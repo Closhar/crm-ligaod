@@ -85,7 +85,6 @@
               :image-field="filter.imageField"
               :key-field="filter.keyField || 'id'"
               :label-field="filter.labelField || 'name'"
-              :limit="filter.limit || null"
               :list_item="filter.list_item || null"
               :options="filter.options"
               :options_list="filter.options_list || null"
@@ -103,7 +102,6 @@
               :initial-class="filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
               @update:modelValue="applyFilters"
           />
-
         </div>
       </div>
     </div>
@@ -240,7 +238,6 @@
                       :image-field="column.options.imageField"
                       :key-field="column.options.keyField || 'id'"
                       :label-field="column.options.labelField || 'name'"
-                      :limit="column.options.limit || null"
                       :options="column.options.options"
                       @update:modelValue="(val) => handleSelectChange(row, column.name, val)"
                   />
@@ -287,7 +284,6 @@
                         :image-field="column.options.imageField"
                         :key-field="column.options.keyField || 'id'"
                         :label-field="column.options.labelField || 'name'"
-                        :limit="column.options.limit || null"
                         :list_item="column.options.list_item || null"
                         :options="column.options.options"
                         :options_list="column.options.options_list || null"
@@ -300,30 +296,15 @@
                   </div>
                 </template>
 
-                <template v-else-if="column.type === 'image'">
-                  <KirhImageField
-                      :error="imageErrors[`${row.id}-${column.name}`]"
-                      :options="column.options"
-                      :row-data="row"
-                      :value="row[column.name]"
-                      @change="(val) => handleImageChange(row, column.name, val)"
-                      @update:modelValue="(val) => updateValue(row, column.name, val)"
-                      @clear-error="clearImageError(row.id, column.name)"
-                  />
-                </template>
-
                 <!-- Другие типы полей -->
                 <template v-else>
                   <component
                       :is="getFieldComponent(column.type)"
-                      :error="error"
                       :options="column.options"
                       :readonly="column.options.readonly"
                       :type="column.type"
                       :value="row[column.name]"
-                      @blur="handleBlur(row, column.name)"
                       @input="updateValue(row, column.name, $event)"
-                      @keyup.enter="handleBlur(row, column.name)"
                   />
                 </template>
               </div>
@@ -385,7 +366,6 @@
                     :image-field="column.options?.imageField"
                     :key-field="column.options?.keyField || 'id'"
                     :label-field="column.options?.labelField || 'name'"
-                    :limit="column.options?.limit || null"
                     :options="column.options?.options || []"
                     :placeholder="column.options?.placeholder || 'Выберите'"
                     class="w-full"
@@ -396,7 +376,6 @@
                     :is="getFieldComponent(column.type)"
                     v-model="formData[column.name]"
                     :options="{ ...column.options, compact: true }"
-                    :row="column.options.image_path ? row : undefined"
                     class="w-full p-1 border border-gray-300 rounded-sm text-xs"
                 />
               </template>
@@ -437,11 +416,12 @@ import {ref, computed, watch, nextTick, onMounted, onUnmounted} from 'vue';
 import {debounce} from 'lodash-es';
 import KirhTextField from './fields/KirhTextField.vue';
 import KirhTextEditorField from './fields/KirhTextEditorField.vue';
+import KirhDateField from './fields/KirhDateField.vue';
+import KirhTimeField from './fields/KirhTimeField.vue';
+import KirhDateTimeField from './fields/KirhDateTimeField.vue';
 import KirhSelectField from './fields/KirhSelectField.vue';
 import KirhToggleField from './fields/KirhToggleField.vue';
 import ToggleFilter from "~/components/kirh/filters/ToggleFilter.vue";
-import KirhImageField from './fields/KirhImageField.vue';
-
 
 export default {
   name: 'KirhTable',
@@ -449,9 +429,11 @@ export default {
     ToggleFilter,
     KirhTextField,
     KirhTextEditorField,
+    KirhDateField,
+    KirhTimeField,
+    KirhDateTimeField,
     KirhSelectField,
-    KirhToggleField,
-    KirhImageField
+    KirhToggleField
   },
   props: {
     apiUrl: {
@@ -558,140 +540,6 @@ export default {
       currentPage.value = 1;
       fetchData();
     };
-
-    const imageErrors = ref({});
-
-
-    const handleImageChange = async (row, fieldName, file) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      // Сбрасываем ошибку
-      imageErrors.value = {
-        ...imageErrors.value,
-        [errorKey]: ''
-      };
-
-      try {
-        if (file instanceof File) {
-          await handleImageUpload(row, fieldName, file);
-        } else if (file === null) {
-          await deleteImage(row, fieldName);
-        }
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message || 'Ошибка загрузки изображения'
-        };
-      }
-    };
-
-    const clearImageError = (rowId, fieldName) => {
-      const errorKey = `${rowId}-${fieldName}`;
-      imageErrors.value = {
-        ...imageErrors.value,
-        [errorKey]: ''
-      };
-    };
-
-    const handleImageUpload = async (row, fieldName, file) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      try {
-        loading.value = true;
-
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('field', fieldName);
-
-        const response = await fetch(`${props.apiUrl}/${row.id}/upload-image`, {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          let errorMessage = data.message || 'Ошибка загрузки изображения';
-          if (data.errors) {
-            errorMessage = Object.values(data.errors).flat().join(', ');
-          }
-          throw new Error(errorMessage);
-        }
-
-        if (!data.success) {
-          throw new Error(data.message || 'Неизвестная ошибка');
-        }
-
-        // Обновляем данные
-        row[fieldName] = data.image_path;
-
-        const column = allFields.value.find(col => col.name === fieldName);
-        if (column?.options?.image_path) {
-          row[column.options.image_path] = data.full_path;
-        }
-
-        await fetchData();
-
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message
-        };
-        throw err;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const deleteImage = async (row, fieldName) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      try {
-        loading.value = true;
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: ''
-        };
-
-        const response = await fetch(`${props.apiUrl}/${row.id}/delete-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({field: fieldName})
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Ошибка удаления изображения');
-        }
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.message || 'Неизвестная ошибка');
-        }
-
-        // Обновляем данные
-        row[fieldName] = '';
-
-        const column = allFields.value.find(col => col.name === fieldName);
-        if (column?.options?.image_path) {
-          row[column.options.image_path] = '';
-        }
-
-        await fetchData();
-
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message
-        };
-      } finally {
-        loading.value = false;
-      }
-    };
-
 
     // Метод для загрузки данных
     const fetchData = async () => {
@@ -895,8 +743,7 @@ export default {
         time: KirhTextField,
         datetime: KirhTextField,
         select: KirhSelectField,
-        toggle: KirhToggleField,
-        image: KirhImageField
+        toggle: KirhToggleField
       };
       return componentMap[type] || KirhTextField;
     };
@@ -932,6 +779,46 @@ export default {
         console.error('Ошибка при удалении:', err);
       } finally {
         loading.value = false;
+      }
+    };
+
+    const updateValue = async (row, fieldName, value) => {
+      if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
+
+      try {
+        const actualValue = typeof value === 'object' && value !== null && 'target' in value
+            ? value.target.value
+            : value;
+
+        const column = allFields.value.find(col => col.name === fieldName);
+
+        if (column?.validate) {
+          const validationResult = column.validate(actualValue);
+          if (typeof validationResult === 'string') {
+            throw new Error(validationResult);
+          }
+          if (validationResult === false) {
+            throw new Error('Недопустимое значение');
+          }
+        }
+
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({[fieldName]: actualValue})
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        const updatedData = await response.json();
+        Object.assign(row, updatedData);
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при обновлении:', err);
       }
     };
 
@@ -1170,6 +1057,16 @@ export default {
           activeSelect.value?.field === fieldName
     }
 
+
+    const handleBlur = () => {
+      setTimeout(() => {
+        const selectEl = getSelectElement()
+        if (selectEl && !selectEl.contains(document.activeElement)) {
+          closeInlineSelect()
+        }
+      }, 100)
+    }
+
     const handleSelectChange = async (row, fieldName, value) => {
       try {
         if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
@@ -1180,10 +1077,6 @@ export default {
         // Подготовка значения для отправки
         let valueToSave = column.options?.saveOnlyId ? value?.id : value;
 
-        // Временно обновляем значение в локальных данных
-        const oldValue = row[fieldName];
-        row[fieldName] = valueToSave;
-
         // Отправка на сервер
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
@@ -1191,121 +1084,19 @@ export default {
           body: JSON.stringify({[fieldName]: valueToSave})
         });
 
-        if (!response.ok) {
-          // Если ошибка - возвращаем старое значение
-          row[fieldName] = oldValue;
-          throw new Error(await response.text());
-        }
+        if (!response.ok) throw new Error(await response.text());
 
-        // Полностью обновляем данные из сервера после успешного сохранения
-        await fetchData();
+        // Обновление локальных данных
+        const updatedData = await response.json();
+        Object.assign(row, updatedData);
 
       } catch (err) {
         console.error('Ошибка при обновлении:', err);
-        error.value = err.message;
+        // Можно добавить отображение ошибки пользователю
       } finally {
-        closeInlineSelect();
+        closeInlineSelect(); // Закрываем селект после обработки
       }
     }
-
-    const debouncedUpdate = debounce(async (row, fieldName, value) => {
-      try {
-        const column = allFields.value.find(col => col.name === fieldName);
-
-        if (column?.validate) {
-          const validationResult = column.validate(value);
-          if (typeof validationResult === 'string') {
-            throw new Error(validationResult);
-          }
-          if (validationResult === false) {
-            throw new Error('Недопустимое значение');
-          }
-        }
-
-        const oldValue = row[fieldName];
-        row[fieldName] = value;
-
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({[fieldName]: value})
-        });
-
-        if (!response.ok) {
-          row[fieldName] = oldValue;
-          throw new Error(await response.text());
-        }
-
-        await fetchData();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при обновлении:', err);
-      }
-    }, 5000); // Задержка 5000 мс
-
-    // Модифицируем метод updateValue
-    const updateValue = (row, fieldName, value) => {
-      if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
-
-      const actualValue = typeof value === 'object' && value !== null && 'target' in value
-          ? value.target.value
-          : value;
-
-      // Для всех полей обновляем локальное значение
-      row[fieldName] = actualValue;
-
-      // Для НЕ текстовых полей (select, toggle и т.д.) сохраняем сразу
-      const column = allFields.value.find(col => col.name === fieldName);
-      if (column?.type !== 'text') {
-        handleSelectChange(row, fieldName, actualValue);
-      }
-    };
-
-    const handleBlur = async (row, fieldName) => {
-      try {
-        const column = allFields.value.find(col => col.name === fieldName);
-
-        if (column?.validate) {
-          const validationResult = column.validate(row[fieldName]);
-          if (typeof validationResult === 'string') {
-            throw new Error(validationResult);
-          }
-          if (validationResult === false) {
-            throw new Error('Недопустимое значение');
-          }
-        }
-
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({[fieldName]: row[fieldName]})
-        });
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        // Опционально: обновить данные после успешного сохранения
-        await fetchData();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при сохранении:', err);
-      }
-    };
-
-    // Очищаем таймеры при размонтировании
-    onUnmounted(() => {
-      tableData.value.forEach(row => {
-        if (row._debounceTimers) {
-          Object.values(row._debounceTimers).forEach(timer => timer.cancel());
-        }
-      });
-    });
-
 
     // Очистка
     onUnmounted(closeInlineSelect)
@@ -1381,11 +1172,7 @@ export default {
       handleSelectBlur,
       handleKeyDown,
       isResetDisabled,
-      resetAllFilters,
-      handleImageChange,
-      imageErrors,
-      clearImageError,
-      handleBlur
+      resetAllFilters
     };
   }
 };

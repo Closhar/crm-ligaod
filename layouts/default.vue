@@ -1,5 +1,7 @@
 <template>
 
+  <KirhLoading :isLoading="isLoading"/>
+
   <div v-if="isAuthenticated" class="flex h-screen">
 
     <!-- Mobile overlay (for closing menu when clicking outside) -->
@@ -114,6 +116,7 @@ import Navigation from "~/components/parts/Navigation.vue";
 import Footer from "~/components/parts/Footer.vue";
 import MobileParts from "~/components/parts/MobileParts.vue";
 import KirhUnauthenticatedUserBlock from "~/components/kirh/auth/KirhUnauthenticatedUserBlock.vue";
+import KirhLoading from "~/components/kirh/parts/KirhLoading.vue";
 
 const {isAuthenticated, user, logout, checkAuth} = useAuth();
 
@@ -135,6 +138,18 @@ const isMenuCollapsed = ref(isMC);
 const toggleMenu = () => {
   isMenuCollapsed.value = !isMenuCollapsed.value;
 };
+
+const isLoading = ref(true);
+const ym_counter_id = params.value.ym_counter_id
+const ga_tracking_id = params.value.ga_tracking_id
+
+onMounted(() => {
+  checkAuth();
+  // Симуляция загрузки данных
+  setTimeout(() => {
+    isLoading.value = false;
+  }, 2000); // Загрузка данных занимает 3 секунды
+});
 
 </script>
 

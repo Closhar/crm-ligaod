@@ -1,74 +1,109 @@
 <template>
-  <label class="toggle-switch">
+  <label class="final-toggle">
     <input
-        :checked="value"
-        :disabled="readonly"
+        ref="input"
+        :checked="internalValue"
+        class="toggle-input"
         type="checkbox"
-        @change="$emit('input', $event.target.checked)"
+        @change="handleSingleChange"
     />
-    <span class="toggle-slider"></span>
+    <span class="toggle-track"></span>
+    <span class="toggle-label">{{ labelText }}</span>
   </label>
 </template>
 
 <script>
 export default {
-  name: 'ToggleField',
+  name: 'KirbFinalToggle',
   props: {
-    value: Boolean,
-    readonly: Boolean,
-    options: Object
+    value: {
+      type: [Number, String, Boolean],
+      default: 0
+    },
+    options: {
+      type: Object,
+      default: () => ({})
+    }
+  },
+  data() {
+    return {
+      lastEmittedValue: null
+    }
+  },
+  computed: {
+    internalValue() {
+      return this.value == 1 || this.value === '1' || this.value === true;
+    },
+    labelText() {
+      if (!this.options.labels) return '';
+      return this.internalValue
+          ? this.options.labels.on || 'Да'
+          : this.options.labels.off || 'Нет';
+    }
+  },
+  methods: {
+    handleSingleChange(e) {
+      const newValue = e.target.checked ? 1 : 0;
+
+      // Защита от дублирования
+      if (this.lastEmittedValue === newValue) return;
+
+      this.lastEmittedValue = newValue;
+      this.$emit('input', newValue);
+      this.$emit('change', newValue);
+    }
   }
-};
+}
 </script>
 
 <style scoped>
-.toggle-switch {
+.final-toggle {
   position: relative;
-  display: inline-block;
-  width: 60px;
-  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
 
-.toggle-switch input {
+.toggle-input {
+  position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: .4s;
-  border-radius: 34px;
+.toggle-track {
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background-color: #e0e0e0;
+  border-radius: 12px;
+  position: relative;
+  transition: background-color 0.3s;
 }
 
-.toggle-slider:before {
+.toggle-input:checked + .toggle-track {
+  background-color: #4CAF50;
+}
+
+.toggle-track:after {
+  content: '';
   position: absolute;
-  content: "";
-  height: 26px;
-  width: 26px;
-  left: 4px;
-  bottom: 4px;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  top: 2px;
   background-color: white;
-  transition: .4s;
   border-radius: 50%;
+  transition: transform 0.3s;
 }
 
-input:checked + .toggle-slider {
-  background-color: #2196F3;
+.toggle-input:checked + .toggle-track:after {
+  transform: translateX(20px);
 }
 
-input:checked + .toggle-slider:before {
-  transform: translateX(26px);
-}
-
-input:disabled + .toggle-slider {
-  cursor: not-allowed;
-  opacity: 0.7;
+.toggle-label {
+  font-size: 12px;
+  user-select: none;
 }
 </style>
