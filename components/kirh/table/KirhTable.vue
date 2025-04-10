@@ -172,6 +172,11 @@
               →
             </button>
           </div>
+
+          <div class="bg-red-600 text-gray-50 px-2" v-if="!tableOptions.editable">
+            Редактирование отключено
+          </div>
+
         </div>
 
         <!-- Таблица -->
@@ -208,7 +213,7 @@
               </button>
             </div>
             <div
-                v-if="tableOptions.editable"
+                v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
                 class="kirh-header-cell p-1.5 hover:bg-gray-50"
                 style="flex: 0 0 80px;"
             >
@@ -327,33 +332,64 @@
                   />
                 </template>
               </div>
-              <div
-                  v-if="tableOptions.editable"
-                  class="kirh-actions-cell p-1.5 border-b border-gray-100 flex gap-1 items-center justify-center"
-                  style="flex: 0 0 80px;"
+
+              <div v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
+                   class="kirh-actions-cell p-1.5 border-b border-gray-100 flex gap-1 items-center justify-center"
+                   style="flex: 0 0 80px;"
               >
-                <button
-                    class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
-                    title="Редактировать"
-                    @click="editRow(row)"
+                <button v-if="tableOptions.editrow && tableOptions.editable"
+                        class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
+                        title="Редактировать"
+                        @click="editRow(row)"
                 >
-                  <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                  </svg>
+                  <Icon name="akar-icons:edit" size="1.5em"/>
                 </button>
-                <button
-                    class="kirh-delete-btn text-red-500 hover:text-red-700 transition-colors p-0.5"
-                    title="Удалить"
-                    @click="deleteRow(row)"
+                <button v-if="tableOptions.deleteable"
+                        class="kirh-delete-btn text-red-500 hover:text-red-700 transition-colors p-0.5"
+                        title="Удалить"
+                        @click="confirmDelete(row)"
                 >
-                  <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path clip-rule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          fill-rule="evenodd"/>
-                  </svg>
+                  <Icon name="mynaui:trash" size="1.5em"/>
                 </button>
+
+                <!-- Модальное окно подтверждения удаления -->
+                <div v-if="showDeleteModal"
+                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                  <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Подтверждение удаления</h3>
+                    <p class="text-sm text-gray-600 mb-2">
+                      Вы собираетесь удалить запись:<br/><span class="font-medium">{{ deleteItemName }}</span>
+                    </p>
+                    <p class="text-sm text-gray-600 mb-6">
+                      Запись невозможно будет восстановить. Подтвердите свои намерения.
+                    </p>
+                    <div class="flex justify-end gap-3">
+                      <button
+                          class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          @click="showDeleteModal = false"
+                      >
+                        Отмена
+                      </button>
+                      <button
+                          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          @click="executeDelete"
+                      >
+                        Подтверждаю, УДАЛИТЬ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <a
+                    v-if="tableOptions.link"
+                    :href="link_to_site(row)"
+                    class="kirh-delete-btn text-green-500 hover:text-green-700 transition-colors p-0.5"
+                    target="_blank"
+                    title="в новом окне"
+                >
+                  <Icon name="iconamoon:link-external-fill" size="1.5em"/>
+                </a>
               </div>
+
             </div>
           </div>
         </div>
@@ -439,8 +475,9 @@ import KirhTextField from './fields/KirhTextField.vue';
 import KirhTextEditorField from './fields/KirhTextEditorField.vue';
 import KirhSelectField from './fields/KirhSelectField.vue';
 import KirhToggleField from './fields/KirhToggleField.vue';
-import ToggleFilter from "~/components/kirh/filters/ToggleFilter.vue";
+import ToggleFilter from "./filters/ToggleFilter.vue";
 import KirhImageField from './fields/KirhImageField.vue';
+import KirhTextareaField from "./fields/KirhTextareaField.vue";
 
 
 export default {
@@ -463,9 +500,12 @@ export default {
       default: () => ({
         columns: [],
         editable: true,
+        editrow: true,
         sortable: true,
         pagination: true,
         pageSize: 10,
+        link: false,
+        link_prefix: '',
         enableResetFilters: true, // Включаем кнопку сброса по умолчанию
         resetFiltersLabel: 'Сбросить', // Можно переопределить текст
         resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
@@ -493,14 +533,6 @@ export default {
     containerStyle: {
       type: Object,
       default: () => ({})
-    },
-    compact: {
-      type: Boolean,
-      default: true
-    },
-    fixedReadonlyField: {
-      type: String,
-      default: ''
     },
     extraEditableFields: {
       type: Array,
@@ -534,8 +566,34 @@ export default {
     const optionsCache = ref({});
     const clickInProgress = ref(false);
     const clickOutsideHandler = ref(null);
+    const showDeleteModal = ref(false);
+    const deleteItem = ref(null);const deleteItemName = computed(() => {
+      if (!deleteItem.value) return '---';
+
+      // Пытаемся получить значение из main_field, если он задан в tableOptions
+      if (props.tableOptions.main_field && deleteItem.value[props.tableOptions.main_field]) {
+        return deleteItem.value[props.tableOptions.main_field];
+      }
+
+      // Если нет - используем id
+      return deleteItem.value.id || '---';
+    });
 
     const selectedFields = ref([...props.defaultVisibleFields])
+
+    const getFieldComponent = (type) => {
+      const componentMap = {
+        text: KirhTextField,
+        textarea: KirhTextareaField,
+        date: KirhTextField,
+        time: KirhTextField,
+        datetime: KirhTextField,
+        select: KirhSelectField,
+        toggle: KirhToggleField,
+        image: KirhImageField
+      };
+      return componentMap[type] || KirhTextField;
+    };
 
     // Инициализация выбранных фильтров
     props.additionalFilters.forEach(filter => {
@@ -885,20 +943,6 @@ export default {
 
     const nextPage = () => {
       if (currentPage.value < totalPages.value) currentPage.value++;
-    };
-
-    const getFieldComponent = (type) => {
-      const componentMap = {
-        text: KirhTextField,
-        textEditor: KirhTextEditorField,
-        date: KirhTextField,
-        time: KirhTextField,
-        datetime: KirhTextField,
-        select: KirhSelectField,
-        toggle: KirhToggleField,
-        image: KirhImageField
-      };
-      return componentMap[type] || KirhTextField;
     };
 
     const addNewRow = () => {
@@ -1306,6 +1350,44 @@ export default {
       });
     });
 
+    const confirmDelete = (row) => {
+      deleteItem.value = row;
+      showDeleteModal.value = true;
+    };
+
+    const executeDelete = async () => {
+      if (!deleteItem.value) return;
+
+      try {
+        loading.value = true;
+        const response = await fetch(`${props.apiUrl}/${deleteItem.value.id}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        await fetchData();
+        showDeleteModal.value = false;
+        deleteItem.value = null;
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при удалении:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Функция для генерации ссылки на основе row
+    const link_to_site = (row) => {
+      const prefix = props.tableOptions.link_prefix || ''; // Префикс ссылки (например, "https://example.com")
+      const fieldName = props.tableOptions.link; // Имя поля в row (например, "id" или "slug")
+      const fieldValue = row[fieldName] || ''; // Значение поля из row
+
+      return `${prefix}/${fieldValue}`; // Итоговая ссылка
+    };
+
 
     // Очистка
     onUnmounted(closeInlineSelect)
@@ -1385,7 +1467,12 @@ export default {
       handleImageChange,
       imageErrors,
       clearImageError,
-      handleBlur
+      handleBlur,
+      confirmDelete,
+      executeDelete,
+      link_to_site,
+      showDeleteModal,
+      deleteItemName
     };
   }
 };

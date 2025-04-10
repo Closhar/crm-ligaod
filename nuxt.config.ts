@@ -7,6 +7,7 @@ export default defineNuxtConfig({
         public: {
             API_URL: process.env.NUXT_PUBLIC_API_URL,
             apiBase: process.env.NUXT_PUBLIC_API_URL,
+            SITE_URL: process.env.NUXT_SITE_URL,
         }
     },
     auth: {

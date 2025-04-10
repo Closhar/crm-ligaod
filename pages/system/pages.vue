@@ -51,6 +51,7 @@ const {data} = await useAsyncData('globals', async () => {
 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
+const site = config.public.SITE_URL;
 const api_addr = api + '/api/events'
 
 // Используем useSeoMeta с данными из хранилища
@@ -142,30 +143,6 @@ const tableOptions = ref({
             warn_ev: "foundation:male-female",
             class_warn_ev: "bg-green-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default"
           }],
-      }
-    },
-    {
-      name: 'image',
-      label: 'img',
-      type: 'image',
-      width: '50px',
-      options: {
-        image_path: 'event_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение для события:',
-        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
       }
     },
     {
@@ -287,6 +264,49 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'image',
+      label: 'img',
+      type: 'image',
+      width: '50px',
+      sortable: false,
+      options: {
+        image_path: 'event_image_path', // поле для текущего изображения
+        thumbnailWidth: 46,
+        thumbnailHeight: 31,
+        previewMaxHeight: '500px',
+        modalTitle: 'Изображение для события:',
+        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
+        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
+        resize: {
+          enabled: true,       // Включить обработку изображений
+          width: 800,          // Ширина (px)
+          height: 500,         // Высота (px)
+          crop: true,          // Обрезать до точных размеров
+          quality: 0.8,         // Качество (0-1)
+          maxSizeMB: 1,         // Максимальный размер (MB)
+          mimeType: 'image/jpeg' // Тип выходного файла
+        }
+      }
+    },
+    {
+      name: 'about',
+      label: 'инфо',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование описания',
+        readonly: false,
+        placeholder: 'Введите описание...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8
+      }
+    },
+    {
       name: 'is_active',
       label: 'акт.',
       type: 'toggle',
@@ -303,14 +323,21 @@ const tableOptions = ref({
       }
     }
   ],
-  editable: true,
-  sortable: true,
-  pagination: true,
+  // Колонка Действия
+  editable: true, // редактирование записи
+  editrow: false, // кнопка редактирования записи
+  deleteable: true, // кнопка удаления записи
+  sortable: true, // сортировка полей
+  link: 'id', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
+  link_prefix: site + '/events', // префикс ссылки
+  pagination: true, // пагинация
+  main_field: 'event_name', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
   enableResetFilters: true, // Кнопка очистки фильтров
-  //resetFiltersLabel: 'Очистить фильтры', // Подпись для кнопки Очистить
-  //resetFiltersClass: 'bg-red-100 text-red-700 hover:bg-red-200' // Дополнительные классы
+  resetFiltersLabel: 'Очистить', // Подпись для кнопки Очистить
+  resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1.5 rounded-md transition-colors shadow-sm ' +
+      'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed' // Дополнительные классы
 });
 
 // Поля формы
