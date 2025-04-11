@@ -3,7 +3,7 @@
     <input
         ref="input"
         :checked="internalValue"
-        class="toggle-input"
+        class="toggle-input mx-auto"
         type="checkbox"
         @change="handleSingleChange"
     />
@@ -74,23 +74,26 @@ export default {
 
 .toggle-track {
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 40px;
+  height: 22px;
   background-color: #e0e0e0;
   border-radius: 12px;
+  border-color: #c3c3c3;
+  border-width: 1px;
   position: relative;
   transition: background-color 0.3s;
+  margin-top: 6px;
 }
 
 .toggle-input:checked + .toggle-track {
-  background-color: #4CAF50;
+  background-color: #59c66a;
 }
 
 .toggle-track:after {
   content: '';
   position: absolute;
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   left: 2px;
   top: 2px;
   background-color: white;

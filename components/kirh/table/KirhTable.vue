@@ -1,115 +1,27 @@
 <template>
   <div class="kirh-table-wrapper flex flex-col h-full">
-    <!-- Кнопка управления панелью выбора полей и фильтры -->
-    <div class="flex mb-1 justify-between items-center">
-      <div class="flex items-center gap-2">
-        <button
-            class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors shadow-sm"
-            @click="toggleFieldSelector"
-        >
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-               xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-          </svg>
-          {{ showFieldSelector ? 'Закрыть панель' : 'Редактировать поля' }}
-        </button>
 
-        <!-- Кнопка обновления таблицы -->
-        <button
-            :disabled="loading"
-            class="refresh-btn text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md flex items-center gap-1 transition-colors shadow-sm"
-            title="Обновить данные"
-            @click="fetchData"
-        >
-          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-               xmlns="http://www.w3.org/2000/svg">
-            <path
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                stroke-linecap="round" stroke-linejoin="round"
-                stroke-width="2"/>
-          </svg>
-          Обновить
-        </button>
+    <!-- Форма -->
+    <div class="kirh-table-wrapper flex flex-col h-full">
 
-        <button
-            v-if="tableOptions.enableResetFilters"
-            :class="tableOptions.resetFiltersClass || 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'"
-            :disabled="isResetDisabled"
-            @click="resetAllFilters"
-        >
-          <svg class="h-3.5 w-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                stroke-linecap="round" stroke-linejoin="round"
-                stroke-width="2"/>
-          </svg>
-          {{ tableOptions.resetFiltersLabel || 'Сбросить' }}
-        </button>
+      <!-- Форма добавления/редактирования -->
+      <KirhTableForm
+          v-if="tableOptions.editable"
+          :api-url="apiUrl"
+          :form-options="formOptions"
+          :show-form="showForm"
+          :editing-row="editingRow"
+          @update:showForm="showForm = $event"
+          @refresh="fetchData"
+          @cancel="cancelForm"
+      />
 
-      </div>
-
-      <!-- Фильтры -->
-      <div class="flex items-center gap-2">
-        <!-- Строковый фильтр -->
-        <div class="relative">
-          <input
-              v-model="searchQuery"
-              class="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Поиск..."
-              type="text"
-              @input="debouncedSearch"
-          >
-          <button
-              v-if="searchQuery"
-              class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              @click="clearSearch"
-          >
-            <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path clip-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    fill-rule="evenodd"/>
-            </svg>
-          </button>
-        </div>
-
-        <!-- Дополнительные фильтры -->
-        <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
-          <KirhSelectField
-              v-if="filter.type !== 'toggle'"
-              v-model="selectedFilters[filter.field]"
-              :api-params="filter.apiParams"
-              :api-url="filter.apiUrl"
-              :empty-option="filter.empty_option"
-              :enable-search="filter.enableSearch"
-              :icon-field="filter.iconField"
-              :image-field="filter.imageField"
-              :key-field="filter.keyField || 'id'"
-              :label-field="filter.labelField || 'name'"
-              :limit="filter.limit || null"
-              :list_item="filter.list_item || null"
-              :options="filter.options"
-              :options_list="filter.options_list || null"
-              :placeholder="filter.placeholder || filter.label"
-              :sel_class="filter.sel_class || null"
-              @update:modelValue="applyFilters"
-          />
-
-          <ToggleFilter
-              v-else
-              v-model="selectedFilters[filter.field]"
-              :active-class="filter.activeClass || 'bg-blue-500 text-white'"
-              :button-class="filter.buttonClass || ''"
-              :filter="filter"
-              :initial-class="filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
-              @update:modelValue="applyFilters"
-          />
-
-        </div>
-      </div>
     </div>
 
+    <!-- Таблица -->
     <div class="flex flex-1 min-h-0">
-      <!-- Панель выбора полей -->
+
+      <!-- Панель выбора полей дополнительного редактирования -->
       <div
           v-if="showFieldSelector"
           class="kirh-field-selector w-56 bg-gray-50 border-r border-gray-200 p-2 overflow-y-auto flex-shrink-0"
@@ -122,9 +34,7 @@
               :class="{
               'bg-blue-500 text-white': selectedFields.includes(field.name),
               'bg-gray-200 text-gray-700 hover:bg-gray-300': !selectedFields.includes(field.name),
-              'opacity-50 cursor-not-allowed': field.name === fixedReadonlyField
             }"
-              :disabled="field.name === fixedReadonlyField"
               class="text-xs px-2 py-1 rounded-md transition-colors text-left"
               @click="toggleFieldSelection(field.name)"
           >
@@ -139,55 +49,181 @@
           :style="containerStyle"
           class="kirh-table-container bg-white rounded-sm shadow-xs p-1 relative border border-gray-100 flex-1 "
       >
+
         <!-- Прелоадер -->
         <div v-if="loading" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
           <div class="loader animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
 
-        <!-- Панель управления -->
-        <div class="kirh-controls flex justify-between items-center mb-1 px-1">
-          <button
-              v-if="tableOptions.editable"
-              class="kirh-add-btn bg-blue-500 hover:bg-blue-600 text-white px-2 py-0.5 text-xs rounded-sm transition-colors"
-              @click="addNewRow"
-          >
-            + Добавить
-          </button>
+        <!-- Панель управления с пагинацией, обновление/сброс, toggle-фильтры, текстовый поиск -->
+        <div class="kirh-controls flex justify-between items-center mb-1 p-2 bg-blue-50">
 
-          <div v-if="tableOptions.pagination" class="kirh-pagination flex items-center gap-2 text-xs">
-            <span class="text-gray-500">Всего: {{ totalItems }}</span>
+          <div class="kirh-pagination flex items-center gap-2 text-xs">
+
+            <!-- Пагинация -->
+            <span v-if="tableOptions.pagination" class="text-gray-500">Всего: {{ totalItems }}</span>
             <button
+                v-if="tableOptions.pagination"
                 :disabled="currentPage === 1 || loading"
-                class="kirh-pagination-btn px-1.5 py-0.5 border border-gray-300 rounded-sm disabled:opacity-50 hover:bg-gray-50"
+                class="kirh-pagination-btn px-1.5 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
                 @click="prevPage"
             >
-              ←
+              <Icon name="emojione-v1:left-arrow" size="2em" />
             </button>
-            <span class="kirh-page-info mx-1">{{ currentPage }}/{{ totalPages }}</span>
+            <span v-if="tableOptions.pagination" class="kirh-page-info mx-1">{{ currentPage }}/{{ totalPages }}</span>
             <button
+                v-if="tableOptions.pagination"
                 :disabled="currentPage === totalPages || loading"
-                class="kirh-pagination-btn px-1.5 py-0.5 border border-gray-300 rounded-sm disabled:opacity-50 hover:bg-gray-50"
+                class="kirh-pagination-btn px-1.5 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
                 @click="nextPage"
             >
-              →
+              <Icon name="emojione-v1:right-arrow" size="2em" />
             </button>
+
+            <!-- Кнопка обновления таблицы -->
+            <button
+                :disabled="loading"
+                class="refresh-btn text-xs bg-blue-500 hover:bg-blue-400 text-gray-50 px-3 py-1 mb-1 rounded-md flex items-center gap-1 transition-colors shadow-sm"
+                title="Обновить данные"
+                @click="fetchData"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"/>
+              </svg>
+              Обновить
+            </button>
+
+            <!-- Кнопка сброса фильтров -->
+            <button
+                v-if="tableOptions.enableResetFilters"
+                :class="tableOptions.resetFiltersClass || 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'"
+                :disabled="isResetDisabled"
+                @click="resetAllFilters"
+            >
+              <svg class="h-3.5 w-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2"/>
+              </svg>
+              {{ tableOptions.resetFiltersLabel || 'Сбросить' }}
+            </button>
+
           </div>
 
-          <div class="bg-red-600 text-gray-50 px-2" v-if="!tableOptions.editable">
-            Редактирование отключено
+          <div class="kirh-pagination flex items-center gap-2 text-xs">
+
+            <!-- Дополнительные фильтры -->
+            <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
+
+              <ToggleFilter
+                  v-if="filter.type === 'toggle'"
+                  v-model="selectedFilters[filter.field]"
+                  :active-class="filter.activeClass || 'bg-blue-500 text-white'"
+                  :button-class="filter.buttonClass || ''"
+                  :filter="filter"
+                  :initial-class="filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                  @update:modelValue="applyFilters"
+              />
+
+            </div>
+
+            <!-- Строковый фильтр -->
+            <div class="relative">
+              <input
+                  v-model="searchQuery"
+                  class="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Поиск..."
+                  type="text"
+                  @input="debouncedSearch"
+              >
+              <button
+                  v-if="searchQuery"
+                  class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  @click="clearSearch"
+              >
+                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path clip-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        fill-rule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Информация об отключении редактирования -->
+            <div class="bg-red-600 text-gray-50 px-2" v-if="!tableOptions.editable">
+            Ред.выкл
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Кнопка управления панелью выбора полей и фильтры -->
+        <div class="flex mb-1 justify-between items-center">
+
+          <!-- Блок выбора полей -->
+          <div class="flex items-center gap-2">
+
+            <!-- Кнопка управления панелью выбора полей -->
+            <button
+                class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-2.5 rounded-md flex items-center gap-1 transition-colors shadow-sm"
+                @click="toggleFieldSelector"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                   xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+              </svg>
+              {{ showFieldSelector ? 'Закрыть панель' : 'Панель редактора отдельных полей' }}
+            </button>
+
+          </div>
+
+          <!-- Блок Фильтры -->
+          <div class="flex items-center gap-2">
+
+            <!-- Селект фильтры -->
+            <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
+              <KirhSelectField
+                  v-if="filter.type !== 'toggle'"
+                  v-model="selectedFilters[filter.field]"
+                  :api-params="filter.apiParams"
+                  :api-url="filter.apiUrl"
+                  :empty-option="filter.empty_option"
+                  :enable-search="filter.enableSearch"
+                  :icon-field="filter.iconField"
+                  :image-field="filter.imageField"
+                  :key-field="filter.keyField || 'id'"
+                  :label-field="filter.labelField || 'name'"
+                  :limit="filter.limit || null"
+                  :list_item="filter.list_item || null"
+                  :options="filter.options"
+                  :options_list="filter.options_list || null"
+                  :placeholder="filter.placeholder || filter.label"
+                  :sel_class="filter.sel_class || null"
+                  @update:modelValue="applyFilters"
+              />
+
+            </div>
+
           </div>
 
         </div>
 
         <!-- Таблица -->
         <div class="kirh-table w-full">
+
           <!-- Заголовки -->
           <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
             <div
                 v-for="(column, colIndex) in visibleColumns"
                 :key="`header-${column.name}-${colIndex}`"
                 :style="getColumnStyle(column)"
-                class="kirh-header-cell p-2 flex items-center justify-between group relative bg-gray-100"
+                class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
             >
               <div class="flex items-center mx-1">
                 <span class="truncate">{{ column.label }}</span>
@@ -214,7 +250,7 @@
             </div>
             <div
                 v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
-                class="kirh-header-cell p-1.5 hover:bg-gray-50"
+                class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
                 style="flex: 0 0 80px;"
             >
               <span class="text-xs">Действия</span>
@@ -307,12 +343,13 @@
 
                 <template v-else-if="column.type === 'image'">
                   <KirhImageField
-                      :error="imageErrors[`${row.id}-${column.name}`]"
-                      :options="column.options"
-                      :row-data="row"
                       :value="row[column.name]"
+                      :options="column.options"
+                      @click="() => openInlineSelect(row, column)"
+                      :row-data="row"
+                      :error="imageErrors[`${row.id}-${column.name}`]"
+                      @update:modelValue="(val) => handleImageChange(row, column.name, val)"
                       @change="(val) => handleImageChange(row, column.name, val)"
-                      @update:modelValue="(val) => updateValue(row, column.name, val)"
                       @clear-error="clearImageError(row.id, column.name)"
                   />
                 </template>
@@ -334,7 +371,7 @@
               </div>
 
               <div v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
-                   class="kirh-actions-cell p-1.5 border-b border-gray-100 flex gap-1 items-center justify-center"
+                   class="kirh-actions-cell border-b border-gray-100 flex gap-1 items-center justify-center"
                    style="flex: 0 0 80px;"
               >
                 <button v-if="tableOptions.editrow && tableOptions.editable"
@@ -392,68 +429,7 @@
 
             </div>
           </div>
-        </div>
 
-        <!-- Форма -->
-        <div
-            v-if="showForm"
-            class="kirh-form mt-2 p-3 border border-gray-200 rounded-sm bg-gray-50 text-xs"
-        >
-          <h3 class="font-bold mb-2">
-            {{ editingRow ? 'Редактирование' : 'Новая запись' }}
-          </h3>
-          <div class="grid gap-2">
-            <div
-                v-for="(column, index) in formOptions.fields"
-                :key="'form-field-'+index"
-                class="kirh-form-field"
-            >
-              <label class="block mb-1">
-                {{ column.label }}
-              </label>
-              <template v-if="column.type === 'select'">
-                <KirhSelectField
-                    v-model="formData[column.name]"
-                    :api-params="column.options?.apiParams"
-                    :api-url="column.options?.apiUrl"
-                    :enable-search="column.options?.enableSearch"
-                    :icon-field="column.options?.iconField"
-                    :image-field="column.options?.imageField"
-                    :key-field="column.options?.keyField || 'id'"
-                    :label-field="column.options?.labelField || 'name'"
-                    :limit="column.options?.limit || null"
-                    :options="column.options?.options || []"
-                    :placeholder="column.options?.placeholder || 'Выберите'"
-                    class="w-full"
-                />
-              </template>
-              <template v-else>
-                <component
-                    :is="getFieldComponent(column.type)"
-                    v-model="formData[column.name]"
-                    :options="{ ...column.options, compact: true }"
-                    :row="column.options.image_path ? row : undefined"
-                    class="w-full p-1 border border-gray-300 rounded-sm text-xs"
-                />
-              </template>
-            </div>
-          </div>
-          <div class="kirh-form-actions mt-3 flex gap-2 justify-end">
-            <button
-                :disabled="formLoading"
-                class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded-sm disabled:opacity-50 transition-colors text-xs"
-                @click="submitForm"
-            >
-              Сохранить
-            </button>
-            <button
-                :disabled="formLoading"
-                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-2 py-1 rounded-sm disabled:opacity-50 transition-colors text-xs"
-                @click="cancelForm"
-            >
-              Отмена
-            </button>
-          </div>
         </div>
 
         <!-- Ошибки -->
@@ -463,32 +439,34 @@
         >
           {{ error }}
         </div>
+
       </div>
+
     </div>
   </div>
 </template>
 
 <script>
-import {ref, computed, watch, nextTick, onMounted, onUnmounted} from 'vue';
-import {debounce} from 'lodash-es';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { debounce } from 'lodash-es';
 import KirhTextField from './fields/KirhTextField.vue';
-import KirhTextEditorField from './fields/KirhTextEditorField.vue';
 import KirhSelectField from './fields/KirhSelectField.vue';
 import KirhToggleField from './fields/KirhToggleField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhTextareaField from "./fields/KirhTextareaField.vue";
-
+import KirhTableForm from './components/KirhTableForm.vue';
 
 export default {
   name: 'KirhTable',
   components: {
     ToggleFilter,
     KirhTextField,
-    KirhTextEditorField,
     KirhSelectField,
     KirhToggleField,
-    KirhImageField
+    KirhImageField,
+    KirhTextareaField,
+    KirhTableForm
   },
   props: {
     apiUrl: {
@@ -506,8 +484,8 @@ export default {
         pageSize: 10,
         link: false,
         link_prefix: '',
-        enableResetFilters: true, // Включаем кнопку сброса по умолчанию
-        resetFiltersLabel: 'Сбросить', // Можно переопределить текст
+        enableResetFilters: true,
+        resetFiltersLabel: 'Сбросить',
         resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
       })
     },
@@ -515,6 +493,7 @@ export default {
       type: Object,
       default: () => ({
         fields: [],
+        showForm: true,
         inline: false
       })
     },
@@ -547,9 +526,7 @@ export default {
     // Реактивные переменные
     const tableData = ref([]);
     const loading = ref(false);
-    const formLoading = ref(false);
-    const showForm = ref(false);
-    const formData = ref({});
+    const showForm = ref(props.formOptions.showForm);
     const editingRow = ref(null);
     const currentPage = ref(1);
     const totalPages = ref(1);
@@ -563,24 +540,288 @@ export default {
     const activeSelect = ref(null);
     const inlineSelectRef = ref(null);
     const selectValues = ref({});
-    const optionsCache = ref({});
-    const clickInProgress = ref(false);
-    const clickOutsideHandler = ref(null);
+    const imageErrors = ref({});
     const showDeleteModal = ref(false);
-    const deleteItem = ref(null);const deleteItemName = computed(() => {
-      if (!deleteItem.value) return '---';
+    const deleteItem = ref(null);
+    const selectedFields = ref([...props.defaultVisibleFields]);
+    const clickOutsideHandler = ref(null);
 
-      // Пытаемся получить значение из main_field, если он задан в tableOptions
+    // Вычисляемые свойства
+    const deleteItemName = computed(() => {
+      if (!deleteItem.value) return '---';
       if (props.tableOptions.main_field && deleteItem.value[props.tableOptions.main_field]) {
         return deleteItem.value[props.tableOptions.main_field];
       }
-
-      // Если нет - используем id
       return deleteItem.value.id || '---';
     });
 
-    const selectedFields = ref([...props.defaultVisibleFields])
+    // Безопасный обработчик кликов вне селекта
+    const handleClickOutside = (event) => {
+      const selectEl = getSelectElement()
+      if (!selectEl) return
 
+      // Современный способ проверки клика
+      const clickedInside = event.composedPath().includes(selectEl)
+      if (!clickedInside) {
+        closeInlineSelect()
+      }
+    }
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && activeSelect.value) {
+        closeInlineSelect();
+      }
+    };
+
+    // Обработчик blur для select
+    const handleSelectBlur = () => {
+      // Если клик в процессе - не закрываем
+      if (clickInProgress.value) {
+        clickInProgress.value = false;
+        return;
+      }
+      closeInlineSelect();
+    };
+
+    // Инициализация обработчика
+    const setupClickOutsideListener = () => {
+      // Сначала удаляем старый обработчик
+      if (clickOutsideHandler.value) {
+        document.removeEventListener('mousedown', clickOutsideHandler.value)
+      }
+
+      // Добавляем новый
+      document.addEventListener('mousedown', handleClickOutside)
+      clickOutsideHandler.value = handleClickOutside
+    }
+
+    const openInlineSelect = async (row, column) => {
+      // Не открываем, если уже активен
+      if (isActiveSelect(row.id, column.name)) return
+
+      // Закрываем предыдущий селект
+      if (activeSelect.value) {
+        closeInlineSelect()
+        await nextTick()
+      }
+
+      // Инициализируем значение
+      if (!selectValues.value[row.id]) {
+        selectValues.value[row.id] = {}
+      }
+
+      selectValues.value[row.id][column.name] = {
+        [column.options.keyField || 'id']: row[column.name],
+        [column.options.labelField || 'name']: getSelectLabel(row, column)
+      }
+
+      // Открываем новый селект
+      activeSelect.value = {rowId: row.id, field: column.name}
+      setupClickOutsideListener()
+
+      await nextTick()
+
+      // Фокусируемся безопасно
+      try {
+        const selectEl = getSelectElement()
+        if (selectEl?.focus) selectEl.focus()
+      } catch (e) {
+        console.error('Focus error:', e)
+      }
+    }
+
+    // Функция закрытия inline select
+    const closeInlineSelect = () => {
+      if (clickOutsideHandler.value) {
+        document.removeEventListener('mousedown', clickOutsideHandler.value)
+        clickOutsideHandler.value = null
+      }
+      activeSelect.value = null
+    }
+
+    // Проверка активности селекта
+    const isActiveSelect = (rowId, fieldName) => {
+      return activeSelect.value?.rowId === rowId &&
+          activeSelect.value?.field === fieldName;
+    };
+
+    // Обновление значения поля
+    const updateValue = (row, fieldName, value) => {
+      if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
+
+      const actualValue = typeof value === 'object' && value !== null && 'target' in value
+          ? value.target.value
+          : value;
+
+      // Для всех полей обновляем локальное значение
+      row[fieldName] = actualValue;
+
+      // Для НЕ текстовых полей (select, toggle и т.д.) сохраняем сразу
+      const column = allFields.value.find(col => col.name === fieldName);
+      if (column?.type !== 'text') {
+        handleSelectChange(row, fieldName, actualValue);
+      }
+    };
+
+    // Обработка изменения в inline-селекте
+    const handleInlineSelectChange = async (row, fieldName, value) => {
+      await handleSelectChange(row, fieldName, value);
+      closeInlineSelect();
+    };
+
+    // Обработчик изменения select
+    const handleSelectChange = async (row, fieldName, value) => {
+      try {
+        if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
+
+        const column = allFields.value.find(col => col.name === fieldName);
+        if (!column) return;
+
+        // Подготовка значения для отправки
+        let valueToSave = value;
+
+        // Если селект работает с объектами (например, {id: 1, name: "Value"})
+        if (column.options?.saveOnlyId) {
+          valueToSave = value?.id ?? null;
+        }
+
+        // Временно обновляем значение в локальных данных
+        const oldValue = row[fieldName];
+        row[fieldName] = valueToSave;
+        closeInlineSelect();
+
+        // Отправка на сервер
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({[fieldName]: valueToSave})
+        });
+
+        if (!response.ok) {
+          // Если ошибка - возвращаем старое значение
+          row[fieldName] = oldValue;
+          throw new Error(await response.text());
+        }
+
+        // Полностью обновляем данные из сервера после успешного сохранения
+        await fetchData();
+
+      } catch (err) {
+        console.error('Ошибка при обновлении:', err);
+        error.value = err.message;
+      }
+    };
+
+    // Проверка доступности поля для редактирования
+    const isFieldEditable = (fieldName) => {
+      if (!showFieldSelector.value) return props.tableOptions.editable;
+      return selectedFields.value.includes(fieldName);
+    };
+
+    // Обработчик события blur
+    const handleBlur = async (row, fieldName) => {
+      try {
+        const column = allFields.value.find(col => col.name === fieldName);
+
+        if (column?.validate) {
+          const validationResult = column.validate(row[fieldName]);
+          if (typeof validationResult === 'string') {
+            throw new Error(validationResult);
+          }
+          if (validationResult === false) {
+            throw new Error('Недопустимое значение');
+          }
+        }
+
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({[fieldName]: row[fieldName]})
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        await fetchData();
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при сохранении:', err);
+      }
+    };
+
+    const allFields = computed(() => {
+      const tableFields = props.tableOptions.columns.map(col => ({
+        name: col.name,
+        label: col.label || col.name,
+        type: col.type || 'text',
+        options: col.options || {}
+      }));
+
+      const extraFields = props.extraEditableFields.map(field => ({
+        name: field.name,
+        label: field.label || field.name,
+        type: field.type || 'text',
+        options: field.options || {}
+      }));
+
+      return [...tableFields, ...extraFields].reduce((acc, field) => {
+        if (!acc.some(f => f.name === field.name)) {
+          acc.push(field);
+        }
+        return acc;
+      }, []);
+    });
+
+    const visibleColumns = computed(() => {
+      if (!showFieldSelector.value) {
+        return props.tableOptions.columns;
+      }
+
+      const selected = selectedFields.value.map(fieldName => {
+        return allFields.value.find(f => f.name === fieldName) || {
+          name: fieldName,
+          label: fieldName,
+          type: 'text',
+          options: {}
+        };
+      }).filter(Boolean);
+
+      const result = [...selected];
+      return result.filter((item, index, self) =>
+          index === self.findIndex(t => t.name === item.name)
+      );
+    });
+
+    const displayedData = computed(() => {
+      if (!props.tableOptions.sortable || !sortField.value) {
+        return tableData.value;
+      }
+
+      return [...tableData.value].sort((a, b) => {
+        const valA = a[sortField.value];
+        const valB = b[sortField.value];
+
+        if (valA === valB) return 0;
+        if (valA === null || valA === undefined) return 1;
+        if (valB === null || valB === undefined) return -1;
+
+        return sortDirection.value === 'asc'
+            ? valA > valB ? 1 : -1
+            : valA < valB ? 1 : -1;
+      });
+    });
+
+    const isResetDisabled = computed(() => {
+      if (searchQuery.value) return false;
+      return !Object.values(selectedFilters.value).some(
+          value => value !== undefined && value !== '' && value !== null
+      );
+    });
+
+    // Методы
     const getFieldComponent = (type) => {
       const componentMap = {
         text: KirhTextField,
@@ -595,163 +836,6 @@ export default {
       return componentMap[type] || KirhTextField;
     };
 
-    // Инициализация выбранных фильтров
-    props.additionalFilters.forEach(filter => {
-      selectedFilters.value[filter.field] = filter.defaultValue || '';
-    });
-
-    // Дебаунс для поиска
-    const debouncedSearch = debounce(() => {
-      fetchData();
-    }, 500);
-
-    // Очистка поиска
-    const clearSearch = () => {
-      searchQuery.value = '';
-      fetchData();
-    };
-
-    // Применение фильтров
-    const applyFilters = () => {
-      currentPage.value = 1;
-      fetchData();
-    };
-
-    const imageErrors = ref({});
-
-
-    const handleImageChange = async (row, fieldName, file) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      // Сбрасываем ошибку
-      imageErrors.value = {
-        ...imageErrors.value,
-        [errorKey]: ''
-      };
-
-      try {
-        if (file instanceof File) {
-          await handleImageUpload(row, fieldName, file);
-        } else if (file === null) {
-          await deleteImage(row, fieldName);
-        }
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message || 'Ошибка загрузки изображения'
-        };
-      }
-    };
-
-    const clearImageError = (rowId, fieldName) => {
-      const errorKey = `${rowId}-${fieldName}`;
-      imageErrors.value = {
-        ...imageErrors.value,
-        [errorKey]: ''
-      };
-    };
-
-    const handleImageUpload = async (row, fieldName, file) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      try {
-        loading.value = true;
-
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('field', fieldName);
-
-        const response = await fetch(`${props.apiUrl}/${row.id}/upload-image`, {
-          method: 'POST',
-          body: formData
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          let errorMessage = data.message || 'Ошибка загрузки изображения';
-          if (data.errors) {
-            errorMessage = Object.values(data.errors).flat().join(', ');
-          }
-          throw new Error(errorMessage);
-        }
-
-        if (!data.success) {
-          throw new Error(data.message || 'Неизвестная ошибка');
-        }
-
-        // Обновляем данные
-        row[fieldName] = data.image_path;
-
-        const column = allFields.value.find(col => col.name === fieldName);
-        if (column?.options?.image_path) {
-          row[column.options.image_path] = data.full_path;
-        }
-
-        await fetchData();
-
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message
-        };
-        throw err;
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const deleteImage = async (row, fieldName) => {
-      const errorKey = `${row.id}-${fieldName}`;
-
-      try {
-        loading.value = true;
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: ''
-        };
-
-        const response = await fetch(`${props.apiUrl}/${row.id}/delete-image`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({field: fieldName})
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Ошибка удаления изображения');
-        }
-
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.message || 'Неизвестная ошибка');
-        }
-
-        // Обновляем данные
-        row[fieldName] = '';
-
-        const column = allFields.value.find(col => col.name === fieldName);
-        if (column?.options?.image_path) {
-          row[column.options.image_path] = '';
-        }
-
-        await fetchData();
-
-      } catch (err) {
-        imageErrors.value = {
-          ...imageErrors.value,
-          [errorKey]: err.message
-        };
-      } finally {
-        loading.value = false;
-      }
-    };
-
-
-    // Метод для загрузки данных
     const fetchData = async () => {
       try {
         loading.value = true;
@@ -780,6 +864,8 @@ export default {
         const response = await fetch(`${props.apiUrl}?${params.toString()}`);
         const data = await response.json();
 
+        closeInlineSelect();
+
         tableData.value = data.data.map((item, index) => {
           if (!item.id) {
             item.uniqueKey = `row-${index}-${Date.now()}` // Добавляем уникальный ключ
@@ -802,100 +888,40 @@ export default {
       }
     };
 
-    // Получение параметров API для селекта
-    const getSelectApiParams = (column, row) => {
-      const params = {...column.options?.apiParams};
+    const debouncedSearch = debounce(() => {
+      fetchData();
+    }, 500);
 
-      if (column.options?.polymorphic) {
-        const {idField, typeField} = column.options.polymorphic;
-        params[typeField] = row[typeField];
-        params[idField] = row[idField];
-      }
-
-      return params;
-    }
-
-    // Методы для работы с select-полями
-    const getNestedValue = (obj, path) => {
-      if (!path || !obj) return null;
-
-      // Если путь не содержит точек, просто возвращаем значение
-      if (!path.includes('.')) {
-        return obj[path] ?? null;
-      }
-
-      // Разбиваем путь на части и последовательно получаем значения
-      return path.split('.').reduce((acc, part) => {
-        if (acc === null || acc === undefined) return null;
-        return acc[part] ?? null;
-      }, obj);
+    const clearSearch = () => {
+      searchQuery.value = '';
+      fetchData();
     };
 
-    const getSelectLabel = (row, column) => {
-      // 1. Если указано поле для отображения в опциях
-      if (column.options?.displayLabelField) {
-        return getNestedValue(row, column.options.displayLabelField);
-      }
-
-      // 2. Если в строке есть прямое поле с label
-      const labelField = column.options?.labelField || 'name';
-      if (row[labelField]) return row[labelField];
-
-      // 3. Если значение - объект (например, {id: 1, name: "Value"})
-      if (row[column.name] && typeof row[column.name] === 'object') {
-        return row[column.name][labelField];
-      }
-
-      // 4. Возвращаем само значение
-      return row[column.name]?.toString() || null;
+    const applyFilters = () => {
+      currentPage.value = 1;
+      fetchData();
     };
 
-    const getSelectImage = (row, column) => {
-      if (!column.options?.displayImageField) return null;
-      return getNestedValue(row, column.options.displayImageField);
+    const resetAllFilters = () => {
+      searchQuery.value = '';
+      Object.keys(selectedFilters.value).forEach(key => {
+        selectedFilters.value[key] = '';
+      });
+      sortField.value = null;
+      sortDirection.value = 'asc';
+      currentPage.value = 1;
+      fetchData();
     };
 
-    const getSelectIcon = (row, column) => {
-      if (!column.options?.displayIconField) return null;
-      return getNestedValue(row, column.options.displayIconField);
-    };
-
-
-    // Обработчик blur для select
-    const handleSelectBlur = () => {
-      // Если клик в процессе - не закрываем
-      if (clickInProgress.value) {
-        clickInProgress.value = false;
-        return;
-      }
-      closeInlineSelect();
-    };
-
-    // Обработка изменения в inline-селекте
-    const handleInlineSelectChange = async (row, fieldName, value) => {
-      await handleSelectChange(row, fieldName, value);
-      closeInlineSelect();
-    };
-
-    // Обработчик клавиши Escape
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && activeSelect.value) {
-        closeInlineSelect();
-      }
-    };
-
-    // Остальные методы компонента
     const toggleFieldSelector = () => {
       showFieldSelector.value = !showFieldSelector.value;
       if (showFieldSelector.value && selectedFields.value.length === 0) {
         selectedFields.value = props.tableOptions.columns
-            .filter(c => c.name !== props.fixedReadonlyField)
             .map(c => c.name);
       }
     };
 
     const toggleFieldSelection = (fieldName) => {
-      if (fieldName === props.fixedReadonlyField) return;
 
       if (selectedFields.value.includes(fieldName)) {
         selectedFields.value = selectedFields.value.filter(f => f !== fieldName);
@@ -903,12 +929,6 @@ export default {
         selectedFields.value = [...selectedFields.value, fieldName];
       }
     };
-
-    const isFieldEditable = (fieldName) => {
-      if (!showFieldSelector.value) return props.tableOptions.editable;
-      if (fieldName === props.fixedReadonlyField) return false;
-      return selectedFields.value.includes(fieldName);
-    }
 
     const getColumnStyle = (column) => {
       if (!props.tableOptions.columns.some(c => c.name === column.name)) {
@@ -946,409 +966,19 @@ export default {
     };
 
     const addNewRow = () => {
-      formData.value = createEmptyFormData();
-      editingRow.value = null;
       showForm.value = true;
+      editingRow.value = null;
     };
 
     const editRow = (row) => {
-      formData.value = {...row};
       editingRow.value = row;
       showForm.value = true;
     };
 
-    const deleteRow = async (row) => {
-      if (!confirm('Вы уверены, что хотите удалить эту запись?')) return;
-
-      try {
-        loading.value = true;
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'DELETE'
-        });
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        await fetchData();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при удалении:', err);
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const submitForm = async () => {
-      try {
-        formLoading.value = true;
-        error.value = null;
-
-        const url = editingRow.value
-            ? `${props.apiUrl}/${editingRow.value.id}`
-            : props.apiUrl;
-
-        const method = editingRow.value ? 'PUT' : 'POST';
-
-        const response = await fetch(url, {
-          method,
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(formData.value)
-        });
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        await fetchData();
-        cancelForm();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при сохранении:', err);
-      } finally {
-        formLoading.value = false;
-      }
-    };
-
     const cancelForm = () => {
       showForm.value = false;
-      formData.value = {};
       editingRow.value = null;
-      error.value = null;
     };
-
-    const createEmptyFormData = () => {
-      const emptyData = {};
-      props.formOptions.fields.forEach(field => {
-        emptyData[field.name] = field.default ?? '';
-      });
-      return emptyData;
-    };
-
-    // Вычисляемые свойства
-    const allFields = computed(() => {
-      const tableFields = props.tableOptions.columns.map(col => ({
-        name: col.name,
-        label: col.label || col.name,
-        type: col.type || 'text',
-        options: col.options || {}
-      }));
-
-      const extraFields = props.extraEditableFields.map(field => ({
-        name: field.name,
-        label: field.label || field.name,
-        type: field.type || 'text',
-        options: field.options || {}
-      }));
-
-      return [...tableFields, ...extraFields].reduce((acc, field) => {
-        if (!acc.some(f => f.name === field.name)) {
-          acc.push(field);
-        }
-        return acc;
-      }, []);
-    });
-
-    const visibleColumns = computed(() => {
-      if (!showFieldSelector.value) {
-        return props.tableOptions.columns;
-      }
-
-      const fixedField = props.fixedReadonlyField
-          ? allFields.value.find(f => f.name === props.fixedReadonlyField)
-          : null;
-
-      const selected = selectedFields.value.map(fieldName => {
-        return allFields.value.find(f => f.name === fieldName) || {
-          name: fieldName,
-          label: fieldName,
-          type: 'text',
-          options: {}
-        };
-      }).filter(Boolean);
-
-      const result = fixedField ? [fixedField, ...selected] : [...selected];
-      return result.filter((item, index, self) =>
-          index === self.findIndex(t => t.name === item.name)
-      );
-    });
-
-    const displayedData = computed(() => {
-      if (!props.tableOptions.sortable || !sortField.value) {
-        return tableData.value;
-      }
-
-      return [...tableData.value].sort((a, b) => {
-        const valA = a[sortField.value];
-        const valB = b[sortField.value];
-
-        if (valA === valB) return 0;
-        if (valA === null || valA === undefined) return 1;
-        if (valB === null || valB === undefined) return -1;
-
-        return sortDirection.value === 'asc'
-            ? valA > valB ? 1 : -1
-            : valA < valB ? 1 : -1;
-      });
-    });
-
-    const isResetDisabled = computed(() => {
-      // Проверяем поисковый запрос
-      if (searchQuery.value) return false
-
-      // Проверяем дополнительные фильтры
-      return !Object.values(selectedFilters.value).some(
-          value => value !== undefined && value !== '' && value !== null
-      )
-    })
-
-    // Метод сброса всех фильтров
-    const resetAllFilters = () => {
-      // Сбрасываем поиск
-      searchQuery.value = ''
-
-      // Сбрасываем все дополнительные фильтры
-      Object.keys(selectedFilters.value).forEach(key => {
-        selectedFilters.value[key] = ''
-      })
-
-      // Сбрасываем сортировку
-      sortField.value = null
-      sortDirection.value = 'asc'
-
-      // Возвращаем на первую страницу
-      currentPage.value = 1
-
-      // Загружаем данные
-      fetchData()
-    }
-
-
-    // Надежное получение DOM-элемента селекта
-    const getSelectElement = () => {
-      if (!inlineSelectRef.value) return null
-
-      // Для компонента Vue 3
-      if (inlineSelectRef.value.$el) return inlineSelectRef.value.$el
-
-      // Для обычного DOM-элемента
-      if (inlineSelectRef.value instanceof HTMLElement) return inlineSelectRef.value
-
-      return null
-    }
-
-    // Безопасный обработчик кликов вне селекта
-    const handleClickOutside = (event) => {
-      const selectEl = getSelectElement()
-      if (!selectEl) return
-
-      // Современный способ проверки клика
-      const clickedInside = event.composedPath().includes(selectEl)
-      if (!clickedInside) {
-        closeInlineSelect()
-      }
-    }
-
-    // Инициализация обработчика
-    const setupClickOutsideListener = () => {
-      // Сначала удаляем старый обработчик
-      if (clickOutsideHandler.value) {
-        document.removeEventListener('mousedown', clickOutsideHandler.value)
-      }
-
-      // Добавляем новый
-      document.addEventListener('mousedown', handleClickOutside)
-      clickOutsideHandler.value = handleClickOutside
-    }
-
-    // Открытие селекта
-    const openInlineSelect = async (row, column) => {
-      // Не открываем, если уже активен
-      if (isActiveSelect(row.id, column.name)) return
-
-      // Закрываем предыдущий селект
-      if (activeSelect.value) {
-        closeInlineSelect()
-        await nextTick()
-      }
-
-      // Инициализируем значение
-      if (!selectValues.value[row.id]) {
-        selectValues.value[row.id] = {}
-      }
-
-      selectValues.value[row.id][column.name] = {
-        [column.options.keyField || 'id']: row[column.name],
-        [column.options.labelField || 'name']: getSelectLabel(row, column)
-      }
-
-      // Открываем новый селект
-      activeSelect.value = {rowId: row.id, field: column.name}
-      setupClickOutsideListener()
-
-      await nextTick()
-
-      // Фокусируемся безопасно
-      try {
-        const selectEl = getSelectElement()
-        if (selectEl?.focus) selectEl.focus()
-      } catch (e) {
-        console.error('Focus error:', e)
-      }
-    }
-
-    // Закрытие селекта
-    const closeInlineSelect = () => {
-      if (clickOutsideHandler.value) {
-        document.removeEventListener('mousedown', clickOutsideHandler.value)
-        clickOutsideHandler.value = null
-      }
-      activeSelect.value = null
-    }
-
-    // Проверка активности селекта
-    const isActiveSelect = (rowId, fieldName) => {
-      return activeSelect.value?.rowId === rowId &&
-          activeSelect.value?.field === fieldName
-    }
-
-    const handleSelectChange = async (row, fieldName, value) => {
-      try {
-        if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
-
-        const column = props.tableOptions.columns.find(col => col.name === fieldName);
-        if (!column) return;
-
-        // Подготовка значения для отправки
-        let valueToSave = column.options?.saveOnlyId ? value?.id : value;
-
-        // Временно обновляем значение в локальных данных
-        const oldValue = row[fieldName];
-        row[fieldName] = valueToSave;
-
-        // Отправка на сервер
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'PATCH',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({[fieldName]: valueToSave})
-        });
-
-        if (!response.ok) {
-          // Если ошибка - возвращаем старое значение
-          row[fieldName] = oldValue;
-          throw new Error(await response.text());
-        }
-
-        // Полностью обновляем данные из сервера после успешного сохранения
-        await fetchData();
-
-      } catch (err) {
-        console.error('Ошибка при обновлении:', err);
-        error.value = err.message;
-      } finally {
-        closeInlineSelect();
-      }
-    }
-
-    const debouncedUpdate = debounce(async (row, fieldName, value) => {
-      try {
-        const column = allFields.value.find(col => col.name === fieldName);
-
-        if (column?.validate) {
-          const validationResult = column.validate(value);
-          if (typeof validationResult === 'string') {
-            throw new Error(validationResult);
-          }
-          if (validationResult === false) {
-            throw new Error('Недопустимое значение');
-          }
-        }
-
-        const oldValue = row[fieldName];
-        row[fieldName] = value;
-
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({[fieldName]: value})
-        });
-
-        if (!response.ok) {
-          row[fieldName] = oldValue;
-          throw new Error(await response.text());
-        }
-
-        await fetchData();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при обновлении:', err);
-      }
-    }, 5000); // Задержка 5000 мс
-
-    // Модифицируем метод updateValue
-    const updateValue = (row, fieldName, value) => {
-      if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
-
-      const actualValue = typeof value === 'object' && value !== null && 'target' in value
-          ? value.target.value
-          : value;
-
-      // Для всех полей обновляем локальное значение
-      row[fieldName] = actualValue;
-
-      // Для НЕ текстовых полей (select, toggle и т.д.) сохраняем сразу
-      const column = allFields.value.find(col => col.name === fieldName);
-      if (column?.type !== 'text') {
-        handleSelectChange(row, fieldName, actualValue);
-      }
-    };
-
-    const handleBlur = async (row, fieldName) => {
-      try {
-        const column = allFields.value.find(col => col.name === fieldName);
-
-        if (column?.validate) {
-          const validationResult = column.validate(row[fieldName]);
-          if (typeof validationResult === 'string') {
-            throw new Error(validationResult);
-          }
-          if (validationResult === false) {
-            throw new Error('Недопустимое значение');
-          }
-        }
-
-        const response = await fetch(`${props.apiUrl}/${row.id}`, {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({[fieldName]: row[fieldName]})
-        });
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        // Опционально: обновить данные после успешного сохранения
-        await fetchData();
-      } catch (err) {
-        error.value = err.message;
-        console.error('Ошибка при сохранении:', err);
-      }
-    };
-
-    // Очищаем таймеры при размонтировании
-    onUnmounted(() => {
-      tableData.value.forEach(row => {
-        if (row._debounceTimers) {
-          Object.values(row._debounceTimers).forEach(timer => timer.cancel());
-        }
-      });
-    });
 
     const confirmDelete = (row) => {
       deleteItem.value = row;
@@ -1379,15 +1009,174 @@ export default {
       }
     };
 
-    // Функция для генерации ссылки на основе row
     const link_to_site = (row) => {
-      const prefix = props.tableOptions.link_prefix || ''; // Префикс ссылки (например, "https://example.com")
-      const fieldName = props.tableOptions.link; // Имя поля в row (например, "id" или "slug")
-      const fieldValue = row[fieldName] || ''; // Значение поля из row
-
-      return `${prefix}/${fieldValue}`; // Итоговая ссылка
+      const prefix = props.tableOptions.link_prefix || '';
+      const fieldName = props.tableOptions.link;
+      const fieldValue = row[fieldName] || '';
+      return `${prefix}/${fieldValue}`;
     };
 
+    // Методы для работы с select-полями
+    const getNestedValue = (obj, path) => {
+      if (!path || !obj) return null;
+      if (!path.includes('.')) return obj[path] ?? null;
+      return path.split('.').reduce((acc, part) => {
+        if (acc === null || acc === undefined) return null;
+        return acc[part] ?? null;
+      }, obj);
+    };
+
+    const getSelectLabel = (row, column) => {
+      if (column.options?.displayLabelField) {
+        return getNestedValue(row, column.options.displayLabelField);
+      }
+      const labelField = column.options?.labelField || 'name';
+      if (row[labelField]) return row[labelField];
+      if (row[column.name] && typeof row[column.name] === 'object') {
+        return row[column.name][labelField];
+      }
+      return row[column.name]?.toString() || null;
+    };
+
+    const getSelectImage = (row, column) => {
+      if (!column.options?.displayImageField) return null;
+      return getNestedValue(row, column.options.displayImageField);
+    };
+
+    const getSelectIcon = (row, column) => {
+      if (!column.options?.displayIconField) return null;
+      return getNestedValue(row, column.options.displayIconField);
+    };
+
+    const getSelectApiParams = (column, row) => {
+      const params = {...column.options?.apiParams};
+      if (column.options?.polymorphic) {
+        const {idField, typeField} = column.options.polymorphic;
+        params[typeField] = row[typeField];
+        params[idField] = row[idField];
+      }
+      return params;
+    };
+
+    // Методы для работы с изображениями
+    const handleImageChange = async (row, fieldName, file) => {
+      const errorKey = `${row.id}-${fieldName}`;
+      imageErrors.value = {...imageErrors.value, [errorKey]: ''};
+
+      try {
+        if (file instanceof File) {
+          await handleImageUpload(row, fieldName, file);
+        } else if (file === null || file === '') {
+          await deleteImage(row, fieldName);
+        } else if (typeof file === 'string') {
+          // Если это строка (уже загруженное изображение), просто обновляем значение
+          row[fieldName] = file;
+        }
+      } catch (err) {
+        imageErrors.value = {
+          ...imageErrors.value,
+          [errorKey]: err.message || 'Ошибка загрузки изображения'
+        };
+      }
+    };
+
+    const clearImageError = (rowId, fieldName) => {
+      const errorKey = `${rowId}-${fieldName}`;
+      imageErrors.value = {...imageErrors.value, [errorKey]: ''};
+    };
+
+    const handleImageUpload = async (row, fieldName, file) => {
+      const errorKey = `${row.id}-${fieldName}`;
+
+      try {
+        loading.value = true;
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('field', fieldName);
+
+        const response = await fetch(`${props.apiUrl}/${row.id}/upload-image`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          let errorMessage = data.message || 'Ошибка загрузки изображения';
+          if (data.errors) {
+            errorMessage = Object.values(data.errors).flat().join(', ');
+          }
+          throw new Error(errorMessage);
+        }
+
+        if (!data.success) {
+          throw new Error(data.message || 'Неизвестная ошибка');
+        }
+
+        row[fieldName] = data.image_path;
+        const column = allFields.value.find(col => col.name === fieldName);
+        if (column?.options?.image_path) {
+          row[column.options.image_path] = data.full_path;
+        }
+
+        await fetchData();
+      } catch (err) {
+        imageErrors.value = {...imageErrors.value, [errorKey]: err.message};
+        throw err;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const deleteImage = async (row, fieldName) => {
+      const errorKey = `${row.id}-${fieldName}`;
+
+      try {
+        loading.value = true;
+        imageErrors.value = {...imageErrors.value, [errorKey]: ''};
+
+        const response = await fetch(`${props.apiUrl}/${row.id}/delete-image`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({field: fieldName})
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Ошибка удаления изображения');
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.message || 'Неизвестная ошибка');
+        }
+
+        row[fieldName] = '';
+        const column = allFields.value.find(col => col.name === fieldName);
+        if (column?.options?.image_path) {
+          row[column.options.image_path] = '';
+        }
+
+        await fetchData();
+      } catch (err) {
+        imageErrors.value = {...imageErrors.value, [errorKey]: err.message};
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Надежное получение DOM-элемента селекта
+    const getSelectElement = () => {
+      if (!inlineSelectRef.value) return null
+
+      // Для компонента Vue 3
+      if (inlineSelectRef.value.$el) return inlineSelectRef.value.$el
+
+      // Для обычного DOM-элемента
+      if (inlineSelectRef.value instanceof HTMLElement) return inlineSelectRef.value
+
+      return null
+    }
 
     // Очистка
     onUnmounted(closeInlineSelect)
@@ -1408,12 +1197,20 @@ export default {
 
     watch([currentPage, sortField, sortDirection], fetchData);
 
+    // Инициализация
+    onMounted(() => {
+      props.additionalFilters.forEach(filter => {
+        selectedFilters.value[filter.field] = filter.defaultValue || '';
+      });
+      fetchData();
+    });
+
+    watch([currentPage, sortField, sortDirection], fetchData);
+
     return {
       tableData,
       loading,
-      formLoading,
       showForm,
-      formData,
       editingRow,
       currentPage,
       totalPages,
@@ -1428,13 +1225,17 @@ export default {
       activeSelect,
       inlineSelectRef,
       selectValues,
+      imageErrors,
+      showDeleteModal,
+      deleteItem,
+      deleteItemName,
       allFields,
       visibleColumns,
       displayedData,
+      isResetDisabled,
       fetchData,
       toggleFieldSelector,
       toggleFieldSelection,
-      isFieldEditable,
       getColumnStyle,
       sortBy,
       prevPage,
@@ -1442,37 +1243,33 @@ export default {
       getFieldComponent,
       addNewRow,
       editRow,
-      deleteRow,
-      updateValue,
-      submitForm,
       cancelForm,
-      createEmptyFormData,
+      confirmDelete,
+      executeDelete,
       debouncedSearch,
       clearSearch,
       applyFilters,
-      getSelectApiParams,
+      resetAllFilters,
       getNestedValue,
       getSelectLabel,
       getSelectImage,
       getSelectIcon,
-      isActiveSelect,
-      openInlineSelect,
-      closeInlineSelect,
-      handleInlineSelectChange,
-      handleSelectChange,
-      handleSelectBlur,
-      handleKeyDown,
-      isResetDisabled,
-      resetAllFilters,
+      getSelectApiParams,
       handleImageChange,
-      imageErrors,
       clearImageError,
-      handleBlur,
-      confirmDelete,
-      executeDelete,
       link_to_site,
-      showDeleteModal,
-      deleteItemName
+      isActiveSelect,
+      updateValue,
+      isFieldEditable,
+      handleBlur,
+      handleSelectChange,
+      openInlineSelect,
+      handleClickOutside,
+      getSelectElement,
+      handleSelectBlur,
+      closeInlineSelect,
+      handleKeyDown,
+      handleInlineSelectChange
     };
   }
 };

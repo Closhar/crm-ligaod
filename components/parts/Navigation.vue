@@ -169,7 +169,7 @@ const handleLeave = () => {
             <NuxtLink
                 v-if="!item.submenu"
                 :class="{'justify-center': isMenuCollapsed}"
-                :to="item.link ? item.link : '/'"
+                :to="item.slug ? '/'+item.slug : '/'"
                 active-class="border border-gray-600 bg-blue-950"
                 class="menu-link"
                 @click="emitToggleMenu"
