@@ -111,6 +111,7 @@ const tableOptions = ref({
     {
       name: 'sport_icon',
       label: '',
+      title_icon: 'i-ic:round-sports-kabaddi',
       type: 'icon',
       width: '40px',
       sortable: false,
@@ -123,6 +124,7 @@ const tableOptions = ref({
     {
       name: 'gender_icon',
       label: '',
+      title_icon: 'icons8:gender',
       type: 'icon',
       width: '40px',
       sortable: false,
@@ -144,6 +146,7 @@ const tableOptions = ref({
       name: 'competition_id',
       label: 'Соревнование',
       type: 'select',
+      min_width: '150px',
       sortable: false,
       options: {
         apiUrl: api + '/api/v1/competitions?type=async',
@@ -165,6 +168,7 @@ const tableOptions = ref({
       name: 'club1_id',
       label: 'Команда (хоз)',
       type: 'select',
+      min_width: '150px',
       sortable: false,
       options: {
         apiUrl: api + '/api/clubs?type=1',
@@ -187,6 +191,7 @@ const tableOptions = ref({
       name: 'club2_id',
       label: 'Команда (гос)',
       type: 'select',
+      min_width: '150px',
       sortable: false,
       options: {
         apiUrl: api + '/api/clubs?type=1',
@@ -209,6 +214,7 @@ const tableOptions = ref({
       name: 'title',
       label: 'Название/этап/стадия',
       type: 'text',
+      min_width: '150px',
       sortable: true,
       options: {
         readonly: false,
@@ -219,6 +225,7 @@ const tableOptions = ref({
       name: 'arena_id',
       label: 'Арена',
       type: 'select',
+      min_width: '150px',
       sortable: false,
       options: {
         apiUrl: api + '/api/v1/arenas?type=async',
@@ -260,7 +267,8 @@ const tableOptions = ref({
     },
     {
       name: 'image',
-      label: 'img',
+      label: '',
+      title_icon: 'stash:image',
       type: 'image',
       width: '50px',
       sortable: false,
@@ -285,7 +293,8 @@ const tableOptions = ref({
     },
     {
       name: 'about',
-      label: 'инфо',
+      label: '',
+      title_icon: 'healthicons:info-outline',
       type: 'textarea',
       width: '50px',
       uploadEnabled: true,
@@ -323,6 +332,7 @@ const tableOptions = ref({
   editrow: false, // кнопка редактирования записи
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
+  separateFields: true, // редактирование отдельных полей
   link: 'id', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
   link_prefix: site + '/events', // префикс ссылки
   pagination: true, // пагинация
@@ -339,6 +349,7 @@ const tableOptions = ref({
 const formOptions = ref({
   showForm: true,
   autoOpen: true,
+  keepFormAfterSubmit: true,
   containerClass: 'bg-gray-50',
   formTitle: 'Добавление матча или события',
   hideButtons: false,
@@ -349,9 +360,9 @@ const formOptions = ref({
   columns: [
     {
       name: 'date_from',
+      required: true,
       label: 'Дата',
       type: 'datetime',
-      required: false,
       width: '180px',
       options: {
         readonly: false,
@@ -363,6 +374,7 @@ const formOptions = ref({
     },
     {
       name: 'competition_id',
+      required: true,
       label: 'Соревнование',
       type: 'select',
       sortable: false,
@@ -509,6 +521,7 @@ const extraFields = ref([
     name: 'event_name',
     label: 'Название события',
     type: 'text',
+    min_width: '200px',
     options: {
       readonly: true,
       cellClass: 'text-xs bg-gray-50 rounded text-gray-60 border px-1 pt-2 w-full min-h-8 text-left cursor-default'

@@ -24,7 +24,10 @@
 
       <!-- Режим редактирования -->
       <template v-else>
-        <Icon v-if="type === 'icon'" :name="effectiveIconName" :size="options.iconSize || 24" class="mx-2"/>
+        <div v-if="type === 'icon'" class="w-18">
+          <Icon :name="effectiveIconName" :size="options.iconSize || 24" class="mx-2"/>
+        </div>
+
         <input
             ref="inputField"
             :class="[dynamicInputClass]"

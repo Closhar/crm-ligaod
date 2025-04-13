@@ -1,6 +1,5 @@
 <template>
   <div class="flex flex-wrap items-center gap-2 p-2 bg-gray-50">
-    <!-- Форматирование текста -->
     <button
         v-if="editor"
         :class="{ 'bg-gray-200': editor.isActive('bold') }"
@@ -38,7 +37,6 @@
       <Icon name="ph:text-strikethrough" size="20"/>
     </button>
 
-    <!-- Цвет текста -->
     <div class="relative">
       <button
           class="p-2 rounded hover:bg-gray-200"
@@ -71,7 +69,6 @@
 
     <div class="border-l border-gray-300 mx-2 h-6 self-center"></div>
 
-    <!-- Заголовки -->
     <button
         v-if="editor"
         :class="{ 'bg-gray-200': editor.isActive('heading', { level: 1 }) }"
@@ -102,7 +99,6 @@
 
     <div class="border-l border-gray-300 mx-2 h-6 self-center"></div>
 
-    <!-- Списки и выравнивание -->
     <button
         v-if="editor"
         :class="{ 'bg-gray-200': editor.isActive('bulletList') }"
@@ -160,7 +156,6 @@
 
     <div class="border-l border-gray-300 mx-2 h-6 self-center"></div>
 
-    <!-- Медиа -->
     <button
         v-if="uploadEnabled"
         class="p-2 rounded hover:bg-gray-200"
@@ -195,7 +190,14 @@
 
     <div class="border-l border-gray-300 mx-2 h-6 self-center"></div>
 
-    <!-- Действия -->
+    <button
+        class="p-2 rounded hover:bg-gray-200"
+        title="Исходный код"
+        @click="$emit('toggle-source')"
+    >
+      <Icon name="ph:code" size="20"/>
+    </button>
+
     <button
         :title="isFullscreen ? 'Выйти из полноэкранного режима' : 'На весь экран'"
         class="p-2 rounded hover:bg-gray-200"
@@ -225,15 +227,19 @@
 </template>
 
 <script setup>
-import {ref} from 'vue'
-
 const props = defineProps({
   editor: Object,
   isFullscreen: Boolean,
   uploadEnabled: Boolean
 })
 
-const emit = defineEmits(['add-image', 'add-iframe', 'toggle-fullscreen', 'show-link-modal'])
+const emit = defineEmits([
+  'add-image',
+  'add-iframe',
+  'toggle-fullscreen',
+  'toggle-source',
+  'show-link-modal'
+])
 
 const showColorPicker = ref(false)
 const colors = [

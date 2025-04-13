@@ -135,6 +135,7 @@
             <!-- Строковый фильтр -->
             <div class="relative">
               <input
+                  v-if="tableOptions.searchable"
                   v-model="searchQuery"
                   class="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Поиск..."
@@ -167,7 +168,7 @@
         <div class="flex mb-1 justify-between items-center">
 
           <!-- Блок выбора полей -->
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" v-if="tableOptions.separateFields">
 
             <!-- Кнопка управления панелью выбора полей -->
             <button
@@ -225,9 +226,13 @@
                 :style="getColumnStyle(column)"
                 class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
             >
-              <div class="flex items-center mx-1">
+              <div class="flex items-center text-center mx-1">
+                <Icon v-if="column.title_icon" :name="column.title_icon" size="1.5em" class="mr-1"/>
                 <span class="truncate">{{ column.label }}</span>
-                <div v-if="column.options?.hint" class="ml-1 relative">
+                <a v-if="column.options?.link_in_title" :href="column.options?.link_in_title" class="text-blue-600 hover:text-blue-500" target="_blank">
+                  <Icon name="lucide:external-link" size="1.2em" class="ml-1" :title="column.options?.hint_in_link || ''"/>
+                </a>
+                <div v-if="column.options?.hint" class="relative">
                   <svg class="h-3 w-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"
                        xmlns="http://www.w3.org/2000/svg">
                     <path clip-rule="evenodd"
@@ -235,7 +240,7 @@
                           fill-rule="evenodd"></path>
                   </svg>
                   <div
-                      class="absolute z-20 bottom-full left-0 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg">
+                      class="absolute z-20 bottom-full -left-20 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg">
                     {{ column.options.hint }}
                   </div>
                 </div>
@@ -546,6 +551,21 @@ export default {
     const selectedFields = ref([...props.defaultVisibleFields]);
     const clickOutsideHandler = ref(null);
 
+    // Методы
+    const getFieldComponent = (type) => {
+      const componentMap = {
+        text: KirhTextField,
+        textarea: KirhTextareaField,
+        date: KirhTextField,
+        time: KirhTextField,
+        datetime: KirhTextField,
+        select: KirhSelectField,
+        toggle: KirhToggleField,
+        image: KirhImageField
+      };
+      return componentMap[type] || KirhTextField;
+    };
+
     // Вычисляемые свойства
     const deleteItemName = computed(() => {
       if (!deleteItem.value) return '---';
@@ -821,22 +841,7 @@ export default {
       );
     });
 
-    // Методы
-    const getFieldComponent = (type) => {
-      const componentMap = {
-        text: KirhTextField,
-        textarea: KirhTextareaField,
-        date: KirhTextField,
-        time: KirhTextField,
-        datetime: KirhTextField,
-        select: KirhSelectField,
-        toggle: KirhToggleField,
-        image: KirhImageField
-      };
-      return componentMap[type] || KirhTextField;
-    };
-
-    const fetchData = async () => {
+      const fetchData = async () => {
       try {
         loading.value = true;
         error.value = null;
@@ -931,21 +936,39 @@ export default {
     };
 
     const getColumnStyle = (column) => {
+      // Если колонки нет в tableOptions, возвращаем дефолтный стиль
       if (!props.tableOptions.columns.some(c => c.name === column.name)) {
-        return {flex: '1 1 0%'};
+        return { flex: '1 1 0%' };
       }
 
       const width = column.width || column.options?.width;
-      if (!width) return {flex: '1 1 0%'};
+      const minWidth = column.min_width || column.options?.min_width;
 
-      if (typeof width === 'number') return {flex: `0 0 ${width}px`};
-      if (typeof width === 'string') {
-        if (width.endsWith('%')) return {flex: `0 0 ${width}`, maxWidth: width};
-        if (width.endsWith('px')) return {flex: `0 0 ${width}`};
-        return {flex: `0 0 ${width}px`};
+      // Базовый стиль
+      const style = { flex: '1 1 0%' };
+
+      // Добавляем min-width если он задан
+      if (minWidth) {
+        style.minWidth = typeof minWidth === 'number' ? `${minWidth}px` : minWidth;
       }
 
-      return {flex: '1 1 0%'};
+      // Обрабатываем width только если min-width не переопределил его
+      if (width && !minWidth) {
+        if (typeof width === 'number') {
+          style.flex = `0 0 ${width}px`;
+        } else if (typeof width === 'string') {
+          if (width.endsWith('%')) {
+            style.flex = `0 0 ${width}`;
+            style.maxWidth = width;
+          } else if (width.endsWith('px')) {
+            style.flex = `0 0 ${width}`;
+          } else {
+            style.flex = `0 0 ${width}px`;
+          }
+        }
+      }
+
+      return style;
     };
 
     const sortBy = (field) => {

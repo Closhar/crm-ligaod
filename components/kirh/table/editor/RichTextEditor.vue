@@ -1,92 +1,45 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-    <div
-        ref="editorContainer"
-        :class="{
-        'max-w-4xl w-full': !isFullscreen,
-        'fixed inset-0 h-screen w-screen': isFullscreen,
-        'h-[90vh] border rounded-lg': !isFullscreen
-      }"
-        class="bg-white shadow-xl flex flex-col transition-all"
-    >
-      <!-- Заголовок -->
-      <div class="p-4 border-b flex justify-between items-center">
-        <h3 class="text-lg font-semibold">
-          {{ title }}
-        </h3>
-        <div class="flex items-center space-x-2">
-          <button
-              v-if="editorEnabled"
-              class="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
-              @click="toggleSource"
-          >
-            {{ showSource ? 'Визуальный' : 'Исходник' }}
-          </button>
-          <button
-              class="text-gray-500 hover:text-gray-700"
-              @click="handleClose"
-          >
-            <Icon name="ph:x" size="20"/>
-          </button>
-        </div>
-      </div>
-
-      <!-- Тулбар -->
-      <div v-if="editorEnabled && !showSource" class="border-b">
-        <EditorToolbar
-            :editor="editor"
-            :is-fullscreen="isFullscreen"
-            :upload-enabled="true"
-            @add-image="showImageModal = true"
-            @add-iframe="showIframeModal = true"
-            @toggle-fullscreen="toggleFullscreen"
-            @show-link-modal="openLinkModal"
-        />
-      </div>
-
-      <!-- Основной контент -->
-      <div class="flex-1 overflow-auto p-4">
-        <editor-content
-            v-if="editorEnabled && !showSource"
-            :editor="editor"
-            :placeholder="placeholder"
-            class="min-h-[200px] outline-none text-left"
-        />
-        <textarea
-            v-else-if="editorEnabled && showSource"
-            ref="sourceTextarea"
-            v-model="sourceContent"
-            :placeholder="placeholder"
-            class="w-full h-full min-h-[200px] p-2 border rounded font-mono text-sm outline-none resize-none text-left whitespace-pre-wrap leading-normal"
-            @paste="handleSourcePaste"
-            @keydown.enter="handleSourceEnter"
-        ></textarea>
-        <textarea
-            v-else
-            v-model="simpleTextContent"
-            :placeholder="placeholder"
-            class="w-full h-full min-h-[200px] p-2 border rounded outline-none resize-none text-left whitespace-pre-wrap"
-        ></textarea>
-      </div>
-
-      <!-- Футер -->
-      <div class="p-4 border-t flex justify-end space-x-2">
+  <div class="h-full flex flex-col">
+    <div v-if="editorEnabled" class="border-b">
+      <EditorToolbar
+          v-if="!showSource"
+          :editor="editor"
+          :is-fullscreen="isFullscreen"
+          :upload-enabled="true"
+          @add-image="showImageModal = true"
+          @add-iframe="showIframeModal = true"
+          @toggle-fullscreen="toggleFullscreen"
+          @show-link-modal="openLinkModal"
+          @toggle-source="toggleSource"
+      />
+      <div v-else class="p-2 bg-gray-50 flex justify-between items-center">
+        <span class="text-sm font-medium">Режим исходного кода</span>
         <button
-            class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-            @click="handleClose"
+            class="px-3 py-1 text-sm bg-gray-200 rounded hover:bg-gray-300 flex items-center"
+            @click="toggleSource"
         >
-          Отмена
-        </button>
-        <button
-            class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            @click="handleSave"
-        >
-          Сохранить
+          <Icon name="ph:eye" size="16" class="mr-1"/> Визуальный редактор
         </button>
       </div>
     </div>
 
-    <!-- Модальные окна -->
+    <div class="flex-1 overflow-auto p-4">
+      <editor-content
+          v-if="editorEnabled && !showSource"
+          :editor="editor"
+          :placeholder="placeholder"
+          class="min-h-[200px] outline-none text-left"
+      />
+      <textarea
+          v-else-if="editorEnabled && showSource"
+          ref="sourceTextarea"
+          v-model="sourceContent"
+          :placeholder="placeholder"
+          class="w-full h-full min-h-[200px] p-2 border rounded font-mono text-sm outline-none resize-none text-left whitespace-pre-wrap leading-normal"
+          @blur="updateEditorFromSource"
+      ></textarea>
+    </div>
+
     <ImageUploadModal
         v-if="showImageModal"
         :upload-options="uploadOptions"
@@ -110,7 +63,6 @@
 </template>
 
 <script setup>
-import {ref, onMounted, onBeforeUnmount, nextTick} from 'vue'
 import {Editor, EditorContent} from '@tiptap/vue-3'
 import {Node} from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -125,8 +77,8 @@ import EditorToolbar from './EditorToolbar.vue'
 import ImageUploadModal from './ImageUploadModal.vue'
 import IframeModal from './IframeModal.vue'
 import LinkModal from './LinkModal.vue'
+import {nextTick} from 'vue'
 
-// Определяем IframeExtension до использования
 const IframeExtension = Node.create({
   name: 'iframe',
   group: 'block',
@@ -160,7 +112,6 @@ const IframeExtension = Node.create({
 
 const props = defineProps({
   modelValue: String,
-  title: {type: String, default: 'Редактор текста'},
   placeholder: {type: String, default: 'Введите текст...'},
   editorEnabled: {type: Boolean, default: true},
   uploadOptions: {
@@ -173,41 +124,43 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:modelValue', 'close', 'save'])
+const emit = defineEmits(['update:modelValue', 'toggle-fullscreen'])
 
 const editor = ref(null)
-const editorContainer = ref(null)
 const showImageModal = ref(false)
 const showIframeModal = ref(false)
 const showLinkModal = ref(false)
-const sourceContent = ref(props.modelValue)
-const simpleTextContent = ref(props.modelValue)
-const showSource = ref(false)
-const isFullscreen = ref(false)
-const sourceTextarea = ref(null)
 const linkModalInitialValues = ref({
   href: '',
   text: '',
   openInNewTab: false
 })
+const showSource = ref(false)
+const sourceContent = ref(props.modelValue)
+const isFullscreen = ref(false)
+const sourceTextarea = ref(null)
 
-const toggleFullscreen = () => {
-  isFullscreen.value = !isFullscreen.value
-  if (isFullscreen.value) {
-    document.body.classList.add('overflow-hidden')
-  } else {
-    document.body.classList.remove('overflow-hidden')
-  }
-}
-
-const toggleSource = () => {
+const toggleSource = async () => {
   showSource.value = !showSource.value
   if (showSource.value) {
     sourceContent.value = editor.value?.getHTML() || ''
-    nextTick(() => sourceTextarea.value?.focus())
+    await nextTick()
+    sourceTextarea.value?.focus()
   } else {
-    editor.value?.commands.setContent(sourceContent.value)
+    updateEditorFromSource()
   }
+}
+
+const updateEditorFromSource = () => {
+  if (editor.value) {
+    editor.value.commands.setContent(sourceContent.value)
+    emit('update:modelValue', sourceContent.value)
+  }
+}
+
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+  emit('toggle-fullscreen', isFullscreen.value)
 }
 
 const openLinkModal = (initialValues) => {
@@ -247,7 +200,6 @@ const handleInsertLink = (link) => {
     return
   }
 
-  // Для email и tel отключаем открытие в новой вкладке
   const isSpecialLink = link.href.startsWith('mailto:') || link.href.startsWith('tel:')
   const target = !isSpecialLink && link.openInNewTab ? '_blank' : null
   const rel = !isSpecialLink && link.openInNewTab ? 'noopener noreferrer' : null
@@ -265,26 +217,8 @@ const handleInsertLink = (link) => {
         {type: 'text', text: link.text}
     )
   }
-}
 
-const handleClose = () => {
-  if (isFullscreen.value) {
-    toggleFullscreen()
-  }
-  emit('close')
-}
-
-const handleSave = () => {
-  let content
-  if (props.editorEnabled) {
-    content = showSource.value ? sourceContent.value : editor.value?.getHTML() || ''
-  } else {
-    content = simpleTextContent.value
-  }
-
-  emit('save', content)
-  emit('update:modelValue', content)
-  handleClose()
+  showLinkModal.value = false
 }
 
 onMounted(() => {
@@ -323,13 +257,13 @@ onMounted(() => {
           placeholder: props.placeholder,
           emptyEditorClass: 'is-editor-empty'
         }),
-        IframeExtension // Используем определенное расширение
+        IframeExtension
       ],
       editorProps: {
         attributes: {class: 'prose focus:outline-none min-h-[200px] text-left'}
       },
       onUpdate: () => {
-        sourceContent.value = editor.value.getHTML()
+        emit('update:modelValue', editor.value.getHTML())
       }
     })
   }
@@ -337,7 +271,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   editor.value?.destroy()
-  document.body.classList.remove('overflow-hidden')
 })
 </script>
 
