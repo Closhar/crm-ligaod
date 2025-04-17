@@ -243,8 +243,9 @@
 
           <!-- Заголовки -->
           <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
-            <!-- ID фильтр заголовок -->
+            <!-- ID фильтр заголовок (отображается только если включен showIdFilter) -->
             <div 
+                v-if="tableOptions.showIdFilter"
                 class="kirh-header-cell flex items-center justify-center group relative bg-gray-100 px-2 py-2 border border-gray-200 rounded"
                 style="flex: 0 0 60px;"
             >
@@ -336,8 +337,9 @@
                 :class="{'bg-gray-50': rowIndex % 2 === 0}"
                 class="kirh-row flex hover:bg-gray-50 text-xs"
             >
-              <!-- ID фильтр ячейка -->
+              <!-- ID фильтр ячейка (отображается только если включен showIdFilter) -->
               <div 
+                  v-if="tableOptions.showIdFilter"
                   class="kirh-cell border-b border-gray-100 flex items-center justify-center"
                   style="flex: 0 0 60px;"
               >
@@ -581,7 +583,8 @@ export default {
         link_prefix: '',
         enableResetFilters: true,
         resetFiltersLabel: 'Сбросить',
-        resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'
+        resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed',
+        showIdFilter: true
       })
     },
     formOptions: {

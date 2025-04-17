@@ -342,11 +342,12 @@ const tableOptions = ref({
     }
   ],
   // Основные параметры
-  editable: true,
-  editrow: false,
-  deleteable: true,
-  sortable: true,
-  separateFields: true,
+  editable: true, // редактирование
+  editrow: false, // редактирование строки
+  deleteable: true, // удаление
+  sortable: true, // сортировка
+  separateFields: true, // разделять поля в форме
+  showIdFilter: true, // отображать фильтр по ID
   link: 'id',
   link_prefix: site + '/events',
   pagination: true,
