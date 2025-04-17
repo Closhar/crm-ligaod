@@ -521,6 +521,7 @@ export default {
 <style scoped>
 .kirh-image-field {
   display: inline-block;
+  width: 100%;
 }
 
 .kirh-image-thumbnail {

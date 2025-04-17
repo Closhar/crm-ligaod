@@ -10,7 +10,7 @@
           v-if="showOnlyIcon"
           :class="['icon-only-wrapper', dynamicInputClass]"
       >
-        <Icon :name="effectiveIconName" :size="options.iconSize || 24"/>
+        <Icon :name="effectiveIconName" :size="options.iconSize || 16" class="text-gray-600"/>
       </div>
 
       <!-- Readonly режим (не только иконка) -->
@@ -18,14 +18,14 @@
           v-else-if="readonly"
           :class="dynamicInputClass"
       >
-        <Icon v-if="type === 'icon'" :name="effectiveIconName" :size="options.iconSize || 24" class="mr-1"/>
+        <Icon v-if="type === 'icon'" :name="effectiveIconName" :size="options.iconSize || 16" class="mr-1 text-gray-600"/>
         <span class="align-top mt-1">{{ displayValue || '&nbsp;' }}</span>
       </div>
 
       <!-- Режим редактирования -->
       <template v-else>
         <div v-if="type === 'icon'" class="w-18">
-          <Icon :name="effectiveIconName" :size="options.iconSize || 24" class="mx-2"/>
+          <Icon :name="effectiveIconName" :size="options.iconSize || 16" class="mx-2 text-gray-600"/>
         </div>
 
         <input
@@ -47,6 +47,7 @@
             v-if="showEditIcon"
             class="edit-icon"
             name="mingcute:pencil-fill"
+            size="16"
             @click="startEdit"
         />
       </template>
@@ -158,6 +159,14 @@ export default {
       const matchedCondition = this.options.ev.find(condition =>
           String(condition.warn_ev || '') === String(currentValue)
       );
+
+      // Check for empty value if check_empty is enabled
+      if (this.options.check_empty) {
+        const strippedValue = currentValue.replace(/<[^>]*>/g, '').trim();
+        if (!strippedValue) {
+          return this.options.empty_class || 'bg-red-100';
+        }
+      }
 
       return matchedCondition?.class_warn_ev || this.options.cellClass || '';
     },
@@ -434,6 +443,7 @@ export default {
   display: flex;
   align-items: center;
   width: 100%;
+  min-height: 32px;
 }
 
 .field-display {
@@ -455,19 +465,22 @@ export default {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: 4px;
+  min-height: 32px;
 }
 
 .edit-icon {
   position: absolute;
-  right: 8px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   cursor: pointer;
   color: #9ca3af;
+  opacity: 0.7;
 }
 
 .edit-icon:hover {
+  opacity: 1;
   color: #4b5563;
 }
 

@@ -1,5 +1,4 @@
 <template>
-
   <KirhLoading :isLoading="isLoading"/>
 
   <div v-if="isAuthenticated" class="flex h-screen">
@@ -24,9 +23,8 @@
       >
         <Icon :name="isMenuCollapsed ? 'heroicons:bars-3' : 'heroicons:x-mark'" class="w-5 h-5"/>
       </button>
-
     </header>
-
+    
     <!-- Sidebar -->
     <div class="relative">
       <aside
@@ -83,12 +81,10 @@
     <!-- Main Content -->
     <div class="flex-1 flex flex-col overflow-hidden py-16 md:py-0">
 
-
       <!-- Content -->
       <main class="flex-1 overflow-y-auto bg-gray-50">
-        <slot/>
+        <slot />
       </main>
-
 
       <!-- Desktop Footer -->
       <Footer :copy_link="copy_link" :copyrights="copyrights" class="hidden md:block"/>
@@ -104,7 +100,6 @@
                                   title="Аутентификация"
     />
   </div>
-
 </template>
 
 <script setup>
@@ -150,7 +145,6 @@ onMounted(() => {
     isLoading.value = false;
   }, 2000); // Загрузка данных занимает 3 секунды
 });
-
 </script>
 
 <style>

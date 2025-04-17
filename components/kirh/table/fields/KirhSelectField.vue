@@ -1,8 +1,12 @@
 <template>
-  <div ref="selectContainer" :class="sel_class" class="custom-select">
+  <div ref="selectContainer" class="custom-select">
     <!-- Поле для отображения выбранного значения -->
-    <div class="selected-option" @click="isOpen = !isOpen">
-      <div class="flex items-center space-x-2">
+    <div 
+      class="selected-option" 
+      :class="[sel_class, {'opacity-50 cursor-not-allowed': disabled}]" 
+      @click="toggleDropdown()"
+    >
+      <div class="flex items-center space-x-2 text-sm">
         <!-- Изображение или иконка выбранной опции -->
         <img
             v-if="selectedOption?.[props.imageField]"
@@ -15,18 +19,18 @@
             :icon="selectedOption[props.iconField]"
             class="w-6 h-6"
         />
-        <span>{{ selectedOption?.[props.labelField] || placeholder }}</span>
+        <span>{{ getDisplayValue }}</span>
       </div>
       <!-- Стрелочка вниз -->
       <Icon
-          :class="{ 'rotate-180': isOpen }"
+          :class="[{ 'rotate-180': isOpen }, disabled ? 'text-gray-300' : 'text-gray-500']"
           class="w-6 h-6 ml-2 transition-transform"
           icon="ic:round-arrow-drop-down"
       />
     </div>
 
     <!-- Выпадающий список -->
-    <div v-if="isOpen" :class="options_list" class="options-list">
+    <div v-if="isOpen && !disabled" :class="options_list" class="options-list">
       <!-- Поле поиска (если enableSearch=true) -->
       <input
           v-if="enableSearch"
@@ -48,7 +52,7 @@
           class="option"
           @click="selectOption(option)"
       >
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-2 text-sm">
           <!-- Изображение или иконка опции -->
           <img
               v-if="option[props.imageField]"
@@ -142,6 +146,18 @@ const props = defineProps({
       image: '',
     }),
   },
+  emptyable: {
+    type: Boolean,
+    default: true,
+  },
+  label: {
+    type: String,
+    default: '',
+  },
+  disabled: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -159,7 +175,7 @@ const getNestedValue = (obj, path) => {
   return path.split('.').reduce((acc, part) => acc && acc[part], obj);
 };
 
-// Вычисляемое свойство для отображения опций
+// Добавляем вычисляемое свойство для отображения опций
 const filteredOptions = computed(() => {
   let options = [];
 
@@ -169,8 +185,8 @@ const filteredOptions = computed(() => {
     options = [...apiOptions.value];
   }
 
-  // Добавляем пустую опцию только если её нет
-  if (props.emptyOption && !options.some(opt => opt[props.keyField] === props.emptyOption.value)) {
+  // Добавляем пустую опцию только если emptyable=true и её нет в списке
+  if (props.emptyable && props.emptyOption && !options.some(opt => opt[props.keyField] === props.emptyOption.value)) {
     options.unshift({
       [props.keyField]: props.emptyOption.value,
       [props.labelField]: props.emptyOption.label,
@@ -190,6 +206,20 @@ const filteredOptions = computed(() => {
   return options;
 });
 
+// Добавляем вычисляемое свойство для отображения значения
+const getDisplayValue = computed(() => {
+  if (selectedOption.value && selectedOption.value[props.labelField]) {
+    return selectedOption.value[props.labelField];
+  }
+  if (props.modelValue && typeof props.modelValue === 'object') {
+    return props.modelValue[props.labelField] || props.modelValue.title_short || props.modelValue.label || props.modelValue;
+  }
+  if (props.modelValue) {
+    return props.modelValue;
+  }
+  return props.label;
+});
+
 // Инициализация значения по умолчанию
 const initializeDefaultValue = () => {
   if (props.defaultValue !== null && props.defaultValue !== undefined) {
@@ -207,6 +237,9 @@ const initializeDefaultValue = () => {
 
 // Обработка выбора опции
 const selectOption = (option) => {
+  // Если селект отключен, не обрабатываем выбор
+  if (props.disabled) return;
+  
   const selectedValue = option[props.keyField];
   emit('update:modelValue', selectedValue);
   selectedOption.value = option;
@@ -223,7 +256,7 @@ const handleClickOutside = (event) => {
 
 // Асинхронный поиск через API
 const fetchOptions = async (query = '') => {
-  if (!props.apiUrl) return;
+  if (!props.apiUrl || props.disabled) return;
 
   isLoading.value = true;
   try {
@@ -252,7 +285,7 @@ const fetchOptions = async (query = '') => {
 
 // Обработка ввода в поле поиска
 const handleSearch = () => {
-  if (props.apiUrl && props.enableSearch) {
+  if (props.apiUrl && props.enableSearch && !props.disabled) {
     fetchOptions(searchQuery.value);
   }
 };
@@ -266,7 +299,7 @@ onMounted(() => {
     initializeDefaultValue();
   }
   // Если есть API URL - загружаем данные
-  else if (props.apiUrl) {
+  else if (props.apiUrl && !props.disabled) {
     fetchOptions().then(() => {
       initializeDefaultValue();
     });
@@ -283,12 +316,30 @@ watch(
     () => props.modelValue,
     (newValue) => {
       if (newValue || newValue === 0) {
-        const allOptions = [...props.options, ...apiOptions.value];
-        selectedOption.value = allOptions.find(
+        // Преобразуем options в массив, если это объект
+        const optionsArray = Array.isArray(props.options) ? props.options : 
+                           (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
+        const allOptions = [...optionsArray, ...apiOptions.value];
+        const foundOption = allOptions.find(
             option => option[props.keyField] === newValue
-        ) || props.emptyOption;
-      } else {
+        );
+        
+        if (foundOption) {
+          selectedOption.value = foundOption;
+        } else if (props.emptyable) {
+          selectedOption.value = props.emptyOption;
+        } else {
+          // Если emptyable=false и значение не найдено, берем первую доступную опцию
+          selectedOption.value = allOptions[0] || null;
+        }
+      } else if (props.emptyable) {
         selectedOption.value = props.emptyOption;
+      } else {
+        // Если emptyable=false и нет значения, берем первую доступную опцию
+        const optionsArray = Array.isArray(props.options) ? props.options : 
+                           (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
+        const allOptions = [...optionsArray, ...apiOptions.value];
+        selectedOption.value = allOptions[0] || null;
       }
     },
     {immediate: true}
@@ -301,6 +352,26 @@ watch(
       initializeDefaultValue();
     },
     {deep: true}
+);
+
+// Переключение выпадающего списка
+const toggleDropdown = () => {
+  if (props.disabled) return;
+  isOpen.value = !isOpen.value;
+  if (isOpen.value && props.apiUrl) {
+    fetchOptions();
+  }
+};
+
+// Добавим наблюдатель за изменением disabled
+watch(
+    () => props.disabled,
+    (newValue) => {
+      // Если компонент становится disabled, закрываем выпадающий список
+      if (newValue === true) {
+        isOpen.value = false;
+      }
+    }
 );
 </script>
 
@@ -318,6 +389,7 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background-color: #fff;
 }
 
 .options-list {
@@ -333,7 +405,6 @@ watch(
   border: 1px solid #ccc;
   border-radius: 4px;
   max-height: 200px;
-  margin-top: 4px;
 }
 
 .search-input {

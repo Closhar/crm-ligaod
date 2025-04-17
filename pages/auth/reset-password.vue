@@ -6,7 +6,7 @@
       </div>
 
       <!-- Уведомления об ошибках -->
-      <KirhNote v-if="message" :message="message" :type="messageType"/>
+      <KirhNote v-if="message" :message="message" :type="messageType" />
 
       <!-- Форма сброса пароля -->
       <form v-if="!isPasswordReset" @submit.prevent="submitForm">
@@ -43,7 +43,7 @@
               type="password"
           />
         </div>
-        <input v-model="token" type="hidden"/>
+        <input v-model="token" type="hidden" />
         <button
             class="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             type="submit"
@@ -81,8 +81,8 @@ const api = config.public.API_URL;
 
 // Получаем токен из URL
 onMounted(() => {
-  token.value = route.query.token;
-  email.value = route.query.email;
+  token.value = String(route.query.token);
+  email.value = String(route.query.email);
 });
 
 // Отправка формы сброса пароля

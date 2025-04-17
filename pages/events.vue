@@ -15,14 +15,15 @@
     <div class="min-h-full text-gray-900">
 
       <KirhTable
-          :additional-filters="additionalFilters"
           :api-url="api_addr"
-          :defaultVisibleFields="defaultVisibleFields"
-          :enable-field-selector="true"
-          :extra-editable-fields="extraFields"
-          :form-options="formOptions"
-          :searchable="true"
           :table-options="tableOptions"
+          :form-options="formOptions"
+          :additional-filters="additionalFilters"
+          :extra-editable-fields="extraFields"
+          :default-visible-fields="defaultVisibleFields"
+          :excluded-fields="excludedFields"
+          :container-class="'w-full'"
+          :container-style="{}"
       />
 
     </div>
@@ -39,6 +40,7 @@ import {useGlobalsStore} from '~/stores/globals';
 import {storeToRefs} from 'pinia';
 import Head from "~/components/parts/Head.vue"
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import {Icon} from '@iconify/vue';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
@@ -71,7 +73,9 @@ const breadcrumbs = [
 
 const {isAuthenticated, user, logout, checkAuth} = useAuth();
 
-// Параметры таблицы и поля
+
+
+// Параметры таблицы
 const tableOptions = ref({
   columns: [
     {
@@ -151,9 +155,10 @@ const tableOptions = ref({
       options: {
         apiUrl: api + '/api/v1/competitions?type=async',
         keyField: 'id',
+        emptyable: false,
         labelField: 'title_short',
         enableSearch: true,
-        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        sel_class: "",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
 
@@ -176,7 +181,8 @@ const tableOptions = ref({
         labelField: 'club_info',
         imageField: 'full_image_path',
         enableSearch: true,
-        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        emptyable: true,
+        sel_class: "",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         limit: 20,
@@ -192,14 +198,15 @@ const tableOptions = ref({
       label: 'Команда (гос)',
       type: 'select',
       min_width: '150px',
-      sortable: false,
+      sortable: true,
       options: {
         apiUrl: api + '/api/clubs?type=1',
         keyField: 'id',
+        emptyable: true,
         labelField: 'club_info',
         imageField: 'full_image_path',
         enableSearch: true,
-        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        sel_class: "",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         limit: 20,
@@ -230,9 +237,10 @@ const tableOptions = ref({
       options: {
         apiUrl: api + '/api/v1/arenas?type=async',
         keyField: 'id',
+        emptyable: false,
         labelField: 'title',
         enableSearch: true,
-        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        sel_class: "",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         displayLabelField: 'arena.title'
@@ -268,6 +276,7 @@ const tableOptions = ref({
     {
       name: 'image',
       label: '',
+      displayLabel: 'Изображение',
       title_icon: 'stash:image',
       type: 'image',
       width: '50px',
@@ -277,6 +286,7 @@ const tableOptions = ref({
         thumbnailWidth: 46,
         thumbnailHeight: 31,
         previewMaxHeight: '500px',
+        hint: 'изображение для события',
         modalTitle: 'Изображение для события:',
         modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
         info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
@@ -294,6 +304,7 @@ const tableOptions = ref({
     {
       name: 'about',
       label: '',
+      displayLabel: 'Информация',
       title_icon: 'healthicons:info-outline',
       type: 'textarea',
       width: '50px',
@@ -304,10 +315,13 @@ const tableOptions = ref({
         icon: 'icon-park-outline:text',
         title: 'Редактирование описания',
         readonly: false,
+        hint: 'информация о событии',
         placeholder: 'Введите описание...',
         uploadUrl: api + '/api/upload-image',
         imageMaxWidth: 1200,
-        imageQuality: 0.8
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
     {
@@ -327,22 +341,23 @@ const tableOptions = ref({
       }
     }
   ],
-  // Колонка Действия
-  editable: true, // редактирование записи
-  editrow: false, // кнопка редактирования записи
-  deleteable: true, // кнопка удаления записи
-  sortable: true, // сортировка полей
-  separateFields: true, // редактирование отдельных полей
-  link: 'id', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
-  link_prefix: site + '/events', // префикс ссылки
-  pagination: true, // пагинация
-  main_field: 'event_name', // Главное поле. выводится при удалении строки с предупреждением
-  pageSize: 30, // записей на страницу
-  searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  enableResetFilters: true, // Кнопка очистки фильтров
-  resetFiltersLabel: 'Очистить', // Подпись для кнопки Очистить
+  // Основные параметры
+  editable: true,
+  editrow: false,
+  deleteable: true,
+  sortable: true,
+  separateFields: true,
+  link: 'id',
+  link_prefix: site + '/events',
+  pagination: true,
+  main_field: 'event_name',
+  pageSize: 30,
+  searchable: true,
+  enableResetFilters: true,
+  resetFiltersLabel: 'Очистить',
   resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
-      'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed' // Дополнительные классы
+      'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
+
 });
 
 // Поля формы
@@ -383,6 +398,7 @@ const formOptions = ref({
         keyField: 'id',
         labelField: 'title_short',
         enableSearch: true,
+        emptyable: false,
         sel_class: "text-xs border min-w-48 w-52 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -403,6 +419,7 @@ const formOptions = ref({
         keyField: 'id',
         labelField: 'title',
         enableSearch: true,
+        emptyable: false,
         sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -420,6 +437,7 @@ const formOptions = ref({
         labelField: 'club_info',
         imageField: 'full_image_path',
         enableSearch: true,
+        emptyable: true,
         sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -442,6 +460,7 @@ const formOptions = ref({
         labelField: 'club_info',
         imageField: 'full_image_path',
         enableSearch: true,
+        emptyable: true,
         sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -517,6 +536,16 @@ const formOptions = ref({
 
 // Дополнитнльные поля в секции редактирования отдельных полей
 const extraFields = ref([
+    {
+      name: 'date_from',
+      label: 'Дата и время',
+      type: 'datetime',
+      width: '160px',
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold bg-blue-100 rounded h-8 text-gray-800 border px-1 w-full',
+      }
+    },
   {
     name: 'event_name',
     label: 'Название события',
@@ -531,6 +560,9 @@ const extraFields = ref([
 
 // Поля, видимые по умолчанию в доп.таблице
 const defaultVisibleFields = ['event_name'];
+
+// Поля, которые не будут отображаться в дополнительной таблице
+const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon'];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([
@@ -612,7 +644,9 @@ const additionalFilters = ref([
     keyField: 'id',
     labelField: 'title',
     iconField: 'icon',
-    enableSearch: true,
+    options: {
+      enableSearch: true,
+    },
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
     list_item: null,
@@ -625,7 +659,6 @@ const additionalFilters = ref([
     keyField: 'id',
     labelField: 'title',
     iconField: 'icon',
-    enableSearch: true,
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
     list_item: null,
@@ -635,10 +668,12 @@ const additionalFilters = ref([
     label: 'Команда',
     apiUrl: api + '/api/v1/clubs?type=async',
     keyField: 'id',
+    options: {
+      enableSearch: true,
+    },
     limit: 20,
     labelField: 'club_info',
     imageField: 'full_image_path',
-    enableSearch: true,
     defaultValue: null,
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
@@ -649,8 +684,11 @@ const additionalFilters = ref([
     label: 'Соревнование',
     apiUrl: api + '/api/v1/competitions?type=async',
     keyField: 'id',
+    options: {
+      enableSearch: true,
+      emptyable: true,
+    },
     labelField: 'title_short',
-    enableSearch: true,
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
     list_item: null,
@@ -660,6 +698,9 @@ const additionalFilters = ref([
     label: 'Спортсооружение',
     apiUrl: api + '/api/v1/arenas?type=async',
     keyField: 'id',
+    options: {
+      enableSearch: true,
+    },
     labelField: 'title',
     enableSearch: true,
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
@@ -672,5 +713,8 @@ const additionalFilters = ref([
 </script>
 
 <style scoped>
-
+.bg-gray-50shadow-sm {
+  background-color: #f9fafb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
 </style>

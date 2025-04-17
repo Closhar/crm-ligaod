@@ -3,6 +3,13 @@ export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
     devtools: {enabled: true},
     modules: ['@nuxt/fonts', '@nuxt/icon', '@nuxt/image', '@nuxtjs/tailwindcss', '@pinia/nuxt'],
+    pages: true,
+    router: {
+        options: {
+            linkActiveClass: 'active-link',
+            linkExactActiveClass: 'exact-active-link'
+        }
+    },
     runtimeConfig: {
         public: {
             API_URL: process.env.NUXT_PUBLIC_API_URL,

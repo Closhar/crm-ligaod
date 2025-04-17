@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import {ref} from "vue";
-import {useRouter} from "#vue-router";
+import {useRouter} from "vue-router";
 import {useAuth} from "~/composables/useAuth"
 import KirhNote from "~/components/kirh/fields/KirhNote.vue";
 import KirhGoogleAuth from "~/components/kirh/auth/KirhGoogleAuth.vue";

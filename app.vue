@@ -1,9 +1,7 @@
 <template>
-
   <NuxtLayout>
-    <NuxtPage/>
+    <NuxtPage />
   </NuxtLayout>
-
 </template>
 
 <script lang="ts" setup>
@@ -18,6 +16,4 @@ const {data} = await useAsyncData('globals', async () => {
   await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
   return {params: globalsStore.params, images: globalsStore.images};
 });
-
-
 </script>

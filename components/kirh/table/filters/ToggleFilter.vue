@@ -1,7 +1,8 @@
 <template>
   <button
       :class="buttonClass"
-      class="kirh-toggle-filter text-xs px-3 py-1.5 rounded-md transition-colors"
+      :disabled="disabled"
+      class="kirh-toggle-filter text-xs px-3 py-1.5 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       @click="toggleFilter"
   >
     {{ buttonLabel }}
@@ -22,6 +23,10 @@ export default {
     modelValue: {
       type: [String, Number, Boolean],
       default: ''
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
   emits: ['update:modelValue'],
@@ -66,7 +71,7 @@ export default {
   },
   methods: {
     toggleFilter() {
-      if (!this.filter.options?.length) return
+      if (!this.filter.options?.length || this.disabled) return
 
       let newIndex = this.currentIndex + 1
       if (newIndex >= this.filter.options.length) {
