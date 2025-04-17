@@ -274,57 +274,6 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'image',
-      label: '',
-      displayLabel: 'Изображение',
-      title_icon: 'stash:image',
-      type: 'image',
-      width: '50px',
-      sortable: false,
-      options: {
-        image_path: 'event_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        hint: 'изображение для события',
-        modalTitle: 'Изображение для события:',
-        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
-      }
-    },
-    {
-      name: 'about',
-      label: '',
-      displayLabel: 'Информация',
-      title_icon: 'healthicons:info-outline',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        editorEnabled: true,
-        icon: 'icon-park-outline:text',
-        title: 'Редактирование описания',
-        readonly: false,
-        hint: 'информация о событии',
-        placeholder: 'Введите описание...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-400 hover:bg-red-300',
-      }
-    },
-    {
       name: 'is_active',
       label: 'акт.',
       type: 'toggle',
@@ -547,6 +496,124 @@ const extraFields = ref([
         cellClass: 'text-xs font-bold bg-blue-100 rounded h-8 text-gray-800 border px-1 w-full',
       }
     },
+    {
+      name: 'image',
+      label: '',
+      displayLabel: 'Изображение',
+      title_icon: 'stash:image',
+      type: 'image',
+      width: '50px',
+      sortable: false,
+      options: {
+        image_path: 'event_image_path', // поле для текущего изображения
+        thumbnailWidth: 46,
+        thumbnailHeight: 31,
+        previewMaxHeight: '500px',
+        hint: 'изображение для события',
+        modalTitle: 'Изображение для события:',
+        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
+        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
+        resize: {
+          enabled: true,       // Включить обработку изображений
+          width: 800,          // Ширина (px)
+          height: 500,         // Высота (px)
+          crop: true,          // Обрезать до точных размеров
+          quality: 0.8,         // Качество (0-1)
+          maxSizeMB: 1,         // Максимальный размер (MB)
+          mimeType: 'image/jpeg' // Тип выходного файла
+        }
+      }
+    },
+    {
+      name: 'about',
+      label: '',
+      displayLabel: 'Информация',
+      title_icon: 'healthicons:info-outline',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование описания',
+        readonly: false,
+        hint: 'информация о событии',
+        placeholder: 'Введите описание...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
+          name: 'streams_count', // Используем имя поля счетчика (Laravel автоматически добавляет это поле через withCount)
+          label: '',
+          displayLabel: 'Видеотрансляции',
+          title_icon: 'solar:stream-linear',
+          type: 'hasmany', // Указываем новый тип поля
+          sortable: false,
+          width: '60px',
+          options: {
+            // Информация о родительской модели
+            parentModel: 'events',
+            parentLabelField: 'title', // Поле для отображения в заголовке модального окна
+            // Заголовок модального окна
+            modalTitle: 'Стримы для события: ',
+            modalTitleAddField: 'event_name',
+            hint: 'ссылки на видеотрансляции',
+
+            // Стили для отображения
+            noDataIconClass: 'text-gray-900',
+            noDataClass: 'bg-red-500 text-gray-100 hover:bg-red-600',
+            hasDataIconClass: 'text-red-600',
+            hasDataClass: 'bg-green-100 text-red-600 font-bold text-xs hover:bg-green-200',
+            iconName: 'hugeicons:live-streaming-01',
+            headerIconName: 'solar:play-stream-bold-duotone',
+            iconSize: '1.6em',
+            
+            // Информация о связи
+            relationship: 'streams', // Название связи
+            relationshipLabel: 'Стримы', // Читаемое название для отображения
+            countField: 'streams_count', // Поле, содержащее количество записей
+            foreignKey: 'event_id', // Поле внешнего ключа
+            
+            // API эндпоинты (можно опустить, если используются стандартные пути)
+            apiUrl: '/api/events/{id}/streams', // Будет автоматически заменено на id текущей записи
+            createApiUrl: '/api/events/{id}/streams',
+            updateApiUrl: '/api/streams/{id}',
+            deleteApiUrl: '/api/streams/{id}',
+            
+            // Поля для связанных записей (streams)
+            fields: [
+              {
+                name: 'date',
+                label: 'Дата',
+                type: 'datetime',
+                options: {
+                  // Специфические настройки для поля даты
+                }
+              },
+              {
+                name: 'title',
+                label: 'Название',
+                type: 'text',
+                options: {
+                  // Настройки текстового поля
+                }
+              },
+              {
+                name: 'link',
+                label: 'Ссылка на стрим',
+                type: 'text',
+                options: {
+                  // Настройки для поля ссылки
+                }
+              }
+            ],
+          }
+        },
   {
     name: 'event_name',
     label: 'Название события',
@@ -563,7 +630,7 @@ const extraFields = ref([
 const defaultVisibleFields = ['event_name'];
 
 // Поля, которые не будут отображаться в дополнительной таблице
-const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon'];
+const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon', 'club1_id', 'club2_id'];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([

@@ -314,7 +314,7 @@
               </div>
               <button
                   v-if="tableOptions.sortable && column.sortable !== false"
-                  class="kirh-sort-btn ml-0.5 text-gray-500 hover:text-gray-700 transition-colors text-xs"
+                  class="kirh-sort-btn ml-0.5 text-gray-500 hover:text-gray-800 transition-colors text-xs"
                   @click="sortBy(column.name)"
               >
                 {{ sortField === column.name ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}
@@ -460,6 +460,7 @@
                       :readonly="column.options.readonly"
                       :type="column.type"
                       :value="row[column.name]"
+                      :row-data="row"
                       @blur="handleBlur(row, column.name)"
                       @input="updateValue(row, column.name, $event)"
                       @keyup.enter="handleBlur(row, column.name)"
@@ -552,6 +553,7 @@ import KirhToggleField from './fields/KirhToggleField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhTextareaField from "./fields/KirhTextareaField.vue";
+import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
 
 export default {
@@ -563,6 +565,7 @@ export default {
     KirhToggleField,
     KirhImageField,
     KirhTextareaField,
+    KirhHasManyField,
     KirhTableForm
   },
   props: {
@@ -659,7 +662,8 @@ export default {
         datetime: KirhTextField,
         select: KirhSelectField,
         toggle: KirhToggleField,
-        image: KirhImageField
+        image: KirhImageField,
+        hasmany: KirhHasManyField
       };
       return componentMap[type] || KirhTextField;
     };
@@ -883,6 +887,7 @@ export default {
           title_icon: col.title_icon || null,
           displayLabel: col.displayLabel || col.label || col.name,
           options: col.options || {},
+          sortable: col.sortable,
           // Добавляем флаг для определения источника
           source: 'table'
         }));
@@ -897,6 +902,7 @@ export default {
         title_icon: field.title_icon || null,
         displayLabel: field.displayLabel || field.label || field.name,
         options: field.options || {},
+        sortable: field.sortable,
         // Добавляем флаг для определения источника
         source: 'extra'
       }));
