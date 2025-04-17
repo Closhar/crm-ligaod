@@ -815,6 +815,8 @@ export default {
         name: col.name,
         label: col.label || col.name,
         type: col.type || 'text',
+        width: col.width || null,
+        min_width: col.min_width || null,
         options: col.options || {}
       }));
 
@@ -822,6 +824,8 @@ export default {
         name: field.name,
         label: field.label || field.name,
         type: field.type || 'text',
+        width: field.width || null,
+        min_width: field.min_width || null,
         options: field.options || {}
       }));
 
@@ -982,11 +986,6 @@ export default {
     };
 
     const getColumnStyle = (column) => {
-      // Если колонки нет в tableOptions, возвращаем дефолтный стиль
-      if (!props.tableOptions.columns.some(c => c.name === column.name)) {
-        return { flex: '1 1 0%' };
-      }
-
       const width = column.width || column.options?.width;
       const minWidth = column.min_width || column.options?.min_width;
 
