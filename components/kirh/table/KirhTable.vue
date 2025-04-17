@@ -127,6 +127,7 @@
                   :button-class="filter.buttonClass || ''"
                   :filter="filter"
                   :initial-class="filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
+                  :disabled="!!idFilter"
                   @update:modelValue="applyFilters"
               />
 
@@ -140,6 +141,7 @@
                   class="text-xs border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Поиск..."
                   type="text"
+                  :disabled="!!idFilter"
                   @input="debouncedSearch"
               >
               <button
@@ -208,6 +210,7 @@
                   :options_list="filter.options_list || null"
                   :placeholder="filter.placeholder || filter.label"
                   :sel_class="filter.sel_class || null"
+                  :disabled="!!idFilter"
                   @update:modelValue="applyFilters"
               />
 
@@ -222,6 +225,14 @@
 
           <!-- Заголовки -->
           <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
+            <!-- ID фильтр заголовок -->
+            <div 
+                class="kirh-header-cell flex items-center justify-center group relative bg-gray-100 px-2 py-2 border border-gray-200 rounded"
+                style="flex: 0 0 60px;"
+            >
+              <Icon name="mdi:filter-outline" size="1.5em" class="text-gray-500"/>
+            </div>
+            
             <div
                 v-for="(column, colIndex) in visibleColumns"
                 :key="`header-${column.name}-${colIndex}`"
@@ -272,6 +283,25 @@
                 :class="{'bg-gray-50': rowIndex % 2 === 0}"
                 class="kirh-row flex hover:bg-gray-50 text-xs"
             >
+              <!-- ID фильтр ячейка -->
+              <div 
+                  class="kirh-cell border-b border-gray-100 flex items-center justify-center"
+                  style="flex: 0 0 60px;"
+              >
+                <button 
+                    class="text-xs px-2 py-1 transition-colors"
+                    @click="toggleIdFilter(row.id)"
+                    :title="idFilter === row.id ? 'Отменить фильтр по ID: ' + row.id : 'Фильтровать по ID: ' + row.id"
+                >
+                  <Icon 
+                    :name="idFilter === row.id ? 'mdi:filter-remove' : 'mdi:filter'" 
+                    :class="idFilter === row.id ? 'text-red-600' : 'text-blue-600'"
+                    size="1.5em"
+                  />
+                  <span class="sr-only">{{ row.id }}</span>
+                </button>
+              </div>
+              
               <div
                   v-for="(column, colIndex) in visibleColumns"
                   :key="`cell-${rowIndex}-${column.name}-${colIndex}`"
@@ -557,6 +587,7 @@ export default {
     const deleteItem = ref(null);
     const selectedFields = ref([...props.defaultVisibleFields]);
     const clickOutsideHandler = ref(null);
+    const idFilter = ref(null);
 
     // Методы
     const getFieldComponent = (type) => {
@@ -842,13 +873,14 @@ export default {
     });
 
     const isResetDisabled = computed(() => {
+      if (idFilter.value) return false;
       if (searchQuery.value) return false;
       return !Object.values(selectedFilters.value).some(
           value => value !== undefined && value !== '' && value !== null
       );
     });
 
-      const fetchData = async () => {
+    const fetchData = async () => {
       try {
         loading.value = true;
         error.value = null;
@@ -858,11 +890,17 @@ export default {
           filterParams.q = searchQuery.value;
         }
 
-        props.additionalFilters.forEach(filter => {
-          if (selectedFilters.value[filter.field] !== undefined && selectedFilters.value[filter.field] !== '') {
-            filterParams[filter.field] = selectedFilters.value[filter.field];
-          }
-        });
+        // Добавляем фильтр по ID, если он активен
+        if (idFilter.value) {
+          filterParams.id = idFilter.value;
+        } else {
+          // Добавляем остальные фильтры только если нет фильтра по ID
+          props.additionalFilters.forEach(filter => {
+            if (selectedFilters.value[filter.field] !== undefined && selectedFilters.value[filter.field] !== '') {
+              filterParams[filter.field] = selectedFilters.value[filter.field];
+            }
+          });
+        }
 
         const params = new URLSearchParams({
           page: currentPage.value,
@@ -922,6 +960,7 @@ export default {
       sortField.value = null;
       sortDirection.value = 'asc';
       currentPage.value = 1;
+      idFilter.value = null; // Сбрасываем фильтр по ID
       fetchData();
     };
 
@@ -1237,6 +1276,21 @@ export default {
 
     watch([currentPage, sortField, sortDirection], fetchData);
 
+    // Переключение фильтра по ID
+    const toggleIdFilter = (id) => {
+      if (idFilter.value === id) {
+        // Отключаем фильтр при повторном клике
+        idFilter.value = null;
+        fetchData();
+      } else {
+        // Включаем фильтр
+        idFilter.value = id;
+        // Отправляем запрос с параметром id
+        currentPage.value = 1;
+        fetchData();
+      }
+    };
+
     return {
       tableData,
       loading,
@@ -1263,6 +1317,8 @@ export default {
       visibleColumns,
       displayedData,
       isResetDisabled,
+      idFilter,
+      toggleIdFilter,
       fetchData,
       toggleFieldSelector,
       toggleFieldSelection,
