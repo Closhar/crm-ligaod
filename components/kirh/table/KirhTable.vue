@@ -26,7 +26,25 @@
           v-if="showFieldSelector"
           class="kirh-field-selector w-56 bg-gray-50 border-r border-gray-200 p-2 overflow-y-auto flex-shrink-0"
       >
-        <div class="text-xs font-medium text-gray-500 mb-2">Выберите поля для редактирования</div>
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-medium text-gray-500">Выберите поля для редактирования</span>
+          
+          <!-- Кнопка сброса полей к исходным значениям -->
+          <button
+               :disabled="isResetFieldsDisabled"
+               :class="{
+                 'bg-red-500 hover:bg-red-600 text-white': !isResetFieldsDisabled,
+                 'bg-gray-300 text-gray-500 cursor-not-allowed': isResetFieldsDisabled
+               }"
+               class="text-xs px-2 py-1 rounded-md transition-colors flex items-center"
+               @click="resetFieldSelector"
+               title="Вернуть стандартный вид"
+           >
+             <Icon name="material-symbols:restore" size="1.2em" class="mr-1" />
+             Сброс полей
+           </button>
+        </div>
+        
         <div class="flex flex-col gap-1">
           <button
               v-for="field in allFields"
@@ -38,7 +56,7 @@
               class="text-xs px-2 py-1 rounded-md transition-colors text-left"
               @click="toggleFieldSelection(field.name)"
           >
-            {{ field.label }}
+            {{ field.displayLabel || field.label || field.name }}
           </button>
         </div>
       </div>
@@ -240,20 +258,55 @@
                 class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
             >
               <div class="flex items-center text-center mx-1">
-                <Icon v-if="column.title_icon" :name="column.title_icon" size="1.5em" class="mr-1"/>
-                <span class="truncate">{{ column.label }}</span>
-                <a v-if="column.options?.link_in_title" :href="column.options?.link_in_title" class="text-blue-600 hover:text-blue-500" target="_blank">
-                  <Icon name="lucide:external-link" size="1.2em" class="ml-1" :title="column.options?.hint_in_link || ''"/>
+                <!-- Иконка (если есть title_icon, показываем только иконку) -->
+                <Icon 
+                    v-if="column.title_icon" 
+                    :name="column.title_icon" 
+                    size="1.5em" 
+                    class="flex-shrink-0"
+                    :title="column.displayLabel || column.label || ''"
+                />
+                
+                <!-- Текст заголовка (показываем только если label не пустой) -->
+                <span 
+                    v-if="!column.title_icon && column.label && column.label !== ''" 
+                    class="truncate"
+                >
+                  {{ column.label }}
+                </span>
+                
+                <!-- Ссылка в заголовке -->
+                <a 
+                    v-if="column.options?.link_in_title" 
+                    :href="column.options?.link_in_title" 
+                    class="text-blue-600 hover:text-blue-500" 
+                    target="_blank"
+                >
+                  <Icon 
+                      name="lucide:external-link" 
+                      size="1.2em" 
+                      class="ml-1" 
+                      :title="column.options?.hint_in_link || ''"
+                  />
                 </a>
+                
+                <!-- Подсказка -->
                 <div v-if="column.options?.hint" class="relative">
-                  <svg class="h-3 w-3 text-gray-400" fill="currentColor" viewBox="0 0 20 20"
-                       xmlns="http://www.w3.org/2000/svg">
-                    <path clip-rule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
-                          fill-rule="evenodd"></path>
+                  <svg 
+                      class="h-3 w-3 text-gray-400" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                        clip-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+                        fill-rule="evenodd"
+                    ></path>
                   </svg>
                   <div
-                      class="absolute z-20 bottom-full -left-20 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg">
+                      class="absolute z-20 bottom-full -left-20 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg"
+                  >
                     {{ column.options.hint }}
                   </div>
                 </div>
@@ -562,6 +615,10 @@ export default {
     defaultVisibleFields: {
       type: Array,
       default: () => []
+    },
+    excludedFields: {
+      type: Array,
+      default: () => []
     }
   },
   setup(props) {
@@ -811,28 +868,51 @@ export default {
     };
 
     const allFields = computed(() => {
-      const tableFields = props.tableOptions.columns.map(col => ({
-        name: col.name,
-        label: col.label || col.name,
-        type: col.type || 'text',
-        width: col.width || null,
-        min_width: col.min_width || null,
-        options: col.options || {}
-      }));
+      // Отфильтровываем исключенные поля только из основной таблицы
+      const tableFields = props.tableOptions.columns
+        .filter(col => !props.excludedFields.includes(col.name))
+        .map(col => ({
+          name: col.name,
+          label: col.label || col.name,
+          type: col.type || 'text',
+          width: col.width || null,
+          min_width: col.min_width || null,
+          title_icon: col.title_icon || null,
+          displayLabel: col.displayLabel || col.label || col.name,
+          options: col.options || {},
+          // Добавляем флаг для определения источника
+          source: 'table'
+        }));
 
+      // Поля extraEditableFields всегда включаются
       const extraFields = props.extraEditableFields.map(field => ({
         name: field.name,
         label: field.label || field.name,
         type: field.type || 'text',
         width: field.width || null,
         min_width: field.min_width || null,
-        options: field.options || {}
+        title_icon: field.title_icon || null,
+        displayLabel: field.displayLabel || field.label || field.name,
+        options: field.options || {},
+        // Добавляем флаг для определения источника
+        source: 'extra'
       }));
 
+      // Объединяем поля, обрабатывая дублирующиеся имена
+      // Это позволит сохранить уникальные параметры для каждого поля
       return [...tableFields, ...extraFields].reduce((acc, field) => {
-        if (!acc.some(f => f.name === field.name)) {
+        // Проверяем, есть ли уже поле с таким именем и источником
+        const existingIndex = acc.findIndex(f => 
+          f.name === field.name && f.source === field.source
+        );
+        
+        if (existingIndex === -1) {
           acc.push(field);
+        } else {
+          // Обновляем существующее поле, сохраняя его уникальные параметры
+          acc[existingIndex] = { ...acc[existingIndex], ...field };
         }
+        
         return acc;
       }, []);
     });
@@ -842,19 +922,42 @@ export default {
         return props.tableOptions.columns;
       }
 
+      // Получаем все выбранные поля с их уникальными свойствами
       const selected = selectedFields.value.map(fieldName => {
-        return allFields.value.find(f => f.name === fieldName) || {
-          name: fieldName,
-          label: fieldName,
-          type: 'text',
-          options: {}
-        };
+        // Ищем среди всех доступных полей
+        const field = allFields.value.find(f => f.name === fieldName);
+        if (!field) {
+          // Если поле не найдено, создаем базовое представление
+          return {
+            name: fieldName,
+            label: fieldName,
+            type: 'text',
+            options: {}
+          };
+        }
+        
+        // Возвращаем найденное поле с его полными свойствами
+        return field;
       }).filter(Boolean);
 
-      const result = [...selected];
-      return result.filter((item, index, self) =>
-          index === self.findIndex(t => t.name === item.name)
-      );
+      // Сохраняем поля с уникальными именами, сохраняя при этом
+      // все специфичные свойства каждого поля
+      const result = [];
+      selected.forEach(field => {
+        // Проверяем, есть ли уже поле с таким именем в результате
+        const existingIndex = result.findIndex(f => f.name === field.name);
+        
+        if (existingIndex === -1) {
+          // Если нет, добавляем новое поле
+          result.push(field);
+        } else if (field.source === 'extra') {
+          // Если поле из extraEditableFields, оно имеет приоритет
+          result[existingIndex] = field;
+        }
+        // Если поле из обычной таблицы и уже есть такое поле, оставляем существующее
+      });
+      
+      return result;
     });
 
     const displayedData = computed(() => {
@@ -882,6 +985,18 @@ export default {
       return !Object.values(selectedFilters.value).some(
           value => value !== undefined && value !== '' && value !== null
       );
+    });
+
+    // Проверяем, можно ли сбросить поля к исходным значениям
+    const isResetFieldsDisabled = computed(() => {
+      // Если выбранных полей столько же, сколько и в defaultVisibleFields
+      if (selectedFields.value.length !== props.defaultVisibleFields.length) {
+        return false;
+      }
+      
+      // Проверяем, что все выбранные поля есть в defaultVisibleFields и наоборот
+      return selectedFields.value.every(field => props.defaultVisibleFields.includes(field)) &&
+             props.defaultVisibleFields.every(field => selectedFields.value.includes(field));
     });
 
     const fetchData = async () => {
@@ -971,8 +1086,9 @@ export default {
     const toggleFieldSelector = () => {
       showFieldSelector.value = !showFieldSelector.value;
       if (showFieldSelector.value && selectedFields.value.length === 0) {
-        selectedFields.value = props.tableOptions.columns
-            .map(c => c.name);
+        // Инициализируем выбранные поля из defaultVisibleFields,
+        // которые указаны при создании компонента
+        selectedFields.value = [...props.defaultVisibleFields];
       }
     };
 
@@ -983,6 +1099,12 @@ export default {
       } else {
         selectedFields.value = [...selectedFields.value, fieldName];
       }
+    };
+
+    // Метод для сброса панели выбора полей к исходному состоянию
+    const resetFieldSelector = () => {
+      // Устанавливаем начальные поля из tableOptions.columns
+      selectedFields.value = [...props.defaultVisibleFields];
     };
 
     const getColumnStyle = (column) => {
@@ -1354,7 +1476,9 @@ export default {
       handleSelectBlur,
       closeInlineSelect,
       handleKeyDown,
-      handleInlineSelectChange
+      handleInlineSelectChange,
+      resetFieldSelector,
+      isResetFieldsDisabled
     };
   }
 };
