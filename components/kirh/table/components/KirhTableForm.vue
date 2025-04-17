@@ -221,7 +221,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import KirhSelectField from './../fields/KirhSelectField.vue';
 import RichTextEditor from "~/components/kirh/table/editor/RichTextEditor.vue";
 
@@ -257,6 +257,14 @@ const props = defineProps({
   editingRow: {
     type: Object,
     default: null
+  },
+  defaultFieldValue: {
+    type: [String, Number, Boolean, Object, Array],
+    default: null
+  },
+  defaultFieldTarget: {
+    type: String,
+    default: null
   }
 });
 
@@ -281,23 +289,43 @@ const visibleColumns = computed(() => {
       !column.options?.hidden || !column.options.hidden(formData.value))
 });
 
-// Инициализация формы
+// Функция инициализации формы
 const initForm = () => {
+  // Сбрасываем значения
   formData.value = {};
   validationErrors.value = {};
-  props.formOptions.columns.forEach(column => {
-    formData.value[column.name] = column.defaultValue ??
-        (column.type === 'toggle' ? (column.options?.defaultChecked || false) : '');
-  });
-
+  
+  // Инициализация формы - установка дефолтных значений
+  if (props.formOptions.initialData) {
+    // Если есть initialData, используем его
+    formData.value = {...props.formOptions.initialData};
+  } else {
+    // Устанавливаем начальные значения для полей
+    props.formOptions.columns.forEach(column => {
+      if (column.options?.defaultChecked !== undefined) {
+        formData.value[column.name] = column.options.defaultChecked;
+      }
+    });
+  }
+  
+  // Если есть редактируемая строка, заполняем форму её данными
   if (props.editingRow) {
-    formData.value = {...props.editingRow};
-    // Конвертация даты для datetime-local
+    // При редактировании заполняем данными строки
+    Object.keys(props.editingRow).forEach(key => {
+      formData.value[key] = props.editingRow[key];
+    });
+    
+    // Конвертация datetime полей для отображения в форме
     props.formOptions.columns.forEach(column => {
       if (column.type === 'datetime' && formData.value[column.name]) {
         formData.value[column.name] = convertToDatetimeLocal(formData.value[column.name]);
       }
     });
+  }
+
+  // Apply default field value if provided and target field exists
+  if (props.defaultFieldValue !== null && props.defaultFieldTarget !== null) {
+    formData.value[props.defaultFieldTarget] = props.defaultFieldValue;
   }
 };
 
@@ -327,6 +355,7 @@ const toggleForm = () => {
 // Сброс формы
 const resetForm = () => {
   initForm();
+  validationErrors.value = null;
   error.value = null;
 };
 

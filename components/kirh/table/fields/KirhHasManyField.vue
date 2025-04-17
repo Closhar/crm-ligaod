@@ -401,45 +401,21 @@ import KirhImageField from './KirhImageField.vue';
  *     relationshipLabel: 'Стримы события',
  *     foreignKey: 'event_id',
  *     
- *     // Настройка визуального отображения
+ *     // Передача значения полей из родительской записи в форму добавления
+ *     // Вариант 1: Одиночное поле
+ *     defaultValueField: 'date_from',      // Поле в родительской записи (rowData)
+ *     defaultValueTargetField: 'date',     // Поле в форме добавления новой записи
+ *     
+ *     // Вариант 2: Массив пар полей
+ *     defaultValues: [
+ *       { sourceField: 'date_from', targetField: 'date' },
+ *       { sourceField: 'title', targetField: 'name' },
+ *       { sourceField: 'location', targetField: 'venue' }
+ *     ],
+ *     
+ *     // Остальные настройки...
  *     iconName: 'solar:list-bold-duotone',
- *     iconSize: '1.2em',
- *     hasDataClass: 'text-blue-600 hover:text-blue-800',
- *     noDataClass: 'text-rose-600 bg-rose-50',
- *     hasDataIconClass: 'text-blue-600',
- *     noDataIconClass: 'text-rose-600',
- *     tooltipText: 'Управление связанными записями',
- *     
- *     // Иконки для действий
- *     icons: {
- *       edit: 'solar:pen-bold-duotone',
- *       delete: 'solar:trash-bin-trash-bold-duotone',
- *       save: 'solar:checkmark-circle-bold-duotone',
- *       cancel: 'solar:close-circle-bold-duotone',
- *       add: 'solar:add-circle-bold-duotone',
- *       saveNew: 'solar:disk-bold-duotone'
- *     },
- *     
- *     // Стили для полей ввода
- *     defaultInputClass: 'w-full px-2 py-1 text-sm border border-gray-300 rounded',
- *     defaultSelectClass: 'w-full px-2 py-1 text-sm border border-gray-300 rounded',
- *     defaultTextareaClass: 'w-full px-2 py-1 text-sm border border-gray-300 rounded',
- *     
- *     // Настройка базового URL API (по умолчанию берется из NUXT_PUBLIC_API_URL)
- *     baseApiUrl: process.env.NUXT_PUBLIC_API_URL,
- *     
- *     // Соответствие бэкенд-маршрутам
- *     apiUrl: '/api/events/{id}/streams',
- *     createApiUrl: '/api/events/{id}/streams',
- *     updateApiUrl: '/api/streams/{id}',
- *     deleteApiUrl: '/api/streams/{id}',
- *     
- *     // Поля для связанных записей
- *     fields: [
- *       { name: 'title', type: 'text', label: 'Название' },
- *       { name: 'date', type: 'date', label: 'Дата' },
- *       ...
- *     ]
+ *     // ... существующий код ...
  *   }
  * }
  */
@@ -469,6 +445,16 @@ export default {
     iconSize: String,
     iconName: String,
     rowData: Object,
+    
+    // Параметры для передачи значения из родительской записи
+    defaultValueField: String,        // Поле в родительской записи (rowData)
+    defaultValueTargetField: String,  // Поле в форме добавления новой записи
+    
+    // Новый параметр для массива пар полей
+    defaultValues: {
+      type: Array,
+      default: () => []
+    },
     
     style: {
       type: Object,
@@ -757,6 +743,14 @@ export default {
     
     // Добавим computed-свойство с дефолтными настройками
     const effectiveOptions = computed(() => {
+      // Добавляем отладку параметров из props
+      console.log('Конструирование effectiveOptions:', {
+        'props.defaultValues': props.defaultValues,
+        'props.options?.defaultValues': props.options?.defaultValues,
+        'props.defaultValueField': props.defaultValueField,
+        'props.options?.defaultValueField': props.options?.defaultValueField
+      });
+      
       // Получаем опции как из прямых пропсов, так и из объекта options
       const result = {
         // Определяем отношения и модели
@@ -767,6 +761,53 @@ export default {
         foreignKey: props.options?.foreignKey || `${props.options?.parentModel || 'item'}_id`.toLowerCase(),
         relatedField: props.relatedField || props.options?.relatedField || null,
         relatedModel: props.relatedModel || props.options?.relatedModel || null,
+        
+        // Параметры для передачи значения из родительской записи
+        defaultValueField: props.defaultValueField || props.options?.defaultValueField || null,
+        defaultValueTargetField: props.defaultValueTargetField || props.options?.defaultValueTargetField || null,
+        
+        // Массив пар полей для копирования значений
+        // Правильно обрабатываем defaultValues для разных форматов входных данных
+        defaultValues: (() => {
+          // Если defaultValues передан напрямую как prop
+          if (props.defaultValues && Array.isArray(props.defaultValues) && props.defaultValues.length > 0) {
+            console.log('Используем defaultValues из props:', props.defaultValues);
+            return props.defaultValues;
+          }
+          
+          // Если defaultValues передан через options
+          if (props.options?.defaultValues && Array.isArray(props.options.defaultValues) && props.options.defaultValues.length > 0) {
+            console.log('Используем defaultValues из options:', props.options.defaultValues);
+            return props.options.defaultValues;
+          }
+          
+          // Если передана одиночная пара полей, создаем массив с одним элементом
+          if (props.defaultValueField && props.defaultValueTargetField) {
+            console.log('Создаем defaultValues из одиночных полей:', [{ 
+              sourceField: props.defaultValueField, 
+              targetField: props.defaultValueTargetField 
+            }]);
+            return [{ 
+              sourceField: props.defaultValueField, 
+              targetField: props.defaultValueTargetField 
+            }];
+          }
+          
+          // Если передана одиночная пара полей через options
+          if (props.options?.defaultValueField && props.options?.defaultValueTargetField) {
+            console.log('Создаем defaultValues из одиночных полей в options:', [{ 
+              sourceField: props.options.defaultValueField, 
+              targetField: props.options.defaultValueTargetField 
+            }]);
+            return [{ 
+              sourceField: props.options.defaultValueField, 
+              targetField: props.options.defaultValueTargetField 
+            }];
+          }
+          
+          // Пустой массив, если ничего не передано
+          return [];
+        })(),
         
         // Настройки отображения
         modalTitle: props.modalTitle || props.options?.modalTitle || null,
@@ -847,6 +888,68 @@ export default {
       if (props.rowData && props.rowData.id) {
         const foreignKey = effectiveOptions.value.foreignKey;
         newItem.value[foreignKey] = props.rowData.id;
+      }
+      
+      // ОТЛАДКА: Проверяем доступность rowData
+      console.log('resetNewItem: rowData доступен?', {
+        rowData: props.rowData ? 'да' : 'нет',
+        rowDataType: typeof props.rowData,
+        hasId: props.rowData?.id ? 'да' : 'нет',
+      });
+      
+      // Проверяем наличие родительской записи
+      if (props.rowData) {
+        // ОТЛАДКА: Выводим все свойства rowData
+        console.log('Свойства rowData:', Object.keys(props.rowData));
+        
+        // Обработка для поддержки обратной совместимости с одиночными полями
+        const sourceField = effectiveOptions.value.defaultValueField;
+        const targetField = effectiveOptions.value.defaultValueTargetField;
+        
+        // Проверяем, что оба поля указаны и значение в родительской записи существует
+        if (sourceField && targetField && props.rowData[sourceField] !== undefined) {
+          console.log(`Передаем значение из родительской записи (одиночное поле): ${sourceField} -> ${targetField}:`, props.rowData[sourceField]);
+          newItem.value[targetField] = props.rowData[sourceField];
+        }
+        
+        // Обработка массива пар полей
+        const defaultValues = effectiveOptions.value.defaultValues;
+        console.log('defaultValues в effectiveOptions:', defaultValues);
+        console.log('Тип defaultValues:', typeof defaultValues);
+        console.log('Это массив?', Array.isArray(defaultValues));
+        console.log('Длина массива:', defaultValues?.length || 'не массив');
+        
+        // Проверяем наличие и валидность массива defaultValues
+        if (Array.isArray(defaultValues) && defaultValues.length > 0) {
+          console.log('Обрабатываем массив пар полей для копирования значений:', defaultValues);
+          
+          // Проверяем каждую пару полей
+          defaultValues.forEach((pair, index) => {
+            console.log(`Проверка пары #${index}:`, pair);
+            
+            // Проверяем наличие обязательных свойств и значения в родительской записи
+            if (pair && typeof pair === 'object') {
+              console.log(`Пара #${index} - объект:`, {
+                hasSourceField: 'sourceField' in pair,
+                sourceField: pair.sourceField,
+                hasTargetField: 'targetField' in pair,
+                targetField: pair.targetField,
+                sourceValueExists: pair.sourceField && props.rowData[pair.sourceField] !== undefined,
+                sourceValue: pair.sourceField ? props.rowData[pair.sourceField] : 'не указано поле'
+              });
+              
+              if (pair.sourceField && pair.targetField && props.rowData[pair.sourceField] !== undefined) {
+                console.log(`Передаем значение из родительской записи: ${pair.sourceField} -> ${pair.targetField}:`, props.rowData[pair.sourceField]);
+                newItem.value[pair.targetField] = props.rowData[pair.sourceField];
+              }
+            } else {
+              console.log(`Пара #${index} не является объектом или null/undefined:`, pair);
+            }
+          });
+          
+          // ОТЛАДКА: Показываем итоговые значения newItem
+          console.log('Итоговые значения newItem после обработки defaultValues:', newItem.value);
+        }
       }
     };
     

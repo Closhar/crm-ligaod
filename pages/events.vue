@@ -564,6 +564,14 @@ const extraFields = ref([
             modalTitleAddField: 'event_name',
             hint: 'ссылки на видеотрансляции',
 
+  //           defaultValueField: 'date_from',      // Поле в родительской записи
+  // defaultValueTargetField: 'date',  // Поле в форме добавления
+
+  defaultValues: [
+    { sourceField: 'date_from', targetField: 'date' },
+    { sourceField: 'event_name', targetField: 'title' },
+  ],
+
             // Стили для отображения
             noDataIconClass: 'text-gray-900',
             noDataClass: 'bg-red-500 text-gray-100 hover:bg-red-600',
