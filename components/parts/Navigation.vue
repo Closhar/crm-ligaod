@@ -102,6 +102,21 @@ const handleLeave = () => {
               <NuxtLink
                   active-class="border border-gray-600 bg-blue-950"
                   class="submenu-link text-sm"
+                  to="/docs"
+                  @click="emitToggleMenu"
+              >
+                <Icon class="submenu-icon" name="heroicons:book-open"/>
+                <span>Документация</span>
+              </NuxtLink>
+            </div>
+
+            <div
+                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
+                class="submenu bg-gray-900 p-1"
+            >
+              <NuxtLink
+                  active-class="border border-gray-600 bg-blue-950"
+                  class="submenu-link text-sm"
                   to="/system/params"
                   @click="emitToggleMenu"
               >

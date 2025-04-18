@@ -4,7 +4,7 @@
     <div class="px-6 pt-4">
       <div class="flex items-start justify-between">
 
-        <Head :breadcrumbs="breadcrumbs" :icon="p_icon" :title="p_description" show_breadcrumbs="true"/>
+        <Head :breadcrumbs="breadcrumbs || []" :icon="p_icon || null" :title="p_description || null" :show_breadcrumbs="'true'"/>
 
       </div>
     </div>
@@ -61,13 +61,13 @@ const api_addr = api + '/api/events'
 // const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
 
 useSeoMeta({
-  title: params.value.adminka_name + ' - Матчи и события',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Матчи и события',
   description: 'Матчи и события',
 });
 
 const p_icon = "i-guidance:calendar menu-icon";
 const p_description = 'Матчи и события';
-const breadcrumbs = [
+const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [
 
 ];
 
@@ -295,6 +295,8 @@ const tableOptions = ref({
   editrow: false, // редактирование строки
   deleteable: true, // удаление
   sortable: true, // сортировка
+  defaultSortField: 'id', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   separateFields: true, // разделять поля в форме
   showIdFilter: true, // отображать фильтр по ID
   link: 'id',
@@ -600,15 +602,7 @@ const extraFields = ref([
                 label: 'Дата',
                 type: 'datetime',
                 options: {
-                  // Специфические настройки для поля даты
-                }
-              },
-              {
-                name: 'title',
-                label: 'Название',
-                type: 'text',
-                options: {
-                  // Настройки текстового поля
+                  formColumnClass: 'col-span-4'
                 }
               },
               {
@@ -616,9 +610,17 @@ const extraFields = ref([
                 label: 'Ссылка на стрим',
                 type: 'text',
                 options: {
-                  // Настройки для поля ссылки
+                  formColumnClass: 'col-span-8'
                 }
-              }
+              },
+              {
+                name: 'title',
+                label: 'Название',
+                type: 'text',
+                options: {
+                  formColumnClass: 'col-span-12'
+                }
+              },
             ],
           }
         },

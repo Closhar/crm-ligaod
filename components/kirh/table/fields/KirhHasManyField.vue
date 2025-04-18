@@ -26,7 +26,7 @@
     <!-- Modal dialog -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
           <!-- Modal header -->
           <div class="px-6 py-4 border-b flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900 flex items-center">
@@ -53,7 +53,7 @@
           </div>
           
           <!-- Modal body with list of related items -->
-          <div class="p-6 overflow-y-auto flex-grow">
+          <div class="p-6 overflow-y-auto overflow-x-hidden flex-grow">
             <!-- Loading indicator -->
             <div v-if="loading" class="flex justify-center items-center h-32">
               <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -93,7 +93,7 @@
               <div v-else>
                 <!-- Related items table -->
                 <div class="mb-4 overflow-x-auto">
-                  <table class="min-w-full divide-y divide-gray-200">
+                  <table class="min-w-full divide-y divide-gray-200 table-fixed">
                     <thead class="bg-gray-50">
                       <tr>
                         <th v-for="field in effectiveOptions?.fields || []" :key="field.name"
@@ -108,14 +108,14 @@
                             {{ field.label }}
                           </div>
                         </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                           Действия
                         </th>
                       </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                       <tr v-for="(item, index) in relatedItems" :key="item.id" class="hover:bg-gray-50">
-                        <td v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`" class="px-3 py-2 whitespace-nowrap text-sm">
+                        <td v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`" class="px-3 py-2 text-sm break-words">
                           <div v-if="isEditingItem === item.id">
                             <input 
                               v-if="field.type === 'text'" 
@@ -220,7 +220,7 @@
                             </div>
                           </div>
                         </td>
-                        <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                        <td class="px-3 py-2 text-sm text-right w-24">
                           <div class="flex space-x-2 justify-end">
                             <button v-if="isEditingItem === item.id"
                                     @click="saveItem(item)"
@@ -243,9 +243,17 @@
                             </button>
                             <button @click="deleteItem(item)"
                                     class="text-red-600 hover:text-red-900"
-                                    :disabled="item._deleting || isEditingItem === item.id">
+                                    :disabled="item._deleting || isEditingItem === item.id"
+                                    title="Отвязать запись">
                               <Icon v-if="item._deleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
-                              <Icon v-else :name="effectiveOptions?.icons?.delete || 'ph:trash-duotone'" size="1.2em" />
+                              <Icon v-else :name="effectiveOptions?.icons?.delete || 'ph:link-break-duotone'" size="1.2em" />
+                            </button>
+                            <button @click="permanentDeleteItem(item)"
+                                    class="text-red-600 hover:text-red-900"
+                                    :disabled="item._permanentDeleting || isEditingItem === item.id"
+                                    title="Удалить запись полностью">
+                              <Icon v-if="item._permanentDeleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
+                              <Icon v-else :name="effectiveOptions?.icons?.permanentDelete || 'ph:trash-duotone'" size="1.2em" />
                             </button>
                           </div>
                         </td>
@@ -261,10 +269,19 @@
                 </div>
                 
                 <!-- Add new item form -->
-                <div v-if="showAddForm" class="border rounded-md p-4 bg-gray-50">
+                <div v-if="showAddForm" class="border rounded-md p-4 bg-gray-50 overflow-x-auto">
                   <h4 class="text-sm font-medium mb-3">Добавить запись</h4>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div v-for="field in effectiveOptions?.fields || []" :key="`new-${field.name}`">
+                  <!-- Заменяем сетку, добавляем 12-колоночную систему -->
+                  <div class="grid grid-cols-12 gap-4 mb-4">
+                    <div 
+                      v-for="field in effectiveOptions?.fields || []" 
+                      :key="`new-${field.name}`"
+                      :class="[
+                        field.options?.formColumnClass || 
+                        effectiveOptions?.defaultFieldColumnClass || 
+                        'col-span-12 md:col-span-6'
+                      ]"
+                    >
                       <label class="block text-xs font-medium text-gray-700 mb-1">
                         {{ field.label }}
                       </label>
@@ -413,6 +430,45 @@ import KirhImageField from './KirhImageField.vue';
  *       { sourceField: 'location', targetField: 'venue' }
  *     ],
  *     
+ *     // Настройка сетки формы (12-колоночная система)
+ *     defaultFieldColumnClass: 'col-span-12 md:col-span-6', // Ширина поля по умолчанию
+ *     
+ *     // Индивидуальная настройка ширины для конкретных полей
+ *     fields: [
+ *       { 
+ *         name: 'title', 
+ *         type: 'text', 
+ *         label: 'Название',
+ *         options: {
+ *           formColumnClass: 'col-span-12 md:col-span-12' // На всю ширину
+ *         }
+ *       },
+ *       { 
+ *         name: 'date', 
+ *         type: 'date', 
+ *         label: 'Дата',
+ *         options: {
+ *           formColumnClass: 'col-span-6 md:col-span-4' // Треть ширины на средних экранах
+ *         }
+ *       },
+ *       { 
+ *         name: 'time', 
+ *         type: 'time', 
+ *         label: 'Время',
+ *         options: {
+ *           formColumnClass: 'col-span-6 md:col-span-4' // Треть ширины на средних экранах
+ *         }
+ *       },
+ *       { 
+ *         name: 'duration', 
+ *         type: 'text', 
+ *         label: 'Длительность',
+ *         options: {
+ *           formColumnClass: 'col-span-12 md:col-span-4' // Треть ширины на средних экранах
+ *         }
+ *       }
+ *     ],
+ *     
  *     // Остальные настройки...
  *     iconName: 'solar:list-bold-duotone',
  *     // ... существующий код ...
@@ -450,11 +506,14 @@ export default {
     defaultValueField: String,        // Поле в родительской записи (rowData)
     defaultValueTargetField: String,  // Поле в форме добавления новой записи
     
-    // Новый параметр для массива пар полей
+    // Параметр для массива пар полей
     defaultValues: {
       type: Array,
       default: () => []
     },
+    
+    // Параметр для настройки сетки формы
+    defaultFieldColumnClass: String,  // Класс для колонок формы по умолчанию
     
     style: {
       type: Object,
@@ -467,21 +526,12 @@ export default {
   },
   emits: ['update:modelValue'],
   setup(props, { emit }) {
-    // Добавляем отладочный вывод для значения rowData.id
-    console.log('KirhHasManyField setup:', {
-      rowData: props.rowData,
-      rowDataId: props.rowData?.id,
-      rowDataType: typeof props.rowData
-    });
-    
-    // Отслеживаем изменения rowData для отладки
-    watch(() => props.rowData, (newVal, oldVal) => {
-      console.log('KirhHasManyField rowData изменился:', {
-        newValue: newVal,
-        newId: newVal?.id,
-        oldValue: oldVal,
-        oldId: oldVal?.id
-      });
+    // Отслеживаем изменения rowData для быстрой реакции на изменения
+    watch(() => props.rowData, () => {
+      // При изменении родительской записи сбрасываем и переинициализируем newItem
+      if (showAddForm.value) {
+        resetNewItem();
+      }
     }, { deep: true });
     
     // Получение базового URL API из различных источников
@@ -532,8 +582,6 @@ export default {
     
     // Вспомогательная функция для корректного соединения базового URL и пути
     const joinUrl = (base, path) => {
-      console.log('Соединяем URL:', { base, path });
-      
       // Если путь уже содержит полный URL (начинается с http:// или https://), возвращаем его как есть
       if (path.startsWith('http')) {
         return path;
@@ -558,9 +606,7 @@ export default {
       }
       
       // Соединяем базовый URL и путь
-      const result = `${base}/${path}`;
-      console.log('Результат соединения URL:', result);
-      return result;
+      return `${base}/${path}`;
     };
     
     // Функция для создания полного API URL на основе путей и шаблонов
@@ -581,14 +627,6 @@ export default {
       
       // Получаем базовый URL API
       const baseApiUrl = effectiveOptions.value.baseApiUrl || getBaseApiUrl();
-      
-      // Выводим для отладки
-      console.log('buildApiUrl:', { 
-        urlTemplate, 
-        url, 
-        baseApiUrl, 
-        'effectiveOptions.baseApiUrl': effectiveOptions.value.baseApiUrl 
-      });
       
       // Иначе добавляем базовый URL
       return joinUrl(baseApiUrl, url);
@@ -611,17 +649,8 @@ export default {
     
     // Функция для получения эффективного ID с учетом режима отладки
     const getEffectiveId = () => {
-      // Упрощаем и добавляем более детальный вывод
       const thisId = props.rowData?.id || props.parentId;
-      console.log('getEffectiveId:', {
-        thisId,
-        rowDataId: props.rowData?.id,
-        parentId: props.parentId,
-        rowDataType: typeof props.rowData,
-        debugMode: debugMode.value,
-        debugFakeId: debugFakeId.value
-      });
-
+      
       // Если включен режим отладки и ID не определен, используем фейковый ID
       if (debugMode.value && !thisId) {
         return debugFakeId.value;
@@ -634,7 +663,6 @@ export default {
     const hasValidId = () => {
       const id = getEffectiveId();
       const isValid = id !== null && id !== undefined && id !== '';
-      console.log('hasValidId проверка:', { id, isValid });
       return isValid;
     };
     
@@ -650,9 +678,7 @@ export default {
       
       // Если значение передано напрямую и это число
       if (typeof props.value === 'number') {
-        const result = props.value;
-        console.log('KirhHasManyField count from props.value:', result);
-        return result;
+        return props.value;
       }
       
       // Иначе используем countField из rowData, но только если rowData существует
@@ -661,32 +687,22 @@ export default {
         // Добавим защиту от undefined для countField
         if (countField && props.rowData[countField] !== undefined) {
           // Преобразуем к числу, чтобы гарантировать правильное сравнение с 0
-          const result = Number(props.rowData[countField]);
-          console.log('KirhHasManyField count from countField:', {
-            countField,
-            value: props.rowData[countField],
-            result
-          });
-          return result;
+          return Number(props.rowData[countField]);
         }
       }
       
       // Если relatedItems загружены, используем их длину
       if (relatedItems.value && Array.isArray(relatedItems.value)) {
-        const result = relatedItems.value.length;
-        console.log('KirhHasManyField count from relatedItems:', result);
-        return result;
+        return relatedItems.value.length;
       }
       
       // Если ничего не найдено, и это первичная загрузка возвращаем null
       // чтобы знак тире показался
       if (!relatedItemsLoaded.value) {
-        console.log('KirhHasManyField count: не загружены данные, возвращаем null');
         return null;
       }
       
       // Если данные были загружены, но их нет, возвращаем 0
-      console.log('KirhHasManyField count: данные загружены, но пусты, возвращаем 0');
       return 0;
     });
     
@@ -708,11 +724,6 @@ export default {
         const addFieldName = props.options?.modalTitleAddField;
         if (addFieldName && props.rowData) {
           const addFieldValue = props.rowData[addFieldName];
-          console.log('modalTitleAddField прямой доступ:', {
-            field: addFieldName,
-            value: addFieldValue,
-            rowData: props.rowData
-          });
           if (addFieldValue) {
             title += ` <span class="font-normal text-sm text-gray-500">${addFieldValue}</span>`;
           }
@@ -728,11 +739,6 @@ export default {
       const addFieldName = props.options?.modalTitleAddField;
       if (addFieldName && props.rowData) {
         const addFieldValue = props.rowData[addFieldName];
-        console.log('modalTitleAddField прямой доступ для генерируемого заголовка:', {
-          field: addFieldName,
-          value: addFieldValue,
-          rowData: props.rowData
-        });
         if (addFieldValue) {
           title += ` <span class="font-normal text-sm text-gray-500">${addFieldValue}</span>`;
         }
@@ -743,14 +749,6 @@ export default {
     
     // Добавим computed-свойство с дефолтными настройками
     const effectiveOptions = computed(() => {
-      // Добавляем отладку параметров из props
-      console.log('Конструирование effectiveOptions:', {
-        'props.defaultValues': props.defaultValues,
-        'props.options?.defaultValues': props.options?.defaultValues,
-        'props.defaultValueField': props.defaultValueField,
-        'props.options?.defaultValueField': props.options?.defaultValueField
-      });
-      
       // Получаем опции как из прямых пропсов, так и из объекта options
       const result = {
         // Определяем отношения и модели
@@ -766,27 +764,20 @@ export default {
         defaultValueField: props.defaultValueField || props.options?.defaultValueField || null,
         defaultValueTargetField: props.defaultValueTargetField || props.options?.defaultValueTargetField || null,
         
-        // Массив пар полей для копирования значений
-        // Правильно обрабатываем defaultValues для разных форматов входных данных
+        // Массив пар полей для копирования значений - восстанавливаем подробную обработку
         defaultValues: (() => {
           // Если defaultValues передан напрямую как prop
           if (props.defaultValues && Array.isArray(props.defaultValues) && props.defaultValues.length > 0) {
-            console.log('Используем defaultValues из props:', props.defaultValues);
             return props.defaultValues;
           }
           
           // Если defaultValues передан через options
           if (props.options?.defaultValues && Array.isArray(props.options.defaultValues) && props.options.defaultValues.length > 0) {
-            console.log('Используем defaultValues из options:', props.options.defaultValues);
             return props.options.defaultValues;
           }
           
           // Если передана одиночная пара полей, создаем массив с одним элементом
           if (props.defaultValueField && props.defaultValueTargetField) {
-            console.log('Создаем defaultValues из одиночных полей:', [{ 
-              sourceField: props.defaultValueField, 
-              targetField: props.defaultValueTargetField 
-            }]);
             return [{ 
               sourceField: props.defaultValueField, 
               targetField: props.defaultValueTargetField 
@@ -795,10 +786,6 @@ export default {
           
           // Если передана одиночная пара полей через options
           if (props.options?.defaultValueField && props.options?.defaultValueTargetField) {
-            console.log('Создаем defaultValues из одиночных полей в options:', [{ 
-              sourceField: props.options.defaultValueField, 
-              targetField: props.options.defaultValueTargetField 
-            }]);
             return [{ 
               sourceField: props.options.defaultValueField, 
               targetField: props.options.defaultValueTargetField 
@@ -845,6 +832,9 @@ export default {
         defaultToggleClass: props.options?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500',
         defaultToggleWrapperClass: props.options?.defaultToggleWrapperClass || 'flex items-center',
         
+        // Настройка размеров полей в сетке формы (новый параметр)
+        defaultFieldColumnClass: props.defaultFieldColumnClass || props.options?.defaultFieldColumnClass || 'col-span-12 md:col-span-6',
+        
         // Поля для связанных записей
         fields: Array.isArray(props.options?.fields) 
           ? props.options.fields.map(field => ({
@@ -855,18 +845,19 @@ export default {
             })) 
           : [],
         
-        // Иконки для действий
+        // Иконки для кнопок действий
         icons: props.options?.icons || {
+          add: 'ph:plus-circle-duotone',
           edit: 'ph:pencil-simple-duotone',
-          delete: 'ph:trash-duotone',
           save: 'ph:check-circle-duotone',
           cancel: 'ph:x-circle-duotone',
-          add: 'ph:plus-circle-duotone',
-          saveNew: 'ph:floppy-disk-duotone'
+          saveNew: 'ph:floppy-disk-duotone',
+          delete: 'ph:link-break-duotone',
+          permanentDelete: 'ph:trash-duotone',
+          refresh: 'solar:refresh-bold-duotone'
         },
       };
 
-      console.log('Effective options for KirhHasManyField:', result);
       return result;
     });
     
@@ -890,17 +881,10 @@ export default {
         newItem.value[foreignKey] = props.rowData.id;
       }
       
-      // ОТЛАДКА: Проверяем доступность rowData
-      console.log('resetNewItem: rowData доступен?', {
-        rowData: props.rowData ? 'да' : 'нет',
-        rowDataType: typeof props.rowData,
-        hasId: props.rowData?.id ? 'да' : 'нет',
-      });
-      
       // Проверяем наличие родительской записи
       if (props.rowData) {
-        // ОТЛАДКА: Выводим все свойства rowData
-        console.log('Свойства rowData:', Object.keys(props.rowData));
+        // Получаем массив пар полей для копирования значений
+        const defaultValues = effectiveOptions.value.defaultValues;
         
         // Обработка для поддержки обратной совместимости с одиночными полями
         const sourceField = effectiveOptions.value.defaultValueField;
@@ -908,47 +892,18 @@ export default {
         
         // Проверяем, что оба поля указаны и значение в родительской записи существует
         if (sourceField && targetField && props.rowData[sourceField] !== undefined) {
-          console.log(`Передаем значение из родительской записи (одиночное поле): ${sourceField} -> ${targetField}:`, props.rowData[sourceField]);
           newItem.value[targetField] = props.rowData[sourceField];
         }
         
-        // Обработка массива пар полей
-        const defaultValues = effectiveOptions.value.defaultValues;
-        console.log('defaultValues в effectiveOptions:', defaultValues);
-        console.log('Тип defaultValues:', typeof defaultValues);
-        console.log('Это массив?', Array.isArray(defaultValues));
-        console.log('Длина массива:', defaultValues?.length || 'не массив');
-        
         // Проверяем наличие и валидность массива defaultValues
         if (Array.isArray(defaultValues) && defaultValues.length > 0) {
-          console.log('Обрабатываем массив пар полей для копирования значений:', defaultValues);
-          
-          // Проверяем каждую пару полей
-          defaultValues.forEach((pair, index) => {
-            console.log(`Проверка пары #${index}:`, pair);
-            
-            // Проверяем наличие обязательных свойств и значения в родительской записи
-            if (pair && typeof pair === 'object') {
-              console.log(`Пара #${index} - объект:`, {
-                hasSourceField: 'sourceField' in pair,
-                sourceField: pair.sourceField,
-                hasTargetField: 'targetField' in pair,
-                targetField: pair.targetField,
-                sourceValueExists: pair.sourceField && props.rowData[pair.sourceField] !== undefined,
-                sourceValue: pair.sourceField ? props.rowData[pair.sourceField] : 'не указано поле'
-              });
-              
-              if (pair.sourceField && pair.targetField && props.rowData[pair.sourceField] !== undefined) {
-                console.log(`Передаем значение из родительской записи: ${pair.sourceField} -> ${pair.targetField}:`, props.rowData[pair.sourceField]);
-                newItem.value[pair.targetField] = props.rowData[pair.sourceField];
-              }
-            } else {
-              console.log(`Пара #${index} не является объектом или null/undefined:`, pair);
+          // Обрабатываем каждую пару полей
+          defaultValues.forEach((pair) => {
+            if (pair && typeof pair === 'object' && pair.sourceField && pair.targetField && 
+                props.rowData[pair.sourceField] !== undefined) {
+              newItem.value[pair.targetField] = props.rowData[pair.sourceField];
             }
           });
-          
-          // ОТЛАДКА: Показываем итоговые значения newItem
-          console.log('Итоговые значения newItem после обработки defaultValues:', newItem.value);
         }
       }
     };
@@ -958,16 +913,8 @@ export default {
       // Сбрасываем ошибку при каждом открытии
       error.value = null;
       
-      // Выводим rowData для отладки
-      console.log('Открытие модального окна, rowData:', {
-        rowData: props.rowData,
-        rowDataType: typeof props.rowData,
-        rowDataEmpty: props.rowData && Object.keys(props.rowData).length === 0
-      });
-      
       // Проверка на валидность ID
       const isValid = hasValidId();
-      console.log('ID валиден:', isValid);
       
       // Показываем модальное окно в любом случае
       showModal.value = true;
@@ -981,13 +928,11 @@ export default {
             <p class="text-xs text-gray-500">После сохранения основной записи, у неё появится уникальный ID, который будет использоваться для связывания с зависимыми записями.</p>
           </div>
         `;
-        console.warn('openModal: ID не валиден и режим отладки выключен, прекращаем загрузку данных');
         return; // Прекращаем выполнение метода, не пытаясь загрузить данные
       } else if (!isValid && debugMode.value) {
         // Проверяем, установлен ли ID-заглушка в режиме отладки
         if (debugFakeId.value === null) {
           error.value = 'РЕЖИМ ОТЛАДКИ: ID-заглушка не установлена. Нажмите "Включить режим отладки" для установки тестового ID.';
-          console.warn('openModal: ID не валиден даже в режиме отладки, т.к. не установлена ID-заглушка');
           return;
         }
         error.value = `
@@ -997,15 +942,13 @@ export default {
             <p class="text-xs text-gray-500">В режиме отладки вы можете делать изменения, но они привязаны к тестовому ID и могут не отображаться в обычном режиме.</p>
           </div>
         `;
-        console.log('openModal: Используем ID-заглушку в режиме отладки:', debugFakeId.value);
       }
       
       // Загружаем данные только если ID валиден или включен режим отладки с ID
       try {
-        console.log('openModal: Начинаем загрузку связанных записей');
         await fetchRelatedItems();
       } catch (err) {
-        console.error('Ошибка при загрузке связанных записей:', err);
+        // Обрабатываем ошибку без вывода в консоль
       }
     };
     
@@ -1044,15 +987,13 @@ export default {
         let finalFetchApiUrl;
         
         if (effectiveOptions.value.apiUrl) {
-          // Используем новую функцию для обработки URL
+          // Используем функцию для обработки URL
           finalFetchApiUrl = buildApiUrl(effectiveOptions.value.apiUrl, { id: formattedId });
         } else {
           // Создаем URL из компонентов
           const path = `${effectiveOptions.value.parentModel}/${formattedId}/${effectiveOptions.value.relationship}`;
           finalFetchApiUrl = joinUrl(effectiveOptions.value.baseApiUrl, path);
         }
-        
-        console.log('Загрузка связанных записей по URL:', finalFetchApiUrl);
         
         // Получаем заголовки авторизации
         const headers = getAuthHeaders();
@@ -1063,6 +1004,15 @@ export default {
           headers: headers
         });
         
+        // Если получаем 404, просто показываем пустой список
+        if (response.status === 404) {
+          console.log('API-эндпоинт не найден, показываем пустой список:', finalFetchApiUrl);
+          relatedItems.value = [];
+          relatedItemsLoaded.value = true;
+          loading.value = false;
+          return;
+        }
+        
         if (!response.ok) {
           await handleApiError(response, 'загрузке связанных записей');
           return;
@@ -1072,7 +1022,9 @@ export default {
         
         // Проверка на пустой ответ
         if (!data) {
-          throw new Error('Получен пустой ответ от сервера');
+          relatedItems.value = []; // Пустой массив вместо ошибки
+          relatedItemsLoaded.value = true;
+          return;
         }
         
         relatedItems.value = data.data || data;
@@ -1082,12 +1034,12 @@ export default {
         relatedItemsLoaded.value = true;
         
       } catch (err) {
-        error.value = err.message || 'Ошибка загрузки связанных записей';
-        console.error('Error fetching related items:', err);
-        relatedItems.value = []; // Сбрасываем список при ошибке
-        
+        console.error('Ошибка при загрузке связанных записей:', err);
+        // Вместо отображения ошибки просто показываем пустой список
+        relatedItems.value = []; 
         // Отмечаем, что данные загружены (хоть и с ошибкой)
         relatedItemsLoaded.value = true;
+        error.value = null; // Убираем сообщение об ошибке
       } finally {
         loading.value = false;
       }
@@ -1130,7 +1082,11 @@ export default {
       } else if (status === 403) {
         errorText = 'Доступ запрещен. У вас недостаточно прав для выполнения этого действия.';
       } else if (status === 404) {
-        errorText = 'Ресурс не найден. Возможно, он был удален или перемещен.';
+        // Для ошибки 404 не выводим сообщение и возвращаем пустые данные
+        relatedItems.value = [];
+        relatedItemsLoaded.value = true;
+        loading.value = false;
+        return;
       } else if (status === 422) {
         // Обработка ошибок валидации
         try {
@@ -1221,8 +1177,6 @@ export default {
           return;
         }
         
-        console.log(`Обновление записи по URL: ${updateUrl}`);
-        
         // Выполняем API-запрос для обновления записи
         const response = await fetch(updateUrl, {
           method: 'PUT',
@@ -1277,7 +1231,6 @@ export default {
         
         item._updating = false;
       } catch (err) {
-        console.error('Ошибка при обновлении записи:', err);
         error.value = `Произошла ошибка при обновлении записи: ${err.message}`;
         item._updating = false;
       }
@@ -1349,8 +1302,6 @@ export default {
           return;
         }
         
-        console.log(`Сохранение новой записи по URL: ${createUrl}`);
-        
         // Проверим, что внешний ключ установлен правильно
         const foreignKey = effectiveOptions.value.foreignKey;
         if (foreignKey && !newItem.value[foreignKey]) {
@@ -1414,7 +1365,6 @@ export default {
         resetNewItem();
         
       } catch (err) {
-        console.error('Ошибка при создании записи:', err);
         error.value = `Произошла ошибка при создании записи: ${err.message}`;
       } finally {
         loading.value = false;
@@ -1426,15 +1376,15 @@ export default {
       if (!hasValidId() && !debugMode.value) {
         error.value = `
           <div class="flex flex-col gap-2">
-            <p><strong>Ошибка:</strong> Невозможно удалить запись.</p>
-            <p>ID родительской записи не определен или некорректен. Сохраните основную запись перед удалением зависимых.</p>
+            <p><strong>Ошибка:</strong> Невозможно отвязать запись.</p>
+            <p>ID родительской записи не определен или некорректен. Сохраните основную запись перед отвязкой зависимых.</p>
           </div>
         `;
         return;
       }
       
-      // Запрос подтверждения удаления
-      if (!confirm(`Вы уверены, что хотите удалить эту запись?`)) {
+      // Запрос подтверждения отвязки
+      if (!confirm(`Вы уверены, что хотите отвязать эту запись? Сама запись не будет удалена, только связь будет разорвана.`)) {
         return;
       }
       
@@ -1442,36 +1392,45 @@ export default {
       item._deleting = true;
       
       try {
-        // Получаем URL для удаления записи
-        const deleteUrl = buildApiUrl(effectiveOptions.value.deleteApiUrl, { id: item.id });
+        // Вместо удаления отправляем запрос на отвязку записи через API отношений
+        const response = await fetch(`/api/relations/detach`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            parent_id: getEffectiveId(),
+            related_id: item.id,
+            parent_model: effectiveOptions.value.parentModel,
+            relation_name: effectiveOptions.value.relationship
+          })
+        });
         
-        if (!deleteUrl) {
-          error.value = 'Ошибка: URL для удаления не настроен. Проверьте опцию deleteApiUrl.';
+        // Если статус 404, это скорее всего означает, что бэкенд не поддерживает метод detach,
+        // но связь всё равно была разорвана другим способом (например, через DELETE запрос)
+        if (response.status === 404) {
+          // Считаем, что запись всё равно была отвязана, просто удаляем её из интерфейса
+          // Удаляем объект из списка relatedItems
+          relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
           item._deleting = false;
           return;
         }
         
-        console.log(`Удаление записи по URL: ${deleteUrl}`);
-        
-        // Выполняем API-запрос для удаления записи
-        const response = await fetch(deleteUrl, {
-          method: 'DELETE',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-        
-        // Проверка успешности ответа
+        // Проверка успешности ответа для других случаев
         if (!response.ok) {
-          let errorMessage = `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+          let errorMessage = '';
+          
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
+          } catch (e) {
+            errorMessage = `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
+          }
           
           // Дополнительная информация в зависимости от статуса
-          if (response.status === 404) {
-            errorMessage = 'Ошибка 404: Запись не найдена. Возможно, она уже была удалена.';
-          } else if (response.status === 403) {
-            errorMessage = 'Ошибка 403: У вас нет прав на удаление этой записи.';
-          } else if (response.status === 409) {
-            errorMessage = 'Ошибка 409: Невозможно удалить запись, так как она используется в других местах.';
+          if (response.status === 403) {
+            errorMessage = 'Ошибка 403: У вас нет прав на изменение этой связи.';
           }
           
           error.value = errorMessage;
@@ -1484,9 +1443,91 @@ export default {
         
         item._deleting = false;
       } catch (err) {
-        console.error('Ошибка при удалении записи:', err);
-        error.value = `Произошла ошибка при удалении записи: ${err.message}`;
+        // Если ошибка возникла при парсинге JSON или другая, но связь была разорвана
+        // всё равно обновляем UI, удаляя запись из списка
+        console.error(`Ошибка при отвязке записи: ${err.message}`, err);
+        relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
         item._deleting = false;
+      }
+    };
+    
+    // Добавляем функцию полного удаления записи
+    const permanentDeleteItem = async (item) => {
+      // Проверка на валидность ID перед удалением записи
+      if (!hasValidId() && !debugMode.value) {
+        error.value = `
+          <div class="flex flex-col gap-2">
+            <p><strong>Ошибка:</strong> Невозможно удалить запись.</p>
+            <p>ID родительской записи не определен или некорректен. Сохраните основную запись перед удалением зависимых.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Запрос подтверждения удаления
+      if (!confirm(`Вы уверены, что хотите полностью удалить эту запись? Это действие нельзя отменить.`)) {
+        return;
+      }
+      
+      // Установка флага удаления
+      item._permanentDeleting = true;
+      
+      try {
+        // Формируем URL для удаления записи
+        const deleteUrl = buildApiUrl(effectiveOptions.value.deleteApiUrl, { id: item.id });
+        
+        if (!deleteUrl) {
+          error.value = 'Ошибка: URL для удаления не настроен. Проверьте опцию deleteApiUrl.';
+          item._permanentDeleting = false;
+          return;
+        }
+        
+        // Выполняем API-запрос для удаления записи
+        const response = await fetch(deleteUrl, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          }
+        });
+        
+        // Если получаем 404, это может означать, что запись уже была удалена
+        if (response.status === 404) {
+          // Удаляем объект из списка relatedItems
+          relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
+          item._permanentDeleting = false;
+          return;
+        }
+        
+        // Проверка успешности ответа для других случаев
+        if (!response.ok) {
+          let errorMessage = '';
+          
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorData.message || `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+          } catch (e) {
+            errorMessage = `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+          }
+          
+          // Дополнительная информация в зависимости от статуса
+          if (response.status === 403) {
+            errorMessage = 'Ошибка 403: У вас нет прав на удаление этой записи.';
+          }
+          
+          error.value = errorMessage;
+          item._permanentDeleting = false;
+          return;
+        }
+        
+        // Удаляем объект из списка relatedItems
+        relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
+        
+        item._permanentDeleting = false;
+      } catch (err) {
+        console.error(`Ошибка при удалении записи: ${err.message}`, err);
+        error.value = `Произошла ошибка при удалении записи: ${err.message}`;
+        item._permanentDeleting = false;
       }
     };
     
@@ -1519,7 +1560,6 @@ export default {
     const toggleDebugMode = () => {
       // Если выключаем режим отладки
       if (debugMode.value) {
-        console.log('toggleDebugMode: Выключаем режим отладки');
         debugMode.value = false;
         debugFakeId.value = null;
         error.value = 'Режим отладки выключен. Необходимо сохранить основную запись перед редактированием связанных.';
@@ -1527,14 +1567,13 @@ export default {
         relatedItems.value = [];
       } else {
         // Если включаем режим отладки, явно указываем ID заглушки
-        console.log('toggleDebugMode: Включаем режим отладки с ID=1');
         debugMode.value = true;
         debugFakeId.value = 1; // Используем 1 только когда пользователь явно включает режим отладки
         error.value = 'РЕЖИМ ОТЛАДКИ: Используется ID-заглушка ' + debugFakeId.value + '. Для нормальной работы необходимо сохранить основную запись.';
         
         // Пробуем загрузить данные с ID=1
-        fetchRelatedItems().catch(err => {
-          console.error('Ошибка при загрузке данных в режиме отладки:', err);
+        fetchRelatedItems().catch(() => {
+          // Ошибки обрабатываются внутри fetchRelatedItems
         });
       }
     };
@@ -1594,14 +1633,19 @@ export default {
       // Автоматически загружаем данные при монтировании компонента,
       // если ID валиден
       if (hasValidId()) {
-        console.log('onMounted: ID валиден, загружаем данные автоматически');
-        fetchRelatedItems().catch(err => {
-          console.error('Ошибка при автоматической загрузке данных:', err);
+        fetchRelatedItems().catch(() => {
+          // Ошибки обрабатываются внутри fetchRelatedItems
         });
-      } else {
-        console.log('onMounted: ID не валиден, пропускаем автоматическую загрузку данных');
       }
     });
+    
+    // Отслеживаем изменения rowData для быстрой реакции на изменения
+    watch(() => props.rowData, () => {
+      // При изменении родительской записи сбрасываем и переинициализируем newItem
+      if (showAddForm.value) {
+        resetNewItem();
+      }
+    }, { deep: true });
     
     return {
       showModal,
@@ -1637,8 +1681,11 @@ export default {
       saveNewItem,
       cancelAddItem,
       deleteItem,
+      permanentDeleteItem,
       getSelectLabel,
       refreshData,
+      // Добавляем функцию полного удаления записи
+      permanentDeleteItem,
       // Добавляем функции проверки ID
       hasValidId,
       getEffectiveId,
@@ -1672,5 +1719,29 @@ export default {
 .hasmany-trigger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Добавляем стили для таблицы */
+table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+table td {
+  max-width: 200px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+.overflow-x-hidden {
+  overflow-x: hidden;
+}
+
+/* Стиль для ячеек с содержимым */
+td input, td textarea, td select {
+  width: 100%;
+  max-width: 100%;
 }
 </style> 

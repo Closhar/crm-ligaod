@@ -587,7 +587,9 @@ export default {
         enableResetFilters: true,
         resetFiltersLabel: 'Сбросить',
         resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed',
-        showIdFilter: true
+        showIdFilter: true,
+        defaultSortField: null,
+        defaultSortDirection: 'asc'
       })
     },
     formOptions: {
@@ -625,7 +627,7 @@ export default {
     excludedFields: {
       type: Array,
       default: () => []
-    }
+    },
   },
   setup(props) {
     // Реактивные переменные
@@ -636,8 +638,8 @@ export default {
     const currentPage = ref(1);
     const totalPages = ref(1);
     const totalItems = ref(0);
-    const sortField = ref(null);
-    const sortDirection = ref('asc');
+    const sortField = ref(props.tableOptions.defaultSortField);
+    const sortDirection = ref(props.tableOptions.defaultSortDirection);
     const error = ref(null);
     const showFieldSelector = ref(false);
     const searchQuery = ref('');
@@ -779,7 +781,20 @@ export default {
       row[fieldName] = actualValue;
 
       // Для НЕ текстовых полей (select, toggle и т.д.) сохраняем сразу
-      const column = allFields.value.find(col => col.name === fieldName);
+      // Проверяем тип поля
+      let column = allFields.value.find(col => col.name === fieldName);
+      
+      // Если колонка не найдена, но это известное поле для селектов
+      if (!column && (fieldName === 'club1_id' || fieldName === 'club2_id')) {
+        column = {
+          name: fieldName,
+          type: 'select',
+          options: {
+            keyField: 'id'
+          }
+        };
+      }
+      
       if (column?.type !== 'text') {
         handleSelectChange(row, fieldName, actualValue);
       }
@@ -796,8 +811,21 @@ export default {
       try {
         if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
 
-        const column = allFields.value.find(col => col.name === fieldName);
-        if (!column) return;
+        // Выполняем поиск колонки с заданным именем
+        let column = allFields.value.find(col => col.name === fieldName);
+        
+        // Если колонка не найдена, но это известное поле 
+        // (club1_id или club2_id, о которых мы точно знаем)
+        if (!column && (fieldName === 'club1_id' || fieldName === 'club2_id')) {
+          // Создаем временную колонку с известными параметрами
+          column = {
+            name: fieldName,
+            type: 'select',
+            options: {
+              keyField: 'id'
+            }
+          };
+        } else if (!column) return;
 
         // Подготовка значения для отправки
         let valueToSave = value;
@@ -836,7 +864,18 @@ export default {
 
     // Проверка доступности поля для редактирования
     const isFieldEditable = (fieldName) => {
+      // Если редактирование вообще отключено на уровне таблицы
+      if (!props.tableOptions.editable) return false;
+      
+      // Проверяем, есть ли поле в основных колонках таблицы
+      const isTableColumn = props.tableOptions.columns.some(col => col.name === fieldName);
+      
+      // Если это поле из основных колонок таблицы, всегда разрешаем редактировать
+      if (isTableColumn) return true;
+      
+      // Для полей из панели редактирования
       if (!showFieldSelector.value) return props.tableOptions.editable;
+      
       return selectedFields.value.includes(fieldName);
     };
 
@@ -1085,8 +1124,8 @@ export default {
       Object.keys(selectedFilters.value).forEach(key => {
         selectedFilters.value[key] = '';
       });
-      sortField.value = null;
-      sortDirection.value = 'asc';
+      sortField.value = props.tableOptions.defaultSortField;
+      sortDirection.value = props.tableOptions.defaultSortDirection;
       currentPage.value = 1;
       idFilter.value = null; // Сбрасываем фильтр по ID
       fetchData();

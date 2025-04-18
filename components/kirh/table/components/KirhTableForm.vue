@@ -80,15 +80,92 @@
               </label>
 
               <div :class="['block w-full', validationErrors?.[column.name] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']">
-                <!-- Текстовое поле -->
+                <!-- Текстовое поле с автоподсказками -->
+                <div 
+                  v-if="column.type === 'text' && column.options?.autoSuggest" 
+                  class="relative"
+                  :ref="el => { autoSuggestRefs[column.name] = el }"
+                >
+                  <input
+                      v-model="formData[column.name]"
+                      type="text"
+                      :required="column.required"
+                      :readonly="column.options?.readonly || formOptions.readonly"
+                      :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                      :placeholder="column.options?.placeholder"
+                      @input="handleAutoSuggest(column.name, column.options?.autoSuggest); handleFieldInput(column.name)"
+                      @focus="isActiveSuggestion[column.name] = true"
+                  />
+                  <div 
+                    v-if="(suggestions[column.name]?.length > 0 || suggestionsLoading[column.name]) && isActiveSuggestion[column.name]" 
+                    class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                  >
+                    <!-- Индикатор загрузки -->
+                    <div v-if="suggestionsLoading[column.name]" class="p-2 text-center text-gray-500">
+                      <div class="inline-block animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                      Загрузка...
+                    </div>
+                    
+                    <!-- Сообщение, если нет результатов -->
+                    <div v-else-if="suggestions[column.name]?.length === 0" class="p-2 text-center text-gray-500">
+                      Нет результатов
+                    </div>
+                    
+                    <!-- Список подсказок -->
+                    <ul v-else class="py-1">
+                      <li 
+                        v-for="(suggestion, i) in suggestions[column.name]" 
+                        :key="i" 
+                        class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                        :class="{'bg-blue-50 hover:bg-blue-100': column.options?.autoSuggest?.clickable}"
+                        @mousedown="handleSuggestionSelect(column.name, suggestion, column.options?.autoSuggest, $event)"
+                      >
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <span class="font-medium">{{ 
+                              suggestion[column.options?.autoSuggest?.labelField || 'name'] || suggestion.name || suggestion.title || suggestion.label || JSON.stringify(suggestion) 
+                            }}</span>
+                            
+                            <!-- Дополнительная информация -->
+                            <span v-if="suggestion.message" class="ml-2 text-xs text-gray-500">
+                              {{ suggestion.message }}
+                            </span>
+                            
+                            <!-- Доп. данные -->
+                            <div v-if="suggestion.email && suggestion.email !== suggestion[column.options?.autoSuggest?.labelField || 'name']" 
+                              class="text-xs text-gray-500 mt-1">
+                              {{ suggestion.email }}
+                            </div>
+                          </div>
+                          
+                          <!-- Счетчик -->
+                          <span v-if="column.options?.autoSuggest?.showCount && suggestion.count" 
+                                class="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                            {{ suggestion.count }}
+                          </span>
+                          
+                          <!-- Иконка для кликабельных подсказок -->
+                          <span v-if="column.options?.autoSuggest?.clickable" class="text-blue-500 ml-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </span>
+                        </div>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              
+                <!-- Обычное текстовое поле -->
                 <input
-                    v-if="column.type === 'text'"
+                    v-else-if="column.type === 'text'"
                     v-model="formData[column.name]"
                     type="text"
                     :required="column.required"
                     :readonly="column.options?.readonly || formOptions.readonly"
                     :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
                     :placeholder="column.options?.placeholder"
+                    @input="handleFieldInput(column.name)"
                 />
 
                 <!-- Поле datetime-local -->
@@ -133,6 +210,7 @@
                 <KirhSelectField
                     v-else-if="column.type === 'select'"
                     v-model="formData[column.name]"
+                    :key="`select-${column.name}-${forceRerenderSelects}`"
                     :options="column.options?.options"
                     :api-url="column.options?.apiUrl"
                     :api-params="column.options?.apiParams"
@@ -221,9 +299,11 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue';
+import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue';
 import KirhSelectField from './../fields/KirhSelectField.vue';
 import RichTextEditor from "~/components/kirh/table/editor/RichTextEditor.vue";
+import { useRuntimeConfig } from '#app';
+import { transliterate } from '~/utils/transliterate';
 
 const props = defineProps({
   apiUrl: {
@@ -247,7 +327,8 @@ const props = defineProps({
       hideCancelButton: false,
       submitButtonText: 'Сохранить',
       cancelButtonText: 'Сбросить',
-      toggleButtonText: 'Показать форму'
+      toggleButtonText: 'Показать форму',
+      forceLocalApi: false
     })
   },
   showForm: {
@@ -265,6 +346,10 @@ const props = defineProps({
   defaultFieldTarget: {
     type: String,
     default: null
+  },
+  forceLocalApi: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -276,6 +361,13 @@ const keepFormAfterSubmit = ref(props.formOptions.keepFormAfterSubmit);
 const loading = ref(false);
 const error = ref(null);
 const validationErrors = ref({});
+
+// Для автоподсказок
+const suggestions = ref({});
+const isActiveSuggestion = ref({});
+const suggestDebounceTimers = ref({});
+const suggestionsLoading = ref({});
+const autoSuggestRefs = ref({});
 
 // Вычисляемые свойства
 const formTitle = computed(() => {
@@ -289,22 +381,198 @@ const visibleColumns = computed(() => {
       !column.options?.hidden || !column.options.hidden(formData.value))
 });
 
+// Добавляем новую систему отслеживания зависимостей полей
+const fieldsWithTransliterate = computed(() => {
+  if (!props.formOptions?.columns) return {};
+  
+  // Собираем отображение полей для транслитерации
+  const result = {};
+  
+  props.formOptions.columns.forEach(column => {
+    if (column.options?.transliterateFrom) {
+      // Если для поля задано значение transliterateFrom
+      result[column.name] = column.options.transliterateFrom;
+    }
+  });
+  
+  return result;
+});
+
+// Обработка изменений в полях, от которых зависит транслитерация
+watch(formData, (newData, oldData) => {
+  // Для каждого поля с настройкой transliterateFrom
+  applyTransliteration(newData, oldData);
+}, { deep: true });
+
+// Функция для применения транслитерации
+const applyTransliteration = (currentData, previousData) => {
+  Object.entries(fieldsWithTransliterate.value).forEach(([targetField, sourceField]) => {
+    // Если изменилось значение исходного поля или previousData пустой (инициализация)
+    if (!previousData || currentData[sourceField] !== previousData[sourceField]) {
+      // Обновляем значение целевого поля через транслитерацию
+      formData.value[targetField] = transliterate(currentData[sourceField] || '');
+    }
+  });
+};
+
+// Обработчик автоподсказок
+const handleAutoSuggest = (fieldName, suggestOptions) => {
+  if (!suggestOptions?.apiUrl) {
+    return;
+  }
+  
+  // Очищаем предыдущий таймер, если он существует
+  if (suggestDebounceTimers.value[fieldName]) {
+    clearTimeout(suggestDebounceTimers.value[fieldName]);
+  }
+  
+  // Устанавливаем новый таймер для предотвращения частых запросов
+  suggestDebounceTimers.value[fieldName] = setTimeout(async () => {
+    const query = formData.value[fieldName];
+    
+    // Если запрос пустой или слишком короткий, очищаем подсказки
+    if (!query || query.length < (suggestOptions.minLength || 2)) {
+      suggestions.value[fieldName] = [];
+      return;
+    }
+    
+    try {
+      // Устанавливаем состояние загрузки
+      suggestionsLoading.value[fieldName] = true;
+      
+      const params = new URLSearchParams();
+      params.append('q', query);
+      
+      // Используем field_name из опций, если указан, иначе используем имя поля формы
+      const fieldForApi = suggestOptions.field_name || fieldName;
+      params.append('field', fieldForApi);
+      
+      // Добавляем дополнительные параметры
+      if (suggestOptions.apiParams) {
+        Object.entries(suggestOptions.apiParams).forEach(([key, value]) => {
+          params.append(key, value);
+        });
+      }
+      
+      // Получаем конфигурацию для API
+      const config = useRuntimeConfig();
+      const baseApiUrl = config.public.API_URL || '';
+      
+      // Формируем полный URL
+      let fullApiUrl = suggestOptions.apiUrl;
+      // Проверяем, нужно ли обрабатывать URL как локальный
+      const forceLocalApi = suggestOptions.forceLocalApi === true;
+      if (fullApiUrl.startsWith('/api/') && baseApiUrl && !forceLocalApi) {
+        fullApiUrl = `${baseApiUrl}${suggestOptions.apiUrl}`;
+      }
+      
+      const response = await fetch(`${fullApiUrl}?${params.toString()}`);
+      if (!response.ok) throw new Error('Ошибка при получении подсказок');
+      
+      const data = await response.json();
+      suggestions.value[fieldName] = Array.isArray(data) ? data : data.data || [];
+    } catch (error) {
+      console.error('Ошибка автоподсказок:', error);
+      suggestions.value[fieldName] = [];
+    } finally {
+      // Сбрасываем состояние загрузки
+      suggestionsLoading.value[fieldName] = false;
+    }
+  }, suggestOptions.debounce || 300);
+};
+
+// Обработчик выбора подсказки для события click/mousedown
+const handleSuggestionSelect = (fieldName, suggestion, autoSuggestOptions, event) => {
+  // Предотвращаем стандартное поведение и всплытие события
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  selectSuggestion(fieldName, suggestion, autoSuggestOptions);
+};
+
+// Выбор значения из подсказок
+const selectSuggestion = (fieldName, suggestion, autoSuggestOptions) => {
+  if (!suggestion) {
+    return;
+  }
+  
+  // Проверяем, разрешен ли выбор
+  if (autoSuggestOptions && !autoSuggestOptions.clickable) {
+    return;
+  }
+  
+  // Находим колонку по имени
+  const column = props.formOptions.columns.find(col => col.name === fieldName);
+  if (!column) {
+    return;
+  }
+  
+  // Определяем поле для отображения (labelField)
+  const labelField = autoSuggestOptions?.labelField || 'name';
+  
+  // Устанавливаем значение в поле формы
+  formData.value[fieldName] = suggestion[labelField];
+  
+  // Если есть дополнительные поля для заполнения из подсказки
+  if (autoSuggestOptions?.fillFields) {
+    for (const [targetField, sourceField] of Object.entries(autoSuggestOptions.fillFields)) {
+      if (suggestion[sourceField] !== undefined) {
+        formData.value[targetField] = suggestion[sourceField];
+      }
+    }
+  }
+  
+  // Проверяем, влияет ли это поле на поле с транслитерацией
+  handleFieldInput(fieldName);
+  
+  // Очищаем подсказки и скрываем выпадающий список
+  suggestions.value[fieldName] = [];
+  isActiveSuggestion.value[fieldName] = false;
+};
+
 // Функция инициализации формы
 const initForm = () => {
   // Сбрасываем значения
   formData.value = {};
   validationErrors.value = {};
+  suggestions.value = {};
+  isActiveSuggestion.value = {};
+  suggestionsLoading.value = {};
+  
+  // Проходим по всем колонкам и устанавливаем правильные начальные значения
+  props.formOptions.columns.forEach(column => {
+    // Для разных типов полей разные значения по умолчанию
+    switch (column.type) {
+      case 'select':
+        // Для селектов устанавливаем null
+        formData.value[column.name] = null;
+        break;
+      case 'toggle':
+        // Для переключателя устанавливаем false
+        formData.value[column.name] = column.options?.defaultChecked === true ? true : false;
+        break;
+      case 'number':
+        // Для числовых полей устанавливаем null
+        formData.value[column.name] = column.options?.defaultValue !== undefined ? column.options.defaultValue : null;
+        break;
+      case 'datetime':
+        // Для даты устанавливаем null
+        formData.value[column.name] = null;
+        break;
+      default:
+        // Для текстовых и прочих полей устанавливаем пустую строку или defaultValue
+        formData.value[column.name] = column.options?.defaultValue !== undefined ? column.options.defaultValue : '';
+        break;
+    }
+  });
   
   // Инициализация формы - установка дефолтных значений
   if (props.formOptions.initialData) {
     // Если есть initialData, используем его
-    formData.value = {...props.formOptions.initialData};
-  } else {
-    // Устанавливаем начальные значения для полей
-    props.formOptions.columns.forEach(column => {
-      if (column.options?.defaultChecked !== undefined) {
-        formData.value[column.name] = column.options.defaultChecked;
-      }
+    Object.entries(props.formOptions.initialData).forEach(([key, value]) => {
+      formData.value[key] = value;
     });
   }
   
@@ -327,6 +595,12 @@ const initForm = () => {
   if (props.defaultFieldValue !== null && props.defaultFieldTarget !== null) {
     formData.value[props.defaultFieldTarget] = props.defaultFieldValue;
   }
+  
+  // Применяем транслитерацию после инициализации всех полей
+  // Используем таймаут, чтобы убедиться, что formData обновлен
+  setTimeout(() => {
+    applyTransliteration(formData.value, {});
+  }, 0);
 };
 
 // Конвертация даты в формат datetime-local
@@ -343,6 +617,37 @@ const convertToDatetimeLocal = (dateString) => {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
+// Флаг для перерисовки селектов
+const forceRerenderSelects = ref(0);
+
+// Функция для сброса селектов с перерисовкой
+const resetSelectFields = () => {
+  // Перерисовываем селекты
+  forceRerenderSelects.value++;
+  
+  // Принудительно сбрасываем селекты на следующий тик
+  setTimeout(() => {
+    const selectColumns = props.formOptions.columns.filter(col => col.type === 'select');
+    selectColumns.forEach(column => {
+      formData.value[column.name] = null;
+    });
+  }, 0);
+};
+
+// Сброс формы
+const resetForm = () => {
+  // Сначала инициализируем форму
+  initForm();
+  validationErrors.value = null;
+  error.value = null;
+  
+  // Сбрасываем селекты с перерисовкой
+  resetSelectFields();
+  
+  // Применяем транслитерацию после сброса
+  applyTransliteration(formData.value, {});
+};
+
 // Переключение формы
 const toggleForm = () => {
   isFormOpen.value = !isFormOpen.value;
@@ -350,13 +655,6 @@ const toggleForm = () => {
   if (isFormOpen.value && !Object.keys(formData.value).length) {
     initForm();
   }
-};
-
-// Сброс формы
-const resetForm = () => {
-  initForm();
-  validationErrors.value = null;
-  error.value = null;
 };
 
 // Отправка формы
@@ -368,15 +666,28 @@ const submitForm = async () => {
 
     // Конвертация datetime-local обратно в стандартный формат
     const submitData = {...formData.value};
+    
+    // Обрабатываем каждую колонку
     props.formOptions.columns.forEach(column => {
+      // Конвертация datetime полей
       if (column.type === 'datetime' && submitData[column.name]) {
         submitData[column.name] = new Date(submitData[column.name]).toISOString();
       }
     });
 
+    // Получаем базовый URL API из конфигурации
+    const config = useRuntimeConfig();
+    const baseApiUrl = config.public.API_URL || '';
+    
+    // Формируем полный URL
+    let apiUrl = props.apiUrl;
+    if (apiUrl.startsWith('/api/') && baseApiUrl && !props.forceLocalApi) {
+      apiUrl = `${baseApiUrl}${props.apiUrl}`;
+    }
+
     const url = props.editingRow ?
-        `${props.apiUrl}/${props.editingRow.id}` :
-        props.apiUrl;
+        `${apiUrl}/${props.editingRow.id}` :
+        apiUrl;
     const method = props.editingRow ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
@@ -410,6 +721,9 @@ const submitForm = async () => {
     } else if (!keepFormAfterSubmit.value) {
       // Если не редактирование и галочка не активна - сбрасываем форму
       initForm();
+      
+      // Сбрасываем селекты с перерисовкой
+      resetSelectFields();
     }
   } catch (err) {
     error.value = err.message;
@@ -439,9 +753,89 @@ watch(() => props.editingRow, (newVal) => {
   }
 }, { deep: true });
 
+// Функция для закрытия подсказок при клике вне элемента
+const handleClickOutside = (event) => {
+  // Для каждого активного поля с подсказками
+  Object.keys(isActiveSuggestion.value).forEach(fieldName => {
+    if (isActiveSuggestion.value[fieldName]) {
+      // Проверяем, был ли клик вне элемента подсказки
+      const suggestElement = autoSuggestRefs.value[fieldName];
+      if (suggestElement && !suggestElement.contains(event.target)) {
+        isActiveSuggestion.value[fieldName] = false;
+      }
+    }
+  });
+};
+
+// Регистрация и удаление обработчика события клика
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleClickOutside);
+});
+
+// Добавляем обработчик ввода текста в поля
+const handleFieldInput = (fieldName) => {
+  // Проверяем, влияет ли это поле на поле с транслитерацией
+  Object.entries(fieldsWithTransliterate.value).forEach(([targetField, sourceField]) => {
+    if (sourceField === fieldName) {
+      // Если да, применяем транслитерацию немедленно
+      formData.value[targetField] = transliterate(formData.value[sourceField] || '');
+    }
+  });
+};
+
 // Инициализация при монтировании
 initForm();
 </script>
+
+<!-- 
+Документация по использованию autoSuggest:
+
+В опциях для колонки типа 'text' можно добавить объект autoSuggest со следующими параметрами:
+
+{
+  apiUrl: '/api/suggestions', // URL API для получения подсказок (обязательный)
+  apiParams: { table: 'users' }, // Дополнительные параметры запроса (опционально)
+  minLength: 2, // Минимальная длина ввода для активации подсказок (по умолчанию 2)
+  debounce: 300, // Задержка между запросами в мс (по умолчанию 300)
+  labelField: 'name', // Поле для отображения в списке подсказок (по умолчанию 'name')
+  valueField: 'value', // Поле для значения (по умолчанию 'value')
+  clickable: true, // Можно ли выбрать значение из списка (по умолчанию false)
+  showCount: false, // Показывать ли счетчик, если он есть в данных (по умолчанию false)
+  forceLocalApi: false, // Не добавлять префикс API_URL для локальных запросов (по умолчанию false)
+  field_name: 'db_field_name', // Имя поля для параметра field при запросе подсказок (не влияет на отправку формы)
+  fillFields: { // Дополнительные поля, которые нужно заполнить при выборе значения
+    email: 'email', // ключ - имя поля в форме, значение - имя поля в данных подсказки
+    id: 'id'
+  }
+}
+
+Пример использования в определении колонок:
+
+columns: [
+  {
+    name: 'username', // Имя поля в форме и ключ для отправки данных на сервер
+    label: 'Имя пользователя',
+    type: 'text',
+    options: {
+      autoSuggest: {
+        apiUrl: '/api/user-suggestions',
+        field_name: 'user', // Имя поля, используемое только при запросе подсказок
+        clickable: true,
+        minLength: 3,
+        showCount: true,
+        fillFields: {
+          email: 'email',
+          user_id: 'id'
+        }
+      }
+    }
+  }
+]
+-->
 
 <style scoped>
 .kirh-form-container {

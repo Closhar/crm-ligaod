@@ -59,13 +59,13 @@ const api_addr = api + '/api/streams'
 // const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
 
 useSeoMeta({
-  title: params.value.adminka_name + ' - Трансляции',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Трансляции',
   description: 'Трансляции',
 });
 
 const p_icon = "solar:stream-broken";
 const p_description = 'Трансляции';
-const breadcrumbs = [
+const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [
 
 ];
 
@@ -130,6 +130,25 @@ const tableOptions = ref({
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
       }
     },
+    {
+      name: 'event_id',
+      label: 'Событие',
+      type: 'select',
+      sortable: false,
+      min_width: '200px',
+      options: {
+        apiUrl: api + '/api/events?type=async',
+        keyField: 'id',
+        labelField: 'event_name',
+        enableSearch: true,
+        emptyable: true ,
+        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        limit: 10,
+        //displayLabelField: 'event_name',
+      }
+    },
   ],
   // Колонка Действия
   editable: true, // редактирование записи
@@ -137,7 +156,10 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
+  defaultSortField: 'id', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   separateFields: false, // редактирование отдельных полей
+  showIdFilter: true,
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
@@ -201,6 +223,25 @@ const formOptions = ref({
         //hint: '',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+      }
+    },
+    {
+      name: 'event_id',
+      label: 'Событие',
+      type: 'select',
+      sortable: false,
+      min_width: '200px',
+      options: {
+        apiUrl: api + '/api/events?type=async',
+        keyField: 'id',
+        labelField: 'event_name',
+        enableSearch: true,
+        emptyable: true ,
+        cellClass: "text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 min-w-48",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100 font-normal text-gray-600 rounded-md",
+        list_item: null,
+        limit: 10,
+        //displayLabelField: 'event_name',
       }
     },
   ]

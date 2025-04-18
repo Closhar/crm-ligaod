@@ -59,13 +59,13 @@ const api_addr = api + '/api/clubs'
 // const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
 
 useSeoMeta({
-  title: params.value.adminka_name + ' - Команды',
+  title: ((params.value as any)?.adminka_name || 'Админка') + ' - Команды',
   description: 'Команды',
 });
 
 const p_icon = "i-bxl:microsoft-teams";
 const p_description = 'Команды';
-const breadcrumbs = [
+const breadcrumbs: Array<{id?: number, title?: string, icon?: string, slug?: string}> = [
 
 ];
 
@@ -434,6 +434,8 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   separateFields: true, // редактирование отдельных полей
+  defaultSortField: 'id', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
   link_prefix: site + '/clubs', // префикс ссылки
   pagination: true, // пагинация
@@ -441,6 +443,7 @@ const tableOptions = ref({
   pageSize: 30, // записей на страницу
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
   enableResetFilters: true, // Кнопка очистки фильтров
+  showIdFilter: true,
   resetFiltersLabel: 'Очистить', // Подпись для кнопки Очистить
   resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
       'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed' // Дополнительные классы
@@ -491,6 +494,28 @@ const formOptions = ref({
         required: true,
         minLength: 1
       }
+    },{
+      name: 'city_title',
+      label: 'Город',
+      required: true,
+      type: 'text',
+      width: '250px',
+      options: {
+        readonly: false,
+        placeholder: 'название города',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/cities',
+      field_name: 'title',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: true,
+      }
+      }
     },
     {
       name: 'slug',
@@ -499,6 +524,7 @@ const formOptions = ref({
       required: true,
       options: {
         readonly: false,
+        transliterateFrom: 'title',
         cellClass: 'bg-gray-100 rounded border px-1 w-64',
         inputClass: 'text-md border w-full h-10 px-2 border-gray-300 bg-gray-50 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
     },
@@ -519,24 +545,6 @@ const formOptions = ref({
         labelField: 'title',
         iconField: 'icon',
         enableSearch: false,
-        emptyable: false,
-        cellClass: 'bg-gray-100 rounded border px-1 w-64',
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        displayLabelField: 'gender.title',
-      }
-    },
-    {
-      name: 'city_id',
-      required: true,
-      label: 'Город',
-      type: 'select',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/cities?type=async',
-        keyField: 'id',
-        labelField: 'title',
-        enableSearch: true,
         emptyable: false,
         cellClass: 'bg-gray-100 rounded border px-1 w-64',
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",

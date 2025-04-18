@@ -47,7 +47,7 @@ class CreateStreamsTable extends Migration
     {
         Schema::create('streams', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('event_id')->constrained()->onDelete('cascade');
+            $table->foreignId('event_id')->nullable()->constrained();
             $table->string('title');
             $table->date('date');
             $table->string('link', 500)->nullable();

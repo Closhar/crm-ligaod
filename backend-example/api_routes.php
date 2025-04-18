@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\EventStreamController;
 use App\Http\Controllers\Api\StreamController;
+use App\Http\Controllers\Api\RelationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,4 +22,7 @@ Route::apiResource('events', EventController::class);
 Route::apiResource('events.streams', EventStreamController::class)->only(['index', 'store']);
 
 // Маршруты для управления отдельными стримами (обновление, удаление)
-Route::apiResource('streams', StreamController::class)->only(['update', 'destroy']); 
+Route::apiResource('streams', StreamController::class)->only(['update', 'destroy']);
+
+// Маршрут для отвязки (detach) связей между моделями
+Route::post('relations/detach', [RelationController::class, 'detach']); 

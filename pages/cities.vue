@@ -52,19 +52,16 @@ const {data} = await useAsyncData('globals', async () => {
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 const site = config.public.SITE_URL;
-const api_addr = api + '/api/sports'
+const api_addr = api + '/api/cities'
 
 // Используем useSeoMeta с данными из хранилища
-// const route = useRoute();
-// const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
-
 useSeoMeta({
-  title: ((params.value as any).adminka_name || 'Админка') + ' - Виды спорта',
-  description: 'Виды спорта',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Города',
+  description: 'Города',
 });
 
-const p_icon = "i-ic:round-sports-kabaddi";
-const p_description = 'Виды спорта';
+const p_icon = "i-carbon:location-filled";
+const p_description = 'Города';
 const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [
 
 ];
@@ -85,23 +82,8 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'icon',
-      label: 'иконка вида спорта',
-      type: 'icon',
-      width: '220px',
-      sortable: false,
-      options: {
-        //hint: '123',
-        readonly: false,
-        only_icon: false,
-        link_in_title: 'https://icon-sets.iconify.design/',
-        hint_in_link: 'возьми код иконки на iconify по ссылке',
-        cellClass: 'bg-gray-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-left cursor-default'
-      }
-    },
-    {
       name: 'title',
-      label: 'вид спорта',
+      label: 'город',
       type: 'text',
       min_width: '200px',
       sortable: true,
@@ -111,76 +93,15 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      width: '180px',
-      sortable: false,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
       name: 'title_short',
-      label: '',
-      title_icon: 'simple-icons:shortcut',
+      label: 'кратко',
       type: 'text',
-      width: '80px',
+      width: '150px',
       sortable: false,
       options: {
         readonly: false,
-        hint: 'сокращенное наименование вида спорта',
+        hint: 'сокращенное наименование города',
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'image',
-      label: '',
-      title_icon: 'stash:image',
-      type: 'image',
-      width: '50px',
-      sortable: false,
-      options: {
-        hint: 'изображение в шапке раздела вида спорта',
-        image_path: 'full_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение для вида спорта:',
-        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
-      }
-    },
-    {
-      name: 'annotation',
-      label: '',
-      title_icon: 'healthicons:info-outline',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        hint: 'описание вида спорта',
-        editorEnabled: true,
-        icon: 'icon-park-outline:text',
-        title: 'Редактирование описания',
-        readonly: false,
-        placeholder: 'Введите описание...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-100',
       }
     },
   ],
@@ -190,12 +111,9 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  separateFields: false, // редактирование отдельных полей
-  showIdFilter: true,
   defaultSortField: 'id', // Поле для сортировки по умолчанию
   defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
-  link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
-  link_prefix: site + '/sports', // префикс ссылки
+  separateFields: false, // редактирование отдельных полей
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
@@ -211,7 +129,7 @@ const formOptions = ref({
   keepFormAfterSubmit: false, // не обнулять форму после отправки данных
   autoOpen: true,
   containerClass: 'bg-gray-50',
-  formTitle: 'Добавление вида спорта',
+  formTitle: 'Добавление города',
   hideButtons: false,
   hideCancelButton: false,
   cancelButtonText: 'Сбросить',
@@ -220,7 +138,7 @@ const formOptions = ref({
   columns: [
     {
       name: 'title',
-      label: 'Вид спорта',
+      label: 'Город',
       required: true,
       type: 'text',
       sortable: true,
@@ -228,9 +146,18 @@ const formOptions = ref({
       options: {
         readonly: false,
         placeholder: 'название',
-        hint: 'название вида спорта',
+        hint: 'название города',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/cities',
+          minLength: 3,
+          debounce: 300,
+          clickable: false,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: true,
+      }
       }
     },
     {
@@ -243,55 +170,7 @@ const formOptions = ref({
       options: {
         readonly: false,
         placeholder: 'сокращение',
-        //hint: '',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'icon',
-      label: 'иконка вида спорта',
-      type: 'text',
-      required: true,
-      sortable: true,
-      width: '250px',
-      options: {
-        readonly: false,
-        placeholder: 'иконка',
-        link_in_title: 'https://icon-sets.iconify.design/',
-        hint_in_link: 'возьми код иконки на iconify по ссылке',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      required: true,
-      sortable: true,
-      width: '250px',
-      options: {
-        readonly: false,
-        placeholder: 'слаг',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'descriptio',
-      label: 'описание вида спорта',
-      type: 'editor',
-      required: true,
-      sortable: true,
-      //width: '250px',
-      options: {
-        editorEnabled: true,
-        readonly: false,
-        placeholder: 'Введите описание вида спорта...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
+        hint: 'сокращенное наименование города',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
@@ -316,4 +195,4 @@ const additionalFilters = ref([
 
 <style scoped>
 
-</style>
+</style> 

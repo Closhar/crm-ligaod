@@ -260,14 +260,28 @@ const fetchOptions = async (query = '') => {
 
   isLoading.value = true;
   try {
-    const url = new URL(props.apiUrl);
+    // Определяем базовый URL (текущий хост)
+    const baseUrl = window.location.origin;
+    
+    // Создаем URL с учетом базового пути
+    let fullUrl;
+    if (props.apiUrl.startsWith('http')) {
+      // Если URL абсолютный, используем его как есть
+      fullUrl = new URL(props.apiUrl);
+    } else {
+      // Иначе добавляем базовый URL
+      fullUrl = new URL(props.apiUrl, baseUrl);
+    }
+    
+    // Добавляем параметры запроса
     Object.entries({...props.apiParams, q: query, limit: props.limit}).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        url.searchParams.append(key, value);
+        fullUrl.searchParams.append(key, value);
       }
     });
 
-    const response = await fetch(url);
+    const response = await fetch(fullUrl);
+    
     if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
 
     const data = await response.json();
@@ -318,7 +332,7 @@ watch(
       if (newValue || newValue === 0) {
         // Преобразуем options в массив, если это объект
         const optionsArray = Array.isArray(props.options) ? props.options : 
-                           (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
+                          (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
         const allOptions = [...optionsArray, ...apiOptions.value];
         const foundOption = allOptions.find(
             option => option[props.keyField] === newValue
@@ -337,7 +351,7 @@ watch(
       } else {
         // Если emptyable=false и нет значения, берем первую доступную опцию
         const optionsArray = Array.isArray(props.options) ? props.options : 
-                           (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
+                          (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
         const allOptions = [...optionsArray, ...apiOptions.value];
         selectedOption.value = allOptions[0] || null;
       }
@@ -357,6 +371,7 @@ watch(
 // Переключение выпадающего списка
 const toggleDropdown = () => {
   if (props.disabled) return;
+  
   isOpen.value = !isOpen.value;
   if (isOpen.value && props.apiUrl) {
     fetchOptions();

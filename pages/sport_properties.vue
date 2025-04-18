@@ -52,19 +52,16 @@ const {data} = await useAsyncData('globals', async () => {
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 const site = config.public.SITE_URL;
-const api_addr = api + '/api/sports'
+const api_addr = api + '/api/sport_properties'
 
 // Используем useSeoMeta с данными из хранилища
-// const route = useRoute();
-// const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
-
 useSeoMeta({
-  title: ((params.value as any).adminka_name || 'Админка') + ' - Виды спорта',
-  description: 'Виды спорта',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Свойства видов спорта',
+  description: 'Свойства видов спорта',
 });
 
-const p_icon = "i-ic:round-sports-kabaddi";
-const p_description = 'Виды спорта';
+const p_icon = "i-carbon:list-boxes";
+const p_description = 'Свойства видов спорта';
 const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [
 
 ];
@@ -86,12 +83,11 @@ const tableOptions = ref({
     },
     {
       name: 'icon',
-      label: 'иконка вида спорта',
+      label: 'иконка',
       type: 'icon',
-      width: '220px',
+      width: '150px',
       sortable: false,
       options: {
-        //hint: '123',
         readonly: false,
         only_icon: false,
         link_in_title: 'https://icon-sets.iconify.design/',
@@ -101,7 +97,7 @@ const tableOptions = ref({
     },
     {
       name: 'title',
-      label: 'вид спорта',
+      label: 'тип вида спорта',
       type: 'text',
       min_width: '200px',
       sortable: true,
@@ -111,66 +107,15 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      width: '180px',
-      sortable: false,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'title_short',
-      label: '',
-      title_icon: 'simple-icons:shortcut',
-      type: 'text',
-      width: '80px',
-      sortable: false,
-      options: {
-        readonly: false,
-        hint: 'сокращенное наименование вида спорта',
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'image',
-      label: '',
-      title_icon: 'stash:image',
-      type: 'image',
-      width: '50px',
-      sortable: false,
-      options: {
-        hint: 'изображение в шапке раздела вида спорта',
-        image_path: 'full_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение для вида спорта:',
-        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
-      }
-    },
-    {
       name: 'annotation',
       label: '',
-      title_icon: 'healthicons:info-outline',
+      title_icon: 'tabler:file-description',
       type: 'textarea',
       width: '50px',
       uploadEnabled: true,
       sortable: false,
       options: {
-        hint: 'описание вида спорта',
+        hint: 'описание типа вида спорта',
         editorEnabled: true,
         icon: 'icon-park-outline:text',
         title: 'Редактирование описания',
@@ -190,12 +135,8 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  separateFields: false, // редактирование отдельных полей
   showIdFilter: true,
-  defaultSortField: 'id', // Поле для сортировки по умолчанию
-  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
-  link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
-  link_prefix: site + '/sports', // префикс ссылки
+  separateFields: false, // редактирование отдельных полей
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
@@ -211,7 +152,7 @@ const formOptions = ref({
   keepFormAfterSubmit: false, // не обнулять форму после отправки данных
   autoOpen: true,
   containerClass: 'bg-gray-50',
-  formTitle: 'Добавление вида спорта',
+  formTitle: 'Добавление свойства вида спорта',
   hideButtons: false,
   hideCancelButton: false,
   cancelButtonText: 'Сбросить',
@@ -220,7 +161,7 @@ const formOptions = ref({
   columns: [
     {
       name: 'title',
-      label: 'Вид спорта',
+      label: 'Тип вида спорта',
       required: true,
       type: 'text',
       sortable: true,
@@ -228,29 +169,14 @@ const formOptions = ref({
       options: {
         readonly: false,
         placeholder: 'название',
-        hint: 'название вида спорта',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'title_short',
-      label: 'Сокращение',
-      required: true,
-      type: 'text',
-      sortable: true,
-      width: '150px',
-      options: {
-        readonly: false,
-        placeholder: 'сокращение',
-        //hint: '',
+        hint: 'название типа вида спорта',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
     },
     {
       name: 'icon',
-      label: 'иконка вида спорта',
+      label: 'иконка',
       type: 'text',
       required: true,
       sortable: true,
@@ -265,22 +191,8 @@ const formOptions = ref({
       }
     },
     {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      required: true,
-      sortable: true,
-      width: '250px',
-      options: {
-        readonly: false,
-        placeholder: 'слаг',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'descriptio',
-      label: 'описание вида спорта',
+      name: 'annotation',
+      label: 'описание',
       type: 'editor',
       required: true,
       sortable: true,
@@ -288,7 +200,7 @@ const formOptions = ref({
       options: {
         editorEnabled: true,
         readonly: false,
-        placeholder: 'Введите описание вида спорта...',
+        placeholder: 'Введите описание типа вида спорта...',
         uploadUrl: api + '/api/upload-image',
         imageMaxWidth: 1200,
         imageQuality: 0.8,
@@ -309,11 +221,20 @@ const defaultVisibleFields: string[] = [];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([
-
+  {
+    name: 'id',
+    label: 'ID',
+    type: 'number',
+    options: {
+      value: null,
+      placeholder: 'ID',
+      inputClass: 'w-20 p-1 h-8 border border-gray-300 rounded text-md'
+    }
+  }
 ]);
 
 </script>
 
 <style scoped>
 
-</style>
+</style> 
