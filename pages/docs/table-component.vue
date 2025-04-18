@@ -334,9 +334,93 @@
                 <td class="p-2">String</td>
                 <td class="p-2">Шаблон для отображения значения (для типа 'custom')</td>
               </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">filter_button</td>
+                <td class="p-2">Object</td>
+                <td class="p-2">Настройки кнопки фильтрации для колонки (для полей типа select)</td>
+              </tr>
             </tbody>
           </table>
         </div>
+      </div>
+      
+      <h3 class="text-lg font-semibold mb-2">Настройка кнопки фильтрации для колонки (filter_button):</h3>
+      
+      <div class="bg-gray-50 p-4 rounded-md overflow-x-auto mb-6">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2 text-left">Параметр</th>
+              <th class="p-2 text-left">Тип</th>
+              <th class="p-2 text-left">Описание</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">enabled</td>
+              <td class="p-2">Boolean</td>
+              <td class="p-2">Включить кнопку фильтрации для данной колонки</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">icon</td>
+              <td class="p-2">String</td>
+              <td class="p-2">Название иконки для кнопки фильтрации</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">active_icon</td>
+              <td class="p-2">String</td>
+              <td class="p-2">Название иконки для активного состояния фильтра</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">icon_size</td>
+              <td class="p-2">String</td>
+              <td class="p-2">Размер иконки (например '1.2em', '16px')</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">tooltip</td>
+              <td class="p-2">String</td>
+              <td class="p-2">Текст подсказки при наведении на кнопку</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">class</td>
+              <td class="p-2">String</td>
+              <td class="p-2">CSS классы для кнопки фильтрации</td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">param_name</td>
+              <td class="p-2">String</td>
+              <td class="p-2">Имя параметра для фильтрации (по умолчанию соответствует имени колонки)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <h3 class="text-lg font-semibold mb-2">Пример использования кнопки фильтрации:</h3>
+      
+      <div class="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto mb-6">
+        <pre class="text-sm font-mono">
+// Пример колонки с кнопкой фильтрации
+{
+  name: 'category_id',
+  label: 'Категория',
+  type: 'select',
+  sortable: false,
+  options: {
+    apiUrl: '/api/categories',
+    keyField: 'id',
+    labelField: 'name',
+    displayLabelField: 'category.name'
+  },
+  filter_button: {
+    enabled: true,
+    icon: 'material-symbols:filter-alt',
+    active_icon: 'material-symbols:filter-alt-off',
+    icon_size: '1.2em',
+    tooltip: 'Фильтровать по категории',
+    class: 'ml-1 p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors',
+    param_name: 'category_id'
+  }
+}</pre>
       </div>
       
       <h2 id="examples" class="text-xl font-bold mb-4 pt-4 border-t">Примеры использования</h2>
@@ -816,7 +900,11 @@ const tableOptions = ref({
 </template>
 
 <script setup>
-// Здесь может быть код для интерактивной документации, если понадобится
+// SEO-параметры для страницы
+useSeoMeta({
+  title: 'Документация: Компонент таблицы KirhTable',
+  description: 'Описание компонента таблицы KirhTable, его параметров, событий и примеров использования. Сортировка, фильтрация, пагинация и редактирование данных.',
+});
 </script>
 
 <style scoped>

@@ -27,6 +27,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    activeClass: {
+      type: String,
+      default: ''
     }
   },
   emits: ['update:modelValue'],
@@ -50,8 +54,9 @@ export default {
         return this.filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'
       }
       const option = this.filter.options[this.currentIndex]
-      return option.buttonClass ||
+      return option.activeClass ||
           this.filter.activeClass ||
+          this.activeClass ||
           'bg-blue-500 text-white'
     }
   },

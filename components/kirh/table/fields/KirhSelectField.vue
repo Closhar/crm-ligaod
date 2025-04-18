@@ -73,6 +73,10 @@
 </template>
 
 <script setup>
+/**
+ * KirhSelectField - компонент селекта с возможностью асинхронной загрузки данных
+ * @version 1.2 - исправлен вывод пустого объекта в поле выбора
+ */
 import {ref, watch, onMounted, onUnmounted, computed} from 'vue';
 import {Icon} from '@iconify/vue';
 
@@ -208,16 +212,33 @@ const filteredOptions = computed(() => {
 
 // Добавляем вычисляемое свойство для отображения значения
 const getDisplayValue = computed(() => {
+  // Проверяем глобальное хранилище объектов
+  if (props.modelValue && window._selectObjects) {
+    const key = Object.keys(window._selectObjects).find(k => k.endsWith(`_${props.modelValue}`));
+    if (key && window._selectObjects[key]) {
+      const obj = window._selectObjects[key];
+      if (obj[props.labelField]) {
+        selectedOption.value = obj;
+        return obj[props.labelField];
+      }
+    }
+  }
+
   if (selectedOption.value && selectedOption.value[props.labelField]) {
     return selectedOption.value[props.labelField];
   }
   if (props.modelValue && typeof props.modelValue === 'object') {
-    return props.modelValue[props.labelField] || props.modelValue.title_short || props.modelValue.label || props.modelValue;
+    // Проверяем, не является ли modelValue объектом с null значениями
+    const isEmptyObject = Object.values(props.modelValue).every(val => val === null);
+    if (isEmptyObject) {
+      return props.placeholder;
+    }
+    return props.modelValue[props.labelField] || props.modelValue.title_short || props.modelValue.label || props.placeholder;
   }
   if (props.modelValue) {
     return props.modelValue;
   }
-  return props.label;
+  return props.placeholder || props.label;
 });
 
 // Инициализация значения по умолчанию
@@ -330,6 +351,18 @@ watch(
     () => props.modelValue,
     (newValue) => {
       if (newValue || newValue === 0) {
+        // Сначала проверяем глобальное хранилище объектов
+        if (window._selectObjects) {
+          const key = Object.keys(window._selectObjects).find(k => k.endsWith(`_${newValue}`));
+          if (key && window._selectObjects[key]) {
+            const obj = window._selectObjects[key];
+            if (obj[props.keyField] == newValue) {
+              selectedOption.value = obj;
+              return;
+            }
+          }
+        }
+      
         // Преобразуем options в массив, если это объект
         const optionsArray = Array.isArray(props.options) ? props.options : 
                           (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];

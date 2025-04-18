@@ -16,10 +16,6 @@
 export default {
   name: 'KirbFinalToggle',
   props: {
-    modelValue: {
-      type: [Number, String, Boolean],
-      default: null
-    },
     value: {
       type: [Number, String, Boolean],
       default: 0
@@ -35,12 +31,8 @@ export default {
     }
   },
   computed: {
-    // Приоритет modelValue над value для поддержки Vue 3
-    actualValue() {
-      return this.modelValue !== null ? this.modelValue : this.value;
-    },
     internalValue() {
-      return this.actualValue == 1 || this.actualValue === '1' || this.actualValue === true;
+      return this.value == 1 || this.value === '1' || this.value === true;
     },
     labelText() {
       if (!this.options.labels) return '';
@@ -55,15 +47,11 @@ export default {
 
       // Защита от дублирования
       if (this.lastEmittedValue === newValue) return;
-      
+
       this.lastEmittedValue = newValue;
-      
-      // Для совместимости с Vue 2
       this.$emit('input', newValue);
       this.$emit('change', newValue);
-      
-      // Для Vue 3
-      this.$emit('update:modelValue', newValue);
+      this.$emit('update:modelValue', newValue); // Добавляем эмит события для v-model в Vue 3
     }
   }
 }
@@ -121,4 +109,4 @@ export default {
   font-size: 12px;
   user-select: none;
 }
-</style>
+</style> 

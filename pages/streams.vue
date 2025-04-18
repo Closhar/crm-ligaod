@@ -146,7 +146,7 @@ const tableOptions = ref({
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         limit: 10,
-        //displayLabelField: 'event_name',
+        displayLabelField: 'event.event_name',
       }
     },
   ],

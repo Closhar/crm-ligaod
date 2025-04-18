@@ -156,7 +156,7 @@ const formOptions = ref({
           clickable: false,
           labelField: 'title',
           valueField: 'id',
-        showCount: true,
+        showCount: false,
       }
       }
     },

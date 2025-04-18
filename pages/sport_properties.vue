@@ -85,7 +85,7 @@ const tableOptions = ref({
       name: 'icon',
       label: 'иконка',
       type: 'icon',
-      width: '150px',
+      width: '250px',
       sortable: false,
       options: {
         readonly: false,
@@ -135,7 +135,9 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  showIdFilter: true,
+  showIdFilter: false,
+  defaultSortField: 'id', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   separateFields: false, // редактирование отдельных полей
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
@@ -171,7 +173,17 @@ const formOptions = ref({
         placeholder: 'название',
         hint: 'название типа вида спорта',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/sport_properties',
+          field_name: 'title',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: false,
+      }
       }
     },
     {
@@ -180,7 +192,7 @@ const formOptions = ref({
       type: 'text',
       required: true,
       sortable: true,
-      width: '250px',
+      width: '350px',
       options: {
         readonly: false,
         placeholder: 'иконка',
@@ -193,17 +205,13 @@ const formOptions = ref({
     {
       name: 'annotation',
       label: 'описание',
-      type: 'editor',
-      required: true,
+      type: 'textarea',
+      required: false,
       sortable: true,
       //width: '250px',
       options: {
-        editorEnabled: true,
+        editorEnabled: false,
         readonly: false,
-        placeholder: 'Введите описание типа вида спорта...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
@@ -221,16 +229,7 @@ const defaultVisibleFields: string[] = [];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([
-  {
-    name: 'id',
-    label: 'ID',
-    type: 'number',
-    options: {
-      value: null,
-      placeholder: 'ID',
-      inputClass: 'w-20 p-1 h-8 border border-gray-300 rounded text-md'
-    }
-  }
+
 ]);
 
 </script>

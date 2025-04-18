@@ -142,9 +142,7 @@
                   v-if="filter.type === 'toggle'"
                   v-model="selectedFilters[filter.field]"
                   :active-class="filter.activeClass || 'bg-blue-500 text-white'"
-                  :button-class="filter.buttonClass || ''"
                   :filter="filter"
-                  :initial-class="filter.initialClass || 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
                   :disabled="!!idFilter"
                   @update:modelValue="applyFilters"
               />
@@ -276,6 +274,23 @@
                   {{ column.label }}
                 </span>
                 
+                <!-- Индикатор активного фильтра для колонки -->
+                <div 
+                  v-if="column.filter_button && isColumnFilterActive(column)"
+                  class="ml-1 flex items-center"
+                >
+                  <div class="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    <Icon name="material-symbols:filter-alt" size="0.7em" />
+                  </div>
+                  <button 
+                    class="ml-1 text-xs text-red-500 hover:text-red-700" 
+                    title="Сбросить фильтр"
+                    @click="clearColumnFilter(column)"
+                  >
+                    <Icon name="material-symbols:close" size="0.8em" />
+                  </button>
+                </div>
+                
                 <!-- Ссылка в заголовке -->
                 <a 
                     v-if="column.options?.link_in_title" 
@@ -361,7 +376,7 @@
                   v-for="(column, colIndex) in visibleColumns"
                   :key="`cell-${rowIndex}-${column.name}-${colIndex}`"
                   :style="getColumnStyle(column)"
-                  class="kirh-cell border-b border-gray-100"
+                  class="kirh-cell border-b border-gray-100 text-center"
               >
                 <!-- Select-поле -->
                 <template v-if="column.type === 'select'">
@@ -382,7 +397,7 @@
                   />
 
                   <!-- API селект -->
-                  <div v-else class=" border border-gray-200 h-8 rounded">
+                  <div v-else class="border border-gray-200 h-8 rounded">
                     <!-- Статическое отображение -->
                     <div
                         v-if="!isActiveSelect(row.id, column.name)"
@@ -407,7 +422,29 @@
                           {{ getSelectLabel(row, column) || 'Не выбрано' }}
                         </span>
                       </div>
-                      <Icon class="text-gray-400" name="mingcute:pencil-fill" size="16"/>
+                      <div class="flex items-center">
+                        <!-- Кнопка фильтрации (если настроена) -->
+                        <button 
+                          v-if="column.filter_button && column.filter_button.enabled && row[column.name]"
+                          class="mr-1"
+                          :class="column.filter_button.class || 'text-blue-500 hover:text-blue-700'"
+                          :title="isColumnFiltered(column, row[column.name]) 
+                            ? `Отменить фильтр по ${column.label}` 
+                            : `Фильтровать по ${column.label}`"
+                          @click.stop="filterByColumnValue(column, row[column.name])"
+                        >
+                          <Icon 
+                            :name="isColumnFiltered(column, row[column.name]) 
+                              ? (column.filter_button.active_icon || 'material-symbols:filter-alt-off') 
+                              : (column.filter_button.icon || 'material-symbols:filter-alt')" 
+                            :class="isColumnFiltered(column, row[column.name]) 
+                              ? 'text-red-500' 
+                              : ''"
+                            :size="column.filter_button.icon_size || '1.2em'"
+                          />
+                        </button>
+                        <Icon class="text-gray-400" name="mingcute:pencil-fill" size="16"/>
+                      </div>
                     </div>
 
                     <!-- Редактируемый селект -->
@@ -460,9 +497,10 @@
                       :readonly="column.options.readonly"
                       :type="column.type"
                       :value="row[column.name]"
+                      :modelValue="row[column.name]"
                       :row-data="row"
                       @blur="handleBlur(row, column.name)"
-                      @input="updateValue(row, column.name, $event)"
+                      @update:modelValue="updateValue(row, column.name, $event)"
                       @keyup.enter="handleBlur(row, column.name)"
                   />
                 </template>
@@ -795,7 +833,16 @@ export default {
         };
       }
       
-      if (column?.type !== 'text') {
+      // Если не найдена колонка, но значение явно булево или 0/1, считаем это toggle
+      if (!column && (actualValue === 0 || actualValue === 1 || typeof actualValue === 'boolean')) {
+        column = {
+          name: fieldName,
+          type: 'toggle'
+        };
+      }
+
+      // Если это toggle или другой НЕ текстовый тип, сохраняем сразу
+      if (column?.type === 'toggle' || (column?.type && column?.type !== 'text')) {
         handleSelectChange(row, fieldName, actualValue);
       }
     };
@@ -825,7 +872,13 @@ export default {
               keyField: 'id'
             }
           };
-        } else if (!column) return;
+        } else if (!column) {
+          // Если колонка не найдена, но значение передаётся, создаем временную колонку
+          column = {
+            name: fieldName,
+            type: typeof value === 'number' || value === 0 || value === 1 ? 'toggle' : 'text'
+          };
+        }
 
         // Подготовка значения для отправки
         let valueToSave = value;
@@ -1460,6 +1513,52 @@ export default {
       }
     };
 
+    const filterByColumnValue = (column, value) => {
+      // Получаем имя параметра для фильтрации
+      const paramName = column.filter_button?.param_name || column.name;
+      
+      // Сбрасываем фильтр по ID, если он активен
+      if (idFilter.value) {
+        idFilter.value = null;
+      }
+      
+      // Проверяем, активен ли уже этот фильтр
+      if (selectedFilters.value[paramName] === value) {
+        // Если да, сбрасываем фильтр
+        selectedFilters.value[paramName] = '';
+      } else {
+        // Иначе устанавливаем новое значение
+        selectedFilters.value[paramName] = value;
+      }
+      
+      // Сбрасываем на первую страницу
+      currentPage.value = 1;
+      
+      // Загружаем данные с новым фильтром
+      fetchData();
+    };
+
+    const isColumnFiltered = (column, value) => {
+      if (!column.filter_button || !column.filter_button.enabled) return false;
+      return selectedFilters.value[column.filter_button.param_name || column.name] === value;
+    };
+
+    const isColumnFilterActive = (column) => {
+      if (!column.filter_button) return false;
+      const paramName = column.filter_button.param_name || column.name;
+      return selectedFilters.value[paramName] !== undefined && 
+             selectedFilters.value[paramName] !== null && 
+             selectedFilters.value[paramName] !== '';
+    };
+    
+    const clearColumnFilter = (column) => {
+      if (!column.filter_button) return;
+      const paramName = column.filter_button.param_name || column.name;
+      selectedFilters.value[paramName] = '';
+      currentPage.value = 1;
+      fetchData();
+    };
+
     return {
       tableData,
       loading,
@@ -1526,7 +1625,11 @@ export default {
       handleKeyDown,
       handleInlineSelectChange,
       resetFieldSelector,
-      isResetFieldsDisabled
+      isResetFieldsDisabled,
+      filterByColumnValue,
+      isColumnFiltered,
+      isColumnFilterActive,
+      clearColumnFilter
     };
   }
 };
@@ -1615,24 +1718,21 @@ export default {
 }
 
 .static-select {
-  @apply flex items-center justify-between cursor-pointer hover:bg-gray-50 rounded p-1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  padding: 0.25rem;
 }
 
-.static-select-content {
-  @apply flex items-center min-w-0;
-}
-
-.static-select-icon {
-  @apply h-5 w-5 rounded-full mr-2 object-cover;
-}
-
-.static-select-edit {
-  @apply h-4 w-4 text-gray-400 flex-shrink-0;
+.static-select:hover {
+  background-color: #f9fafb;
 }
 
 /* Стили для inline-селекта */
 .inline-select {
-  @apply w-full;
+  width: 100%;
 }
 
 /* Стиль для кнопки обновления */

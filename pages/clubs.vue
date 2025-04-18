@@ -468,11 +468,11 @@ const formOptions = ref({
       label: 'Название команды',
       type: 'text',
       required: true,
-      placeholder: 'Введите название команды',
       options: {
         readonly: false,
-        cellClass: 'bg-gray-100 rounded border px-1 w-72',
-        inputClass: 'text-md border w-full h-10 px-2 border-gray-300 bg-gray-50 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
+      placeholder: 'команда',
+      cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
     },
       validation: {
         required: true,
@@ -484,11 +484,11 @@ const formOptions = ref({
       label: 'Кратко',
       type: 'text',
       required: true,
-      placeholder: 'Введите краткое обозначение',
       options: {
         readonly: false,
-        cellClass: 'bg-gray-100 rounded border px-1 w-24',
-        inputClass: 'text-md border w-full h-10 px-2 border-gray-300 bg-gray-50 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
+        placeholder: 'сокр.',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-24',
+      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
     },
     validation: {
         required: true,
@@ -513,7 +513,7 @@ const formOptions = ref({
           clickable: true,
           labelField: 'title',
           valueField: 'id',
-        showCount: true,
+        showCount: false,
       }
       }
     },
@@ -524,9 +524,19 @@ const formOptions = ref({
       required: true,
       options: {
         readonly: false,
+        placeholder: 'slug',
         transliterateFrom: 'title',
-        cellClass: 'bg-gray-100 rounded border px-1 w-64',
-        inputClass: 'text-md border w-full h-10 px-2 border-gray-300 bg-gray-50 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
+      cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/clubs',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'slug',
+          valueField: 'id',
+        showCount: false,
+      }
     },
       validation: {
         required: true,
@@ -571,6 +581,55 @@ const formOptions = ref({
         displayLabelField: 'sport.title',
       }
     },
+  ],
+  quickAdd: [
+    {
+      label: 'ВИД СПОРТА', // Текст кнопки
+      icon: 'i-ic:round-sports-kabaddi', // Опциональная иконка (имя иконки из библиотеки)
+      title: 'Добавление нового вида спорта', // Заголовок модального окна
+      instruction: 'Заполните данные для создания нового вида спорта. Не забудьте позже в разделе Виды спорта добавить описание и изображение для вида спорта.', // Инструкция (необязательно)
+      apiUrl: '/api/sports', // URL для отправки данных
+      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
+      successMessage: 'Вид спорта успешно добавлен', // Сообщение при успешном добавлении
+      fillField: 'sport_id', // Поле в основной форме, которое нужно заполнить после добавления
+      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
+      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
+      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
+      fields: [ // Массив полей формы
+        {
+          name: 'title', // Имя поля (ключ при отправке на сервер)
+          label: 'Название вида спорта', // Отображаемая метка поля
+          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
+          required: true, // Обязательное поле
+          placeholder: 'Введите название вида спорта', // Подсказка в поле
+          defaultValue: '' // Значение по умолчанию
+        },
+        {
+          name: 'slug',
+          label: 'Слаг',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите слаг вида спорта',
+          defaultValue: ''
+        },
+        {
+          name: 'title_short',
+          label: 'Краткое название',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите краткое название вида спорта',
+          defaultValue: ''
+        },
+        {
+          name: 'icon',
+          label: 'Иконка',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите иконку вида спорта',
+          defaultValue: ''
+        }
+      ],
+    }
   ]
 });
 

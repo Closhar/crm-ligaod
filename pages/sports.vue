@@ -230,7 +230,17 @@ const formOptions = ref({
         placeholder: 'название',
         hint: 'название вида спорта',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/sports',
+          field_name: 'title',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: true,
+      }
       }
     },
     {
@@ -274,16 +284,26 @@ const formOptions = ref({
       options: {
         readonly: false,
         placeholder: 'слаг',
+        transliterateFrom: 'title',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/sports',
+          field_name: 'slug',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'slug',
+          valueField: 'id',
+        showCount: false,
+      }
       }
     },
     {
       name: 'descriptio',
       label: 'описание вида спорта',
       type: 'editor',
-      required: true,
-      sortable: true,
+      required: false,
       //width: '250px',
       options: {
         editorEnabled: true,

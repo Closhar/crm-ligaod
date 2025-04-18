@@ -292,10 +292,174 @@
               <span class="ml-2 text-sm text-gray-700">Не обнулять форму после добавления</span>
             </label>
           </div>
+          
+          <!-- Быстрое добавление сущностей -->
+          <div v-if="formOptions.quickAdd && formOptions.quickAdd.length > 0" class="flex flex-wrap items-center gap-2 mt-3 px-4 pb-4 border-t pt-3">
+            <h3 class="text-sm font-medium text-gray-700 mr-2">Быстрое добавление:</h3>
+            <button
+              v-for="(quickAddItem, index) in formOptions.quickAdd"
+              :key="index"
+              @click="openQuickAddModal(quickAddItem)"
+              class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-xs flex items-center"
+              type="button"
+            >
+              <Icon v-if="quickAddItem.icon" :name="quickAddItem.icon" class="mr-1" size="16" />
+              {{ quickAddItem.label || 'Добавить' }}
+            </button>
+          </div>
         </form>
       </div>
     </div>
   </div>
+  
+  <!-- Модальное окно быстрого добавления -->
+  <Teleport to="body">
+    <div v-if="quickAddModalVisible" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+        <!-- Заголовок модального окна -->
+        <div class="px-4 py-3 border-b flex justify-between items-center bg-gray-100 rounded-t-lg">
+          <h3 class="font-medium text-lg text-gray-800">{{ currentQuickAddItem?.title || 'Быстрое добавление' }}</h3>
+          <button @click="closeQuickAddModal" class="text-gray-500 hover:text-gray-700">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <!-- Инструкция по применению (если есть) -->
+        <div v-if="currentQuickAddItem?.instruction" class="px-4 py-2 bg-blue-50 border-b border-blue-100">
+          <p class="text-sm text-blue-700">{{ currentQuickAddItem.instruction }}</p>
+        </div>
+        
+        <!-- Содержимое модального окна -->
+        <div class="flex-1 overflow-y-auto p-4">
+          <!-- Сообщение об успешном добавлении -->
+          <div v-if="quickAddSuccess" class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-green-700">{{ quickAddSuccessMessage }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Форма быстрого добавления -->
+          <form v-if="!quickAddSuccess" @submit.prevent="submitQuickAddForm" class="space-y-4">
+            <div v-for="(field, fieldIndex) in currentQuickAddItem?.fields" :key="fieldIndex" class="space-y-1">
+              <label :for="`quick-add-field-${fieldIndex}`" class="block text-sm font-medium text-gray-700">
+                {{ field.label }}
+                <span v-if="field.required" class="text-red-500">*</span>
+              </label>
+              
+              <!-- Текстовое поле -->
+              <input 
+                v-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
+                :type="field.type" 
+                :id="`quick-add-field-${fieldIndex}`"
+                v-model="quickAddFormData[field.name]" 
+                :required="field.required"
+                :placeholder="field.placeholder"
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              />
+              
+              <!-- Текстовая область -->
+              <textarea 
+                v-else-if="field.type === 'textarea'" 
+                :id="`quick-add-field-${fieldIndex}`"
+                v-model="quickAddFormData[field.name]" 
+                :required="field.required"
+                :placeholder="field.placeholder"
+                :rows="field.rows || 3"
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              ></textarea>
+              
+              <!-- Селект -->
+              <select 
+                v-else-if="field.type === 'select'" 
+                :id="`quick-add-field-${fieldIndex}`"
+                v-model="quickAddFormData[field.name]" 
+                :required="field.required"
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              >
+                <option value="" disabled selected>{{ field.placeholder || 'Выберите...' }}</option>
+                <option v-for="option in field.options" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              
+              <!-- Переключатель -->
+              <div v-else-if="field.type === 'toggle'" class="flex items-center">
+                <input 
+                  :id="`quick-add-field-${fieldIndex}`"
+                  type="checkbox"
+                  v-model="quickAddFormData[field.name]"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label :for="`quick-add-field-${fieldIndex}`" class="ml-2 block text-sm text-gray-700">
+                  {{ field.toggleLabel || field.label }}
+                </label>
+              </div>
+              
+              <!-- Дата/время -->
+              <input 
+                v-else-if="field.type === 'datetime'" 
+                type="datetime-local" 
+                :id="`quick-add-field-${fieldIndex}`"
+                v-model="quickAddFormData[field.name]" 
+                :required="field.required"
+                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+              />
+              
+              <!-- Сообщение об ошибке поля -->
+              <p v-if="quickAddValidationErrors?.[field.name]" class="text-sm text-red-600 mt-1">
+                {{ quickAddValidationErrors[field.name].join(', ') }}
+              </p>
+            </div>
+            
+            <!-- Ошибка формы -->
+            <div v-if="quickAddError" class="bg-red-50 border-l-4 border-red-500 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <p class="text-sm text-red-700">
+                    {{ quickAddError }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        
+        <!-- Кнопки модального окна -->
+        <div class="px-4 py-3 border-t flex justify-end space-x-3 bg-gray-50 rounded-b-lg">
+          <button 
+            @click="closeQuickAddModal" 
+            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+          >
+            {{ quickAddSuccess ? 'Закрыть' : 'Отмена' }}
+          </button>
+          <button 
+            v-if="!quickAddSuccess"
+            type="button" 
+            @click="submitQuickAddForm" 
+            class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm"
+            :disabled="quickAddLoading"
+          >
+            <span v-if="quickAddLoading">Сохранение...</span>
+            <span v-else>Сохранить</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -328,7 +492,8 @@ const props = defineProps({
       submitButtonText: 'Сохранить',
       cancelButtonText: 'Сбросить',
       toggleButtonText: 'Показать форму',
-      forceLocalApi: false
+      forceLocalApi: false,
+      quickAdd: [] // Конфигурация для быстрого добавления сущностей
     })
   },
   showForm: {
@@ -368,6 +533,16 @@ const isActiveSuggestion = ref({});
 const suggestDebounceTimers = ref({});
 const suggestionsLoading = ref({});
 const autoSuggestRefs = ref({});
+
+// Состояние для модального окна быстрого добавления
+const quickAddModalVisible = ref(false);
+const currentQuickAddItem = ref(null);
+const quickAddFormData = ref({});
+const quickAddLoading = ref(false);
+const quickAddError = ref(null);
+const quickAddValidationErrors = ref({});
+const quickAddSuccess = ref(false);
+const quickAddSuccessMessage = ref('');
 
 // Вычисляемые свойства
 const formTitle = computed(() => {
@@ -767,13 +942,41 @@ const handleClickOutside = (event) => {
   });
 };
 
-// Регистрация и удаление обработчика события клика
+// Вызываем функцию при монтировании компонента
 onMounted(() => {
   document.addEventListener('mousedown', handleClickOutside);
+  
+  // Инициализация глобального хранилища объектов
+  if (typeof window !== 'undefined' && !window._selectObjects) {
+    window._selectObjects = {};
+  }
+  
+  // Загрузка данных из localStorage
+  try {
+    const savedSelectData = localStorage.getItem('kirhSelectObjects');
+    if (savedSelectData) {
+      const parsedData = JSON.parse(savedSelectData);
+      
+      if (parsedData && typeof parsedData === 'object') {
+        window._selectObjects = { ...window._selectObjects, ...parsedData };
+      }
+    }
+  } catch (e) {
+    console.error('Ошибка при загрузке данных селектов из localStorage:', e);
+  }
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('mousedown', handleClickOutside);
+  
+  // Сохранение в localStorage
+  try {
+    if (window._selectObjects && Object.keys(window._selectObjects).length > 0) {
+      localStorage.setItem('kirhSelectObjects', JSON.stringify(window._selectObjects));
+    }
+  } catch (e) {
+    console.error('Ошибка при сохранении данных селектов в localStorage:', e);
+  }
 });
 
 // Добавляем обработчик ввода текста в поля
@@ -787,8 +990,343 @@ const handleFieldInput = (fieldName) => {
   });
 };
 
-// Инициализация при монтировании
-initForm();
+// Открытие модального окна быстрого добавления
+const openQuickAddModal = (quickAddItem) => {
+  currentQuickAddItem.value = quickAddItem;
+  quickAddModalVisible.value = true;
+  quickAddFormData.value = {};
+  quickAddError.value = null;
+  quickAddValidationErrors.value = {};
+  quickAddSuccess.value = false;
+  
+  // Проверяем, есть ли начальные данные для формы
+  if (quickAddItem.initialData) {
+    quickAddFormData.value = {...quickAddItem.initialData};
+  }
+  
+  // Инициализация значений полей по умолчанию
+  if (quickAddItem.fields) {
+    quickAddItem.fields.forEach(field => {
+      if (field.defaultValue !== undefined && quickAddFormData.value[field.name] === undefined) {
+        if (field.type === 'toggle') {
+          quickAddFormData.value[field.name] = !!field.defaultValue;
+        } else {
+          quickAddFormData.value[field.name] = field.defaultValue;
+        }
+      }
+    });
+  }
+};
+
+// Закрытие модального окна быстрого добавления
+const closeQuickAddModal = () => {
+  quickAddModalVisible.value = false;
+  currentQuickAddItem.value = null;
+};
+
+// Отправка формы быстрого добавления
+const submitQuickAddForm = async () => {
+  try {
+    quickAddLoading.value = true;
+    quickAddError.value = null;
+    quickAddValidationErrors.value = {};
+    quickAddSuccess.value = false;
+    
+    // Подготовка данных для отправки
+    const submitData = {...quickAddFormData.value};
+    
+    // Обработка полей даты (если они есть)
+    if (currentQuickAddItem.value?.fields) {
+      currentQuickAddItem.value.fields.forEach(field => {
+        if (field.type === 'datetime' && submitData[field.name]) {
+          submitData[field.name] = new Date(submitData[field.name]).toISOString();
+        }
+      });
+    }
+    
+    // Формируем URL для API
+    const config = useRuntimeConfig();
+    const baseApiUrl = config.public.API_URL || '';
+    
+    let apiUrl = currentQuickAddItem.value.apiUrl;
+    if (apiUrl.startsWith('/api/') && baseApiUrl) {
+      apiUrl = `${baseApiUrl}${currentQuickAddItem.value.apiUrl}`;
+    }
+    
+    // Отправляем запрос на создание
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(submitData)
+    });
+    
+    const responseData = await response.json();
+    
+    if (!response.ok) {
+      if (response.status === 422 && responseData.errors) {
+        quickAddValidationErrors.value = responseData.errors;
+        quickAddError.value = responseData.message || 'Ошибка валидации';
+      } else {
+        throw new Error(responseData.message || 'Ошибка сохранения');
+      }
+      return;
+    }
+    
+    // Получаем поле для заполнения из настроек
+    const fieldToFill = currentQuickAddItem.value.fillField;
+    
+    // Устанавливаем сообщение об успехе
+    quickAddSuccessMessage.value = currentQuickAddItem.value.successMessage || 
+      `${currentQuickAddItem.value.title} успешно добавлен`;
+    
+    // Если есть поле для заполнения после добавления
+    if (fieldToFill) {
+      const resultData = responseData.data || responseData;
+      
+      // Получаем значение, которое нужно установить (обычно это id)
+      const valueField = currentQuickAddItem.value.valueField || 'id';
+      // Поле с названием/текстом элемента
+      const labelField = currentQuickAddItem.value.labelField || 'name';
+      
+      let valueToSet = null;
+      
+      if (resultData[valueField] !== undefined) {
+        valueToSet = resultData[valueField];
+        
+        // Ищем колонку в конфигурации формы
+        const targetColumn = props.formOptions.columns.find(col => col.name === fieldToFill);
+        
+        if (targetColumn && targetColumn.type === 'select') {
+          // Определяем ключевое поле и поле с меткой для селекта
+          const keyField = targetColumn.options?.keyField || 'id';
+          const displayField = targetColumn.options?.labelField || 'name';
+          const iconField = targetColumn.options?.iconField || 'icon';
+          
+          // Создаем объект с правильной структурой
+          const optionObject = {
+            [keyField]: Number(valueToSet),
+            [displayField]: resultData[labelField] || resultData.name || resultData.title || String(valueToSet)
+          };
+          
+          // Добавляем иконку, если она есть в данных
+          if (resultData.icon) {
+            optionObject[iconField] = resultData.icon;
+          }
+          
+          // Добавляем другие поля из результата, которые могут быть полезны
+          Object.keys(resultData).forEach(key => {
+            if (!optionObject[key] && key !== valueField && key !== labelField) {
+              optionObject[key] = resultData[key];
+            }
+          });
+          
+          try {
+            // 1. Сохраняем объект в глобальном хранилище
+            if (!window._selectObjects) {
+              window._selectObjects = {};
+            }
+            
+            const cacheKey = `${fieldToFill}_${valueToSet}`;
+            window._selectObjects[cacheKey] = optionObject;
+            
+            // Сохраняем данные в localStorage для персистентности
+            try {
+              localStorage.setItem('kirhSelectObjects', JSON.stringify(window._selectObjects));
+            } catch (e) {
+              console.warn('Ошибка при сохранении данных селектов в localStorage:', e);
+            }
+            
+            // 2. Устанавливаем ID в основное поле формы
+            formData.value[fieldToFill] = Number(valueToSet);
+            
+            // 3. Принудительно перерисовываем селект
+            forceRerenderSelects.value++;
+            
+            // 4. Добавляем в массив опций селекта, если он существует
+            if (targetColumn.options && targetColumn.options.options && Array.isArray(targetColumn.options.options)) {
+              const existingOption = targetColumn.options.options.find(opt => 
+                opt[keyField] == valueToSet
+              );
+              
+              if (!existingOption) {
+                targetColumn.options.options.push(optionObject);
+              }
+            }
+            
+            // 5. Находим элемент селекта на странице и обновляем его напрямую
+            setTimeout(() => {
+              try {
+                const selectElement = document.querySelector(`[data-field="${fieldToFill}"]`);
+                if (selectElement) {
+                  const selectedOptionElement = selectElement.querySelector('.selected-option');
+                  if (selectedOptionElement) {
+                    // Поиск или создание элемента для отображения текста
+                    let textElement = selectedOptionElement.querySelector('.selected-text');
+                    if (!textElement) {
+                      textElement = document.createElement('span');
+                      textElement.className = 'selected-text';
+                      selectedOptionElement.appendChild(textElement);
+                    }
+                    
+                    // Устанавливаем текст опции
+                    textElement.textContent = optionObject[displayField];
+                    
+                    // Если есть иконка, добавляем её
+                    if (optionObject[iconField]) {
+                      let iconElement = selectedOptionElement.querySelector('.option-icon');
+                      if (!iconElement) {
+                        iconElement = document.createElement('span');
+                        iconElement.className = 'option-icon mr-2';
+                        selectedOptionElement.insertBefore(iconElement, textElement);
+                      }
+                      
+                      // Формат иконки: collection:icon-name
+                      if (optionObject[iconField].includes(':')) {
+                        const iconParts = optionObject[iconField].split(':');
+                        const iconSrc = `https://api.iconify.design/${iconParts[0]}/${iconParts[1]}.svg`;
+                        
+                        let imgElement = iconElement.querySelector('img');
+                        if (!imgElement) {
+                          imgElement = document.createElement('img');
+                          imgElement.className = 'h-5 w-5';
+                          iconElement.appendChild(imgElement);
+                        }
+                        
+                        imgElement.src = iconSrc;
+                        imgElement.alt = optionObject[displayField];
+                      }
+                    }
+                  }
+                }
+              } catch (e) {
+                console.warn('Ошибка при прямом обновлении DOM селекта:', e);
+              }
+            }, 100);
+            
+            // 6. Если есть API URL у селекта, проверяем нужно ли обновить его данные
+            if (targetColumn.options?.apiUrl) {
+              // Конструируем URL для получения данных элемента
+              let itemApiUrl = targetColumn.options.apiUrl;
+              // Убираем параметры из URL, если они есть
+              if (itemApiUrl.includes('?')) {
+                itemApiUrl = itemApiUrl.split('?')[0];
+              }
+              // Добавляем ID элемента для прямого запроса данных
+              if (!itemApiUrl.endsWith('/')) {
+                itemApiUrl += '/';
+              }
+              itemApiUrl += valueToSet;
+              
+              // Если API URL начинается с /api/, добавляем базовый URL
+              if (itemApiUrl.startsWith('/api/') && baseApiUrl) {
+                itemApiUrl = `${baseApiUrl}${itemApiUrl}`;
+              }
+              
+              // Загружаем данные элемента для обновления селекта
+              try {
+                const itemResponse = await fetch(itemApiUrl);
+                if (itemResponse.ok) {
+                  const itemData = await itemResponse.json();
+                  if (itemData.data) {
+                    // Обновляем объект в глобальном хранилище
+                    const updatedObject = {
+                      [keyField]: Number(valueToSet),
+                      [displayField]: itemData.data[displayField] || itemData.data.name || itemData.data.title || String(valueToSet)
+                    };
+                    
+                    // Добавляем все поля из ответа
+                    Object.keys(itemData.data).forEach(key => {
+                      updatedObject[key] = itemData.data[key];
+                    });
+                    
+                    window._selectObjects[cacheKey] = updatedObject;
+                    
+                    // Сохраняем обновленные данные в localStorage
+                    try {
+                      localStorage.setItem('kirhSelectObjects', JSON.stringify(window._selectObjects));
+                    } catch (e) {
+                      console.warn('Ошибка при сохранении данных селектов в localStorage:', e);
+                    }
+                    
+                    // Обновляем опцию в массиве опций, если он существует
+                    if (targetColumn.options && targetColumn.options.options && Array.isArray(targetColumn.options.options)) {
+                      const optionIndex = targetColumn.options.options.findIndex(opt => 
+                        opt[keyField] == valueToSet
+                      );
+                      
+                      if (optionIndex !== -1) {
+                        targetColumn.options.options[optionIndex] = updatedObject;
+                      } else {
+                        targetColumn.options.options.push(updatedObject);
+                      }
+                    }
+                    
+                    // Еще раз принудительно перерисовываем селект
+                    forceRerenderSelects.value++;
+                    
+                    // Обновляем DOM напрямую с новыми данными
+                    setTimeout(() => {
+                      try {
+                        const selectElement = document.querySelector(`[data-field="${fieldToFill}"]`);
+                        if (selectElement) {
+                          const selectedOptionElement = selectElement.querySelector('.selected-option');
+                          if (selectedOptionElement) {
+                            // Поиск или создание элемента для отображения текста
+                            let textElement = selectedOptionElement.querySelector('.selected-text');
+                            if (textElement) {
+                              textElement.textContent = updatedObject[displayField];
+                            }
+                          }
+                        }
+                      } catch (e) {
+                        console.warn('Ошибка при прямом обновлении DOM селекта с API данными:', e);
+                      }
+                    }, 150);
+                  }
+                }
+              } catch (e) {
+                console.error('Ошибка при загрузке данных элемента для селекта:', e);
+              }
+            }
+          } catch (e) {
+            console.error('Ошибка при установке объекта селекта:', e);
+            // При ошибке устанавливаем просто ID
+            formData.value[fieldToFill] = Number(valueToSet);
+          }
+        } else {
+          // Для других типов полей просто устанавливаем значение
+          formData.value[fieldToFill] = valueToSet;
+        }
+      }
+    }
+    
+    // Помечаем форму как успешно отправленную
+    quickAddSuccess.value = true;
+    
+    // Сообщаем родителю об обновлении, если это требуется
+    if (currentQuickAddItem.value.emitRefresh) {
+      emit('refresh');
+    }
+    
+  } catch (err) {
+    quickAddError.value = err.message;
+    console.error('Ошибка при быстром добавлении:', err);
+  } finally {
+    quickAddLoading.value = false;
+  }
+};
+
+// Подписываемся на события закрытия модального окна
+watch(() => quickAddModalVisible.value, (newVal) => {
+  if (!newVal && currentQuickAddItem.value?.fillField) {
+    // Окно закрыто, принудительно перерисовываем селекты через некоторое время
+    setTimeout(() => {
+      forceRerenderSelects.value++;
+    }, 100);
+  }
+});
 </script>
 
 <!-- 

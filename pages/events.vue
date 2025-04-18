@@ -166,8 +166,15 @@ const tableOptions = ref({
         displayLabelField: 'competition.title_short', // Вложенное поле
         //displayImageField: 'club_info.logo', // Вложенное поле
         //displayIconField: 'icon' // Плоское поле
+      },
+      filter_button: {
+        enabled: true,
+        icon: 'iconamoon:arrow-right-6-circle-fill',
+        tooltip: 'Фильтровать по соревнованию',
+        class: 'ml-1 p-1 text-blue-800 rounded hover:text-blue-600 transition-colors',
+        param_name: 'competition_id',
+        icon_size: '1.4em'
       }
-
     },
     {
       name: 'club1_id',
@@ -190,8 +197,7 @@ const tableOptions = ref({
         displayLabelField: 'club1.club_info', // Вложенное поле
         displayImageField: 'club1.image', // Вложенное поле
 //displayIconField: 'icon' // Плоское поле
-      }
-
+      },
     },
     {
       name: 'club2_id',
@@ -214,8 +220,7 @@ const tableOptions = ref({
         displayLabelField: 'club2.club_info', // Вложенное поле
         displayImageField: 'club2.image', // Вложенное поле
 //displayIconField: 'icon' // Плоское поле
-      }
-
+      },
     },
     {
       name: 'title',
@@ -244,8 +249,7 @@ const tableOptions = ref({
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         displayLabelField: 'arena.title'
-      }
-
+      },
     },
     {
       name: 'result',
@@ -676,7 +680,7 @@ const additionalFilters = ref([
     field: 'with_team',
     type: 'toggle',
     label: '',
-    initialLabel: 'с/без команды',
+    initialLabel: 'есть ли команды',
     initialClass: 'text-sm text-gray-500 bg-gray-300 hover:bg-gray-400', // Класс для начальной кнопки
     options: [
       {
@@ -713,6 +717,25 @@ const additionalFilters = ref([
         label: 'прошедшие',
         activeClass: 'text-sm text-gray-50 bg-red-600 hover-red-700' // Индивидуальный класс для этого варианта
       }
+    ]
+  },
+  {
+    field: 'is_active',
+    type: 'toggle',
+    label: '',
+    initialLabel: 'активность',
+    initialClass: 'text-sm text-gray-500 bg-gray-300 hover:bg-gray-400', // Класс для начальной кнопки
+    options: [
+      {
+        value: true,
+        label: 'активные',
+        activeClass: 'text-sm text-gray-50 bg-green-600 hover:bg-green-700' // Индивидуальный класс для этого варианта
+      },
+      {
+        value: false,
+        label: 'неактивные',
+        activeClass: 'text-sm text-gray-50 bg-red-600 hover:bg-red-700' // Индивидуальный класс для этого варианта
+      },
     ]
   },
   {

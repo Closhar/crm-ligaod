@@ -122,14 +122,66 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
-          В разработке: Версия 1.2
+          Версия 1.2 (Май 2024)
         </h3>
         <div class="text-gray-700 mb-2">
-          <p class="italic mb-2">Скоро выйдет новая версия с улучшениями и расширенным функционалом.</p>
+          <h4 class="font-semibold text-emerald-700">Новые возможности:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Добавлен функционал быстрого добавления связанных сущностей из формы</li>
+            <li>Создано глобальное хранилище объектов для селектов</li>
+            <li>Реализовано персистентное хранение данных селектов в localStorage</li>
+            <li>Улучшено отображение имен вместо ID после быстрого добавления</li>
+          </ul>
+          
+          <h4 class="font-semibold text-emerald-700">Исправления:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Исправлен вывод пустого объекта в поле выбора KirhSelectField</li>
+            <li>Улучшена обработка пустых значений в формах</li>
+            <li>Исправлена проблема с двойной отправкой запросов при изменении toggle-полей</li>
+            <li>Добавлена поддержка Vue 3 с обратной совместимостью для toggle-компонентов</li>
+          </ul>
+          
+          <h4 class="font-semibold text-emerald-700">Улучшения:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Оптимизирована работа с селектами для корректного отображения имен</li>
+            <li>Добавлена документация по версиям компонентов</li>
+            <li>Оптимизирована работа с placeholder в компонентах выбора</li>
+            <li>Добавлены кнопки фильтрации в ячейках таблицы для быстрой фильтрации данных</li>
+            <li>Добавлена возможность настройки размера иконки для кнопки фильтрации</li>
+            <li>Добавлены индикаторы активных фильтров в заголовках колонок</li>
+            <li>KirhToggleField теперь поддерживает Vue 3 modelValue/update:modelValue API</li>
+          </ul>
           
           <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
-            <p class="font-semibold">Следите за обновлениями!</p>
+            <p class="font-semibold">Пример настройки быстрого добавления связанных сущностей:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>formOptions: {
+  // ... другие настройки ...
+  quickAdd: [
+    {
+      label: 'Добавить организацию',
+      apiUrl: '/api/organizations',
+      fillField: 'organization_id',
+      fields: [...]
+    }
+  ]
+}</code></pre>
           </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример использования кнопки фильтрации в колонке:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>filter_button: {
+  enabled: true,
+  icon: 'material-symbols:filter-alt',
+  icon_size: '1.2em',
+  tooltip: 'Фильтровать по значению',
+  class: 'ml-1 p-1 bg-blue-500 text-white rounded',
+  param_name: 'field_name'
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/form-component#quick-add" class="text-blue-600 hover:underline text-sm">
+            Подробнее о быстром добавлении &rarr;
+          </NuxtLink>
         </div>
       </div>
       
@@ -164,7 +216,11 @@
 </template>
 
 <script setup>
-// Здесь может быть код для интерактивной документации, если понадобится
+// SEO-параметры для страницы
+useSeoMeta({
+  title: 'Документация по компонентам KirhTable',
+  description: 'Документация по компонентам системы KirhTable - набора компонентов для создания таблиц и форм с различными функциональными возможностями',
+});
 </script>
 
 <style scoped>
