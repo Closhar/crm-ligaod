@@ -86,16 +86,30 @@
                   class="relative"
                   :ref="el => { autoSuggestRefs[column.name] = el }"
                 >
-                  <input
-                      v-model="formData[column.name]"
-                      type="text"
-                      :required="column.required"
-                      :readonly="column.options?.readonly || formOptions.readonly"
-                      :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
-                      :placeholder="column.options?.placeholder"
-                      @input="handleAutoSuggest(column.name, column.options?.autoSuggest); handleFieldInput(column.name)"
-                      @focus="isActiveSuggestion[column.name] = true"
-                  />
+                  <div class="relative">
+                    <input
+                        v-model="formData[column.name]"
+                        type="text"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full rounded-md shadow-sm pr-8', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                        @input="handleAutoSuggest(column.name, column.options?.autoSuggest); handleFieldInput(column.name)"
+                        @focus="isActiveSuggestion[column.name] = true"
+                    />
+                    <!-- Кнопка вставки из буфера -->
+                    <button 
+                      v-if="column.options?.pasteFromClipboard" 
+                      type="button" 
+                      @click="pasteFromClipboard(column.name)"
+                      class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                      :title="column.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </button>
+                  </div>
                   <div 
                     v-if="(suggestions[column.name]?.length > 0 || suggestionsLoading[column.name]) && isActiveSuggestion[column.name]" 
                     class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
@@ -157,16 +171,29 @@
                 </div>
               
                 <!-- Обычное текстовое поле -->
-                <input
-                    v-else-if="column.type === 'text'"
-                    v-model="formData[column.name]"
-                    type="text"
-                    :required="column.required"
-                    :readonly="column.options?.readonly || formOptions.readonly"
-                    :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
-                    :placeholder="column.options?.placeholder"
-                    @input="handleFieldInput(column.name)"
-                />
+                <div v-else-if="column.type === 'text'" class="relative">
+                  <input
+                      v-model="formData[column.name]"
+                      type="text"
+                      :required="column.required"
+                      :readonly="column.options?.readonly || formOptions.readonly"
+                      :class="['w-full rounded-md shadow-sm', column.options?.pasteFromClipboard ? 'pr-8' : '', column.options?.inputClass]"
+                      :placeholder="column.options?.placeholder"
+                      @input="handleFieldInput(column.name)"
+                  />
+                  <!-- Кнопка вставки из буфера -->
+                  <button 
+                    v-if="column.options?.pasteFromClipboard" 
+                    type="button" 
+                    @click="pasteFromClipboard(column.name)"
+                    class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                    :title="column.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </button>
+                </div>
 
                 <!-- Поле datetime-local -->
                 <input
@@ -778,6 +805,58 @@ const initForm = () => {
   }, 0);
 };
 
+// Функция для вставки из буфера обмена
+const pasteFromClipboard = async (fieldName) => {
+  try {
+    // Проверяем доступность API буфера обмена
+    if (!navigator.clipboard || !navigator.clipboard.readText) {
+      error.value = 'API буфера обмена недоступно в вашем браузере';
+      setTimeout(() => { error.value = null; }, 3000);
+      return;
+    }
+    
+    // Запрашиваем текст из буфера обмена
+    const text = await navigator.clipboard.readText();
+    
+    // Проверяем, что получили текст
+    if (!text || text.trim() === '') {
+      error.value = 'Буфер обмена пуст';
+      setTimeout(() => { error.value = null; }, 3000);
+      return;
+    }
+    
+    // Находим колонку для применения обработки (если есть)
+    const column = props.formOptions.columns.find(col => col.name === fieldName);
+    
+    if (column?.options?.pasteFromClipboard?.transform) {
+      // Если задана функция преобразования, применяем её
+      try {
+        const transformFn = new Function('text', column.options.pasteFromClipboard.transform);
+        const transformedText = transformFn(text);
+        formData.value[fieldName] = transformedText;
+      } catch (e) {
+        console.error('Ошибка при преобразовании текста из буфера:', e);
+        formData.value[fieldName] = text;
+      }
+    } else {
+      // Просто устанавливаем текст как есть
+      formData.value[fieldName] = text;
+    }
+    
+    // Вызываем обработчик изменения поля для активации зависимостей (например, транслитерации)
+    handleFieldInput(fieldName);
+    
+    // Активируем автоподсказки, если они настроены
+    if (column?.options?.autoSuggest) {
+      handleAutoSuggest(fieldName, column.options.autoSuggest);
+    }
+  } catch (err) {
+    console.error('Ошибка при вставке из буфера обмена:', err);
+    error.value = 'Ошибка при вставке из буфера обмена: ' + err.message;
+    setTimeout(() => { error.value = null; }, 3000);
+  }
+};
+
 // Конвертация даты в формат datetime-local
 const convertToDatetimeLocal = (dateString) => {
   const date = new Date(dateString);
@@ -1369,6 +1448,46 @@ columns: [
           email: 'email',
           user_id: 'id'
         }
+      }
+    }
+  }
+]
+
+Документация по использованию pasteFromClipboard:
+
+В опциях для колонки типа 'text' можно добавить объект pasteFromClipboard для отображения кнопки вставки из буфера обмена:
+
+{
+  title: 'Вставить из буфера', // Подсказка при наведении на кнопку (по умолчанию 'Вставить из буфера обмена')
+  transform: 'return text.trim().toLowerCase();' // Код JavaScript-функции для преобразования текста из буфера
+}
+
+Функция transform получает один параметр text (содержимое буфера обмена)
+и должна возвращать преобразованный текст. Это позволяет автоматически чистить, 
+форматировать или извлекать нужные данные при вставке.
+
+Пример использования в определении колонок:
+
+columns: [
+  {
+    name: 'email',
+    label: 'Email адрес',
+    type: 'text',
+    options: {
+      pasteFromClipboard: {
+        title: 'Вставить email',
+        transform: 'return text.trim().toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$/i)?.[0] || text;'
+      }
+    }
+  },
+  {
+    name: 'phone',
+    label: 'Телефон',
+    type: 'text',
+    options: {
+      pasteFromClipboard: {
+        // Автоматически очищаем телефон от всего, кроме цифр
+        transform: 'return text.replace(/[^0-9]/g, "");'
       }
     }
   }

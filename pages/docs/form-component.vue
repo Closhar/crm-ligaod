@@ -268,6 +268,12 @@
               <td class="p-2">null</td>
               <td class="p-2">Настройки для функции автоподсказок (описано в отдельном разделе)</td>
             </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-2 font-medium">pasteFromClipboard</td>
+              <td class="p-2">Object</td>
+              <td class="p-2">null</td>
+              <td class="p-2">Настройки для функции вставки из буфера обмена</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -372,7 +378,7 @@
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">text</td>
                 <td class="p-2">Текстовое поле</td>
-                <td class="p-2">placeholder, readonly, inputClass, <NuxtLink to="/docs/auto-suggest" class="text-blue-600 hover:underline">autoSuggest</NuxtLink>, clickableHint, hint, hintClass</td>
+                <td class="p-2">placeholder, readonly, inputClass, <NuxtLink to="/docs/auto-suggest" class="text-blue-600 hover:underline">autoSuggest</NuxtLink>, clickableHint, hint, hintClass, pasteFromClipboard</td>
               </tr>
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">textarea</td>
@@ -700,6 +706,95 @@ const formOptions = ref({
         <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
           <p class="text-sm text-yellow-800">
             <span class="font-bold">Примечание:</span> Данные селектов автоматически сохраняются в localStorage браузера и восстанавливаются при следующем открытии формы. Это обеспечивает корректное отображение имен вместо ID даже после перезагрузки страницы.
+          </p>
+        </div>
+      </div>
+      
+      <h3 id="paste-from-clipboard" class="text-lg font-semibold mb-4 pt-4 border-t bg-indigo-50 p-2 rounded">Вставка из буфера обмена</h3>
+      
+      <div class="bg-indigo-50 p-4 rounded-md mb-6">
+        <p class="text-gray-700 mb-4">
+          Компонент KirhTableForm теперь поддерживает вставку из буфера обмена для текстовых полей. Это позволяет быстро вставлять
+          скопированный текст в поля формы с автоматическим преобразованием при необходимости.
+        </p>
+        
+        <h4 class="font-semibold mb-2">Функциональность вставки из буфера обмена:</h4>
+        
+        <ul class="list-disc list-inside text-gray-700 mb-4">
+          <li>Кнопка для вставки из буфера обмена внутри текстового поля</li>
+          <li>Автоматическое преобразование вставляемого текста с помощью функции transform</li>
+          <li>Поддержка автоподсказок после вставки текста</li>
+          <li>Поддержка транслитерации для зависимых полей после вставки</li>
+          <li>Обработка ошибок и отображение уведомлений</li>
+        </ul>
+        
+        <h4 class="font-semibold mb-2">Настройка вставки из буфера обмена:</h4>
+        
+        <div class="bg-white p-4 rounded-md mb-4">
+          <pre class="text-xs text-gray-800 overflow-x-auto">
+<code>// В настройках поля
+{
+  name: 'email',
+  label: 'Email адрес',
+  type: 'text',
+  options: {
+    pasteFromClipboard: {
+      title: 'Вставить email', // Подсказка при наведении на кнопку
+      transform: 'return text.trim().toLowerCase();' // Функция преобразования текста
+    }
+  }
+}</code></pre>
+        </div>
+        
+        <h4 class="font-semibold mb-2">Параметры pasteFromClipboard:</h4>
+        
+        <div class="bg-white p-4 rounded-md mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2 text-left">Параметр</th>
+                <th class="p-2 text-left">Тип</th>
+                <th class="p-2 text-left">По умолчанию</th>
+                <th class="p-2 text-left">Описание</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">title</td>
+                <td class="p-2">String</td>
+                <td class="p-2">'Вставить из буфера обмена'</td>
+                <td class="p-2">Текст подсказки при наведении на кнопку</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">transform</td>
+                <td class="p-2">String</td>
+                <td class="p-2">null</td>
+                <td class="p-2">Код JavaScript-функции для преобразования текста из буфера. Получает параметр text и должна возвращать преобразованный текст.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h4 class="font-semibold mb-2">Примеры использования transform:</h4>
+        
+        <div class="bg-white p-4 rounded-md mb-4">
+          <pre class="text-xs text-gray-800 overflow-x-auto">
+<code>// Очистка телефонного номера (оставляем только цифры)
+transform: 'return text.replace(/[^0-9]/g, "");'
+
+// Извлечение email из текста
+transform: 'return text.trim().toLowerCase().match(/[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$/i)?.[0] || text;'
+
+// Преобразование URL
+transform: 'return text.trim().startsWith("http") ? text : "https://" + text;'
+
+// Форматирование текста
+transform: 'return text.trim().split("\\n").join(", ");'</code></pre>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+          <p class="text-sm text-yellow-800">
+            <span class="font-bold">Примечание:</span> Функция вставки из буфера обмена зависит от разрешений браузера. В некоторых браузерах доступ к буферу обмена может быть ограничен в целях безопасности и требовать разрешения пользователя.
           </p>
         </div>
       </div>

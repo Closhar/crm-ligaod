@@ -131,6 +131,8 @@
             <li>Создано глобальное хранилище объектов для селектов</li>
             <li>Реализовано персистентное хранение данных селектов в localStorage</li>
             <li>Улучшено отображение имен вместо ID после быстрого добавления</li>
+            <li>Добавлена кнопка вставки из буфера обмена для текстовых полей</li>
+            <li>Реализовано преобразование текста при вставке через настраиваемую функцию transform</li>
           </ul>
           
           <h4 class="font-semibold text-emerald-700">Исправления:</h4>
@@ -150,6 +152,7 @@
             <li>Добавлена возможность настройки размера иконки для кнопки фильтрации</li>
             <li>Добавлены индикаторы активных фильтров в заголовках колонок</li>
             <li>KirhToggleField теперь поддерживает Vue 3 modelValue/update:modelValue API</li>
+            <li>Улучшена интеграция с API буфера обмена для удобной вставки данных</li>
           </ul>
           
           <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
@@ -179,8 +182,22 @@
 }</code></pre>
           </div>
           
-          <NuxtLink to="/docs/form-component#quick-add" class="text-blue-600 hover:underline text-sm">
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример использования вставки из буфера обмена:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
+  pasteFromClipboard: {
+    title: 'Вставить email',
+    transform: 'return text.trim().toLowerCase();'
+  }
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/form-component#quick-add" class="text-blue-600 hover:underline text-sm mr-3">
             Подробнее о быстром добавлении &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/form-component#paste-from-clipboard" class="text-blue-600 hover:underline text-sm">
+            Подробнее о вставке из буфера обмена &rarr;
           </NuxtLink>
         </div>
       </div>

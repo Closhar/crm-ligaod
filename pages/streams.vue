@@ -222,7 +222,8 @@ const formOptions = ref({
         placeholder: 'ссылка на трансляцию',
         //hint: '',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        pasteFromClipboard: true,
       }
     },
     {

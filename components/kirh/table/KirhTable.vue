@@ -501,6 +501,7 @@
                       :row-data="row"
                       @blur="handleBlur(row, column.name)"
                       @update:modelValue="updateValue(row, column.name, $event)"
+                      @change="(val) => handleSelectChange(row, column.name, val)"
                       @keyup.enter="handleBlur(row, column.name)"
                   />
                 </template>
@@ -818,7 +819,6 @@ export default {
       // Для всех полей обновляем локальное значение
       row[fieldName] = actualValue;
 
-      // Для НЕ текстовых полей (select, toggle и т.д.) сохраняем сразу
       // Проверяем тип поля
       let column = allFields.value.find(col => col.name === fieldName);
       
@@ -841,10 +841,8 @@ export default {
         };
       }
 
-      // Если это toggle или другой НЕ текстовый тип, сохраняем сразу
-      if (column?.type === 'toggle' || (column?.type && column?.type !== 'text')) {
-        handleSelectChange(row, fieldName, actualValue);
-      }
+      // Всегда сохраняем значение для всех типов полей, не только для toggle и не-текстовых
+      handleSelectChange(row, fieldName, actualValue);
     };
 
     // Обработка изменения в inline-селекте

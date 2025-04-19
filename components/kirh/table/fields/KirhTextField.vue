@@ -211,6 +211,8 @@ export default {
       } else {
         this.validateInput();
         this.$emit('input', value);
+        // Добавляем эмит события change, чтобы таблица могла корректно обработать изменения
+        this.$emit('change', value);
       }
     },
 
@@ -399,7 +401,7 @@ export default {
 
     handleClickOutside() {
       if (this.isEditing) {
-        this.submitChanges();
+        this.finalizeChanges();
       }
     },
 
