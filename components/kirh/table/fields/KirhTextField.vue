@@ -98,6 +98,7 @@ export default {
   },
   props: {
     value: [String, Number, Date],
+    modelValue: [String, Number, Date],
     readonly: {
       type: Boolean,
       default: false
@@ -112,7 +113,7 @@ export default {
       default: () => ({})
     }
   },
-  emits: ['input', 'change', 'cancel', 'start-edit'],
+  emits: ['input', 'change', 'cancel', 'start-edit', 'update:modelValue'],
   data() {
     return {
       localValue: '',
@@ -120,7 +121,7 @@ export default {
       originalValue: '',
       hasError: false,
       errorMessage: '',
-      pendingDateValue: null // Новое поле для хранения временного значения даты/времени
+      pendingDateValue: null
     };
   },
   computed: {
@@ -141,14 +142,13 @@ export default {
     },
     displayValue() {
       if (this.isEditing) {
-        // Для типов даты/времени во время редактирования показываем pendingDateValue или localValue
         return this.isDateType
             ? (this.pendingDateValue !== null ? this.pendingDateValue : this.localValue)
             : this.localValue;
       }
-      if ([null, undefined].includes(this.value)) return '';
-      if (!this.isDateType) return String(this.value);
-      return this.formatForDisplay(this.value);
+      if ([null, undefined].includes(this.value) && [null, undefined].includes(this.modelValue)) return '';
+      if (!this.isDateType) return String(this.value || this.modelValue || '');
+      return this.formatForDisplay(this.value || this.modelValue);
     },
     dynamicInputClass() {
       if (!this.options.ev || !Array.isArray(this.options.ev)) {
@@ -196,7 +196,17 @@ export default {
             this.isDateType ? this.formatForDisplay(newVal) : String(newVal);
         this.localValue = val;
         this.originalValue = val;
-        this.pendingDateValue = null; // Сбрасываем pending значение при изменении props
+        this.pendingDateValue = null;
+      }
+    },
+    modelValue: {
+      immediate: true,
+      handler(newVal) {
+        const val = newVal == null ? '' :
+            this.isDateType ? this.formatForDisplay(newVal) : String(newVal);
+        this.localValue = val;
+        this.originalValue = val;
+        this.pendingDateValue = null;
       }
     }
   },
@@ -206,11 +216,12 @@ export default {
       this.localValue = value;
 
       if (this.isDateType) {
-        // Для типов даты/времени сохраняем временное значение, но не эмитируем событие
         this.pendingDateValue = value;
       } else {
         this.validateInput();
-        this.$emit('input', value);
+        // Убираем отправку событий при вводе
+        // this.$emit('input', value);
+        // this.$emit('update:modelValue', value);
       }
     },
 
@@ -220,18 +231,34 @@ export default {
       if (this.isDateType && this.pendingDateValue !== null) {
         // При потере фокуса для типов даты/времени - обрабатываем и отправляем значение
         this.processDateValue(this.pendingDateValue);
+      } else {
+        // Для текстовых полей отправляем текущее значение только при потере фокуса
+        this.validateInput();
+        if (!this.hasError) {
+          this.$emit('input', this.localValue);
+          this.$emit('update:modelValue', this.localValue);
+          this.originalValue = this.localValue;
+        }
       }
 
-      this.finalizeChanges();
+      this.isEditing = false;
     },
 
     handleEnter() {
       if (this.isDateType && this.pendingDateValue !== null) {
         // При нажатии Enter для типов даты/времени - обрабатываем и отправляем значение
         this.processDateValue(this.pendingDateValue);
+      } else {
+        // Для текстовых полей отправляем текущее значение только при нажатии Enter
+        this.validateInput();
+        if (!this.hasError) {
+          this.$emit('input', this.localValue);
+          this.$emit('update:modelValue', this.localValue);
+          this.originalValue = this.localValue;
+        }
       }
 
-      this.finalizeChanges();
+      this.isEditing = false;
     },
 
     processDateValue(value) {
@@ -261,7 +288,7 @@ export default {
 
       this.originalValue = result; // Обновляем originalValue чтобы submitChanges не эмитил лишний запрос
       this.$emit('input', result);
-      this.$emit('change', result);
+      this.$emit('update:modelValue', result);
     },
 
     finalizeChanges() {
@@ -269,10 +296,20 @@ export default {
       if (this.hasError) return;
 
       this.isEditing = false;
-      // Для date/time типов изменения уже отправлены в processDateValue
-      if (!this.isDateType && this.localValue !== this.originalValue) {
-        this.$emit('input', this.localValue);
-        this.$emit('change', this.localValue);
+      
+      // Проверяем, изменилось ли значение
+      const hasChanged = this.isDateType 
+        ? this.pendingDateValue !== null && this.pendingDateValue !== this.originalValue
+        : this.localValue !== this.originalValue;
+
+      if (hasChanged) {
+        if (this.isDateType && this.pendingDateValue !== null) {
+          this.processDateValue(this.pendingDateValue);
+        } else {
+          this.$emit('input', this.localValue);
+          this.$emit('update:modelValue', this.localValue);
+          this.originalValue = this.localValue;
+        }
       }
     },
 
@@ -381,7 +418,7 @@ export default {
       this.isEditing = false;
       if (this.localValue !== this.originalValue) {
         this.$emit('input', this.localValue);
-        this.$emit('change', this.localValue);
+        this.$emit('update:modelValue', this.localValue);
       }
     },
 

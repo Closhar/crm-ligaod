@@ -256,6 +256,7 @@ const tableOptions = ref({
       type: 'text',
       width: '90px',
       sortable: false,
+      checkFreshness: true,
       options: {
         readonly: false,
         cellClass: 'text-xs font-bold bg-red-100 rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',
@@ -271,6 +272,7 @@ const tableOptions = ref({
       type: 'text',
       width: '100px',
       sortable: false,
+      checkFreshness: true,
       options: {
         readonly: false,
         cellClass: 'text-xs font-bold rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',

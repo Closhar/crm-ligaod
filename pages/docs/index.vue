@@ -169,8 +169,7 @@
           <NuxtLink to="/docs/form-component#check-freshness" class="text-blue-600 hover:underline text-sm ml-3">
             Подробнее о проверке свежести данных &rarr;
           </NuxtLink>
-        </div>
-      </div>
+
       
       <div class="bg-amber-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-amber-800 flex items-center">
@@ -241,6 +240,8 @@
         </ul>
       </div>
     </div>
+  </div>
+</div>
   </div>
 </template>
 

@@ -589,12 +589,13 @@
                         :options="column.options"
                         :readonly="column.options.readonly"
                         :type="column.type"
-                        :value="row[column.name]"
-                        :modelValue="row[column.name]"
+                        v-model="row[column.name]"
                         :row-data="row"
                         @blur="handleBlur(row, column.name)"
-                        @update:modelValue="updateValue(row, column.name, $event)"
+                        @input="updateValue(row, column.name, $event)"
+                        @change="updateValue(row, column.name, $event)"
                         @keyup.enter="handleBlur(row, column.name)"
+                        @click="handleCellClick(row, column)"
                     />
                   </template>
                 </div>
@@ -668,6 +669,27 @@
             class="kirh-error mt-1 p-1.5 bg-red-50 text-red-600 rounded-sm border border-red-100 text-xs"
         >
           {{ error }}
+        </div>
+
+        <!-- Модальное окно для проверки свежести значения -->
+        <div v-if="showFreshnessModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Значение устарело</h3>
+            <p class="text-sm text-gray-600 mb-2">
+              Текущее значение на сервере: <span class="font-medium">{{ serverValue }}</span>
+            </p>
+            <p class="text-sm text-gray-600 mb-6">
+              Дата последнего обновления: <span class="font-medium">{{ updatedAt }}</span>
+            </p>
+            <div class="flex justify-end">
+              <button
+                  class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                  @click="updateCellValue"
+              >
+                Обновить значение
+              </button>
+            </div>
+          </div>
         </div>
 
       </div>
@@ -787,6 +809,11 @@ export default {
     const idFilter = ref(null);
     const showMobileFilters = ref(false);
     const isFieldSelectorCollapsed = ref(false);
+    const showFreshnessModal = ref(false);
+    const serverValue = ref('');
+    const updatedAt = ref('');
+    const currentCell = ref(null);
+    const isFreshnessChecked = ref(false);
 
     // Методы
     const getFieldComponent = (type) => {
@@ -907,9 +934,8 @@ export default {
     const updateValue = (row, fieldName, value) => {
       if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
 
-      const actualValue = typeof value === 'object' && value !== null && 'target' in value
-          ? value.target.value
-          : value;
+      // Получаем актуальное значение из события или напрямую
+      const actualValue = value?.target?.value ?? value;
 
       // Для всех полей обновляем локальное значение
       row[fieldName] = actualValue;
@@ -936,8 +962,35 @@ export default {
         };
       }
 
-      // Всегда сохраняем значение для всех типов полей, не только для toggle и не-текстовых
-      handleSelectChange(row, fieldName, actualValue);
+      // Обрабатываем разные типы полей по-разному
+      if (column) {
+        switch (column.type) {
+          case 'select':
+          case 'toggle':
+            handleSelectChange(row, fieldName, actualValue);
+            break;
+          case 'text':
+          case 'textarea':
+          case 'date':
+          case 'time':
+          case 'datetime':
+            // Для текстовых полей и полей даты/времени отправляем изменения напрямую
+            handleTextChange(row, fieldName, actualValue);
+            break;
+          default:
+            // Для остальных типов полей используем handleSelectChange
+            handleSelectChange(row, fieldName, actualValue);
+        }
+      } else {
+        // Если тип поля не определен, используем handleTextChange
+        handleTextChange(row, fieldName, actualValue);
+      }
+    };
+
+    // Новый метод для обработки изменений текстовых полей
+    const handleTextChange = (row, fieldName, value) => {
+      // Просто обновляем локальное значение
+      row[fieldName] = value;
     };
 
     // Обработка изменения в inline-селекте
@@ -1040,6 +1093,29 @@ export default {
           }
         }
 
+        // Проверяем, нужно ли проверять свежесть значения и не была ли уже проверка
+        if (column?.checkFreshness && !isFreshnessChecked.value) {
+          // Сохраняем текущую ячейку
+          currentCell.value = { row, column };
+          
+          const response = await fetch(`${props.apiUrl}/${row.id}/check-freshness?field=${fieldName}&value=${encodeURIComponent(row[fieldName] || '')}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const data = await response.json();
+
+          if (!data.is_fresh) {
+            // Показываем модальное окно с выбором действия
+            serverValue.value = data.server_value;
+            updatedAt.value = data.updated_at;
+            showFreshnessModal.value = true;
+            return;
+          }
+        }
+
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
           headers: {
@@ -1053,6 +1129,7 @@ export default {
         }
 
         await fetchData();
+        isFreshnessChecked.value = false; // Сбрасываем флаг после успешного сохранения
       } catch (err) {
         error.value = err.message;
         console.error('Ошибка при сохранении:', err);
@@ -1664,6 +1741,106 @@ export default {
       isFieldSelectorCollapsed.value = !isFieldSelectorCollapsed.value;
     };
 
+    // Метод для сохранения изменений текстовых полей
+    const saveTextChanges = async (row, fieldName, value) => {
+      try {
+        // Отправляем на сервер
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({[fieldName]: value})
+        });
+
+        if (!response.ok) {
+          // Если ошибка - возвращаем старое значение
+          const oldValue = row[fieldName];
+          row[fieldName] = oldValue;
+          throw new Error(await response.text());
+        }
+
+        // Полностью обновляем данные из сервера после успешного сохранения
+        await fetchData();
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при сохранении:', err);
+      }
+    };
+
+    const handleCellClick = async (row, column) => {
+      try {
+        // Проверяем, нужно ли проверять свежесть значения и не была ли уже проверка
+        if (column?.checkFreshness && !isFreshnessChecked.value) {
+          // Сохраняем текущую ячейку
+          currentCell.value = { row, column };
+          
+          const response = await fetch(`${props.apiUrl}/${row.id}/check-freshness?field=${column.name}&value=${encodeURIComponent(row[column.name] || '')}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const data = await response.json();
+
+          if (!data.is_fresh) {
+            // Показываем модальное окно с выбором действия
+            serverValue.value = data.server_value;
+            updatedAt.value = formatDate(data.updated_at); // Форматируем дату
+            showFreshnessModal.value = true;
+            return;
+          }
+        }
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при проверке свежести значения:', err);
+      }
+    };
+
+    const updateCellValue = async () => {
+      try {
+        if (!currentCell.value) return;
+        
+        const { row, column } = currentCell.value;
+        row[column.name] = serverValue.value;
+        
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({[column.name]: serverValue.value})
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        await fetchData();
+        showFreshnessModal.value = false;
+        isFreshnessChecked.value = false; // Сбрасываем флаг после обновления значения
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при обновлении значения:', err);
+      }
+    };
+
+    // Добавляем метод форматирования даты
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      
+      const date = new Date(dateString);
+      return date.toLocaleString('ru-RU', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    };
+
     return {
       tableData,
       loading,
@@ -1738,6 +1915,13 @@ export default {
       showMobileFilters,
       isFieldSelectorCollapsed,
       toggleFieldSelectorCollapse,
+      saveTextChanges,
+      showFreshnessModal,
+      serverValue,
+      updatedAt,
+      updateCellValue,
+      handleCellClick,
+      formatDate, // Добавляем метод в возвращаемый объект
     };
   }
 };
