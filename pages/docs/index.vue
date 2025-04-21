@@ -75,6 +75,102 @@
       </div>
       
       <h2 class="text-xl font-bold mb-4 mt-8 pt-6 border-t">История версий</h2>
+
+            
+      <div class="bg-emerald-50 p-4 rounded-md shadow mb-4">
+        <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Версия 1.2 (21.04.2025)
+        </h3>
+        <div class="text-gray-700 mb-2">
+          <h4 class="font-semibold text-emerald-700">Новые возможности:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Добавлен функционал быстрого добавления связанных сущностей из формы</li>
+            <li>Добавлена кнопка вставки из буфера обмена для текстовых полей</li>
+            <li>Реализовано преобразование текста при вставке через настраиваемую функцию transform</li>
+            <li>Добавлена проверка свежести данных в полях таблицы через параметр checkFreshness - проверяется актуальность данных перед редактированием (для полей результат и доп.результат в разделе Матчи и события)</li>
+            <li>Добавлена горизонтальная прокрутка в таблице (для отображения всех колонок при большой ширине)</li>
+            <li>Добавлены кнопки фильтрации в ячейках таблицы для быстрой фильтрации данных (для поля Серии в разделе Матчи и события) и добавлены индикаторы активных фильтров в заголовках колонок</li>
+          </ul>
+          
+          <h4 class="font-semibold text-emerald-700">Исправления:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Исправлено отображение имен вместо ID после быстрого добавления в селекте</li>
+            <li>Исправлен вывод пустого объекта в поле выбора KirhSelectField</li>
+            <li>Улучшена обработка пустых значений в формах</li>
+            <li>Исправлена проблема с двойной отправкой запросов при изменении toggle-полей</li>
+          </ul>
+          
+          <h4 class="font-semibold text-emerald-700">Улучшения:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Оптимизирована работа с селектами для корректного отображения имен</li>
+            <li>Добавлена документация по версиям компонентов</li>
+            <li>Оптимизирована работа с placeholder в компонентах выбора</li>
+            <li>Добавлена возможность настройки размера иконки для кнопки фильтрации</li>
+            <li>Реализован механизм предотвращения конфликтов при одновременном редактировании</li>
+            <li>Добавлена адаптация для мобильных устройств</li>
+          </ul>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример настройки быстрого добавления связанных сущностей:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>formOptions: {
+  // ... другие настройки ...
+  quickAdd: [
+    {
+      label: 'Добавить организацию',
+      apiUrl: '/api/organizations',
+      fillField: 'organization_id',
+      fields: [...]
+    }
+  ]
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример использования кнопки фильтрации в колонке:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>filter_button: {
+  enabled: true,
+  icon: 'material-symbols:filter-alt',
+  icon_size: '1.2em',
+  tooltip: 'Фильтровать по значению',
+  class: 'ml-1 p-1 bg-blue-500 text-white rounded',
+  param_name: 'field_name'
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример использования вставки из буфера обмена:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
+  pasteFromClipboard: {
+    title: 'Вставить email',
+    transform: 'return text.trim().toLowerCase();'
+  }
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
+            <p class="font-semibold">Пример включения проверки свежести данных:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
+  checkFreshness: true, // Включает проверку актуальности перед редактированием
+  // Другие параметры...
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/form-component#quick-add" class="text-blue-600 hover:underline text-sm mr-3">
+            Подробнее о быстром добавлении &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/form-component#paste-from-clipboard" class="text-blue-600 hover:underline text-sm">
+            Подробнее о вставке из буфера обмена &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/form-component#check-freshness" class="text-blue-600 hover:underline text-sm ml-3">
+            Подробнее о проверке свежести данных &rarr;
+          </NuxtLink>
+        </div>
+      </div>
       
       <div class="bg-amber-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-amber-800 flex items-center">
@@ -116,91 +212,7 @@
           </NuxtLink>
         </div>
       </div>
-      
-      <div class="bg-emerald-50 p-4 rounded-md shadow mb-4">
-        <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          Версия 1.2 (Май 2024)
-        </h3>
-        <div class="text-gray-700 mb-2">
-          <h4 class="font-semibold text-emerald-700">Новые возможности:</h4>
-          <ul class="list-disc list-inside ml-2 mb-2">
-            <li>Добавлен функционал быстрого добавления связанных сущностей из формы</li>
-            <li>Создано глобальное хранилище объектов для селектов</li>
-            <li>Реализовано персистентное хранение данных селектов в localStorage</li>
-            <li>Улучшено отображение имен вместо ID после быстрого добавления</li>
-            <li>Добавлена кнопка вставки из буфера обмена для текстовых полей</li>
-            <li>Реализовано преобразование текста при вставке через настраиваемую функцию transform</li>
-          </ul>
-          
-          <h4 class="font-semibold text-emerald-700">Исправления:</h4>
-          <ul class="list-disc list-inside ml-2 mb-2">
-            <li>Исправлен вывод пустого объекта в поле выбора KirhSelectField</li>
-            <li>Улучшена обработка пустых значений в формах</li>
-            <li>Исправлена проблема с двойной отправкой запросов при изменении toggle-полей</li>
-            <li>Добавлена поддержка Vue 3 с обратной совместимостью для toggle-компонентов</li>
-          </ul>
-          
-          <h4 class="font-semibold text-emerald-700">Улучшения:</h4>
-          <ul class="list-disc list-inside ml-2 mb-2">
-            <li>Оптимизирована работа с селектами для корректного отображения имен</li>
-            <li>Добавлена документация по версиям компонентов</li>
-            <li>Оптимизирована работа с placeholder в компонентах выбора</li>
-            <li>Добавлены кнопки фильтрации в ячейках таблицы для быстрой фильтрации данных</li>
-            <li>Добавлена возможность настройки размера иконки для кнопки фильтрации</li>
-            <li>Добавлены индикаторы активных фильтров в заголовках колонок</li>
-            <li>KirhToggleField теперь поддерживает Vue 3 modelValue/update:modelValue API</li>
-            <li>Улучшена интеграция с API буфера обмена для удобной вставки данных</li>
-          </ul>
-          
-          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
-            <p class="font-semibold">Пример настройки быстрого добавления связанных сущностей:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>formOptions: {
-  // ... другие настройки ...
-  quickAdd: [
-    {
-      label: 'Добавить организацию',
-      apiUrl: '/api/organizations',
-      fillField: 'organization_id',
-      fields: [...]
-    }
-  ]
-}</code></pre>
-          </div>
-          
-          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
-            <p class="font-semibold">Пример использования кнопки фильтрации в колонке:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>filter_button: {
-  enabled: true,
-  icon: 'material-symbols:filter-alt',
-  icon_size: '1.2em',
-  tooltip: 'Фильтровать по значению',
-  class: 'ml-1 p-1 bg-blue-500 text-white rounded',
-  param_name: 'field_name'
-}</code></pre>
-          </div>
-          
-          <div class="bg-white p-3 rounded-md text-sm border border-emerald-200 mb-2">
-            <p class="font-semibold">Пример использования вставки из буфера обмена:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
-  pasteFromClipboard: {
-    title: 'Вставить email',
-    transform: 'return text.trim().toLowerCase();'
-  }
-}</code></pre>
-          </div>
-          
-          <NuxtLink to="/docs/form-component#quick-add" class="text-blue-600 hover:underline text-sm mr-3">
-            Подробнее о быстром добавлении &rarr;
-          </NuxtLink>
-          
-          <NuxtLink to="/docs/form-component#paste-from-clipboard" class="text-blue-600 hover:underline text-sm">
-            Подробнее о вставке из буфера обмена &rarr;
-          </NuxtLink>
-        </div>
-      </div>
+
       
       <div class="bg-emerald-50 p-4 rounded-md shadow">
         <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">

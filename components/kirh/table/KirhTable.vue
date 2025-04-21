@@ -21,10 +21,25 @@
     <!-- Таблица -->
     <div class="flex flex-1 min-h-0">
 
+      <!-- Кнопка управления панелью -->
+      <button
+          v-if="showFieldSelector"
+          class="kirh-field-selector-toggle fixed left-0 top-1/2 transform -translate-y-1/2 z-10 bg-white border border-gray-200 rounded-r-lg shadow-sm hover:bg-gray-50 transition-all duration-200 p-1.5"
+          @click="toggleFieldSelectorCollapse"
+          :title="isFieldSelectorCollapsed ? 'Развернуть панель' : 'Свернуть панель'"
+      >
+        <Icon 
+            :name="isFieldSelectorCollapsed ? 'material-symbols:chevron-right' : 'material-symbols:chevron-left'" 
+            size="1.2em" 
+            class="text-gray-600"
+        />
+      </button>
+
       <!-- Панель выбора полей дополнительного редактирования -->
       <div
           v-if="showFieldSelector"
-          class="kirh-field-selector w-56 bg-gray-50 border-r border-gray-200 p-2 overflow-y-auto flex-shrink-0"
+          :class="{'kirh-field-selector-collapsed': isFieldSelectorCollapsed}"
+          class="kirh-field-selector w-56 bg-gray-50 border-r border-gray-200 p-2 overflow-y-auto flex-shrink-0 transition-all duration-300 relative"
       >
         <div class="flex justify-between items-center mb-2">
           <span class="text-xs font-medium text-gray-500">Выберите поля для редактирования</span>
@@ -65,43 +80,46 @@
       <div
           :class="containerClass"
           :style="containerStyle"
-          class="kirh-table-container bg-white rounded-sm shadow-xs p-1 relative border border-gray-100 flex-1 "
+          class="kirh-table-container bg-white rounded-sm shadow-xs p-1 relative border border-gray-100 flex-1 flex flex-col"
       >
-
         <!-- Прелоадер -->
-        <div v-if="loading" class="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
-          <div class="loader animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        <div v-if="loading" class="fixed inset-0 flex items-center justify-center z-50">
+          <img src="/ldr.png" class="loader-image" alt="Loading...">
         </div>
 
         <!-- Панель управления с пагинацией, обновление/сброс, toggle-фильтры, текстовый поиск -->
-        <div class="kirh-controls flex justify-between items-center mb-1 p-2 bg-blue-50">
-
-          <div class="kirh-pagination flex items-center gap-2 text-xs">
+        <div class="kirh-controls flex flex-wrap gap-1 items-center mb-1 p-1.5 bg-blue-50 w-full">
+          <div class="kirh-pagination flex items-left gap-1 text-xs">
 
             <!-- Пагинация -->
-            <span v-if="tableOptions.pagination" class="text-gray-500">Всего: {{ totalItems }}</span>
+            <span v-if="tableOptions.pagination" class="text-gray-500 text-xs">Всего: {{ totalItems }}</span>
             <button
                 v-if="tableOptions.pagination"
                 :disabled="currentPage === 1 || loading"
-                class="kirh-pagination-btn px-1.5 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
+                class="kirh-pagination-btn px-1 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
                 @click="prevPage"
             >
-              <Icon name="emojione-v1:left-arrow" size="2em" />
+              <Icon name="emojione-v1:left-arrow" size="1.5em" />
             </button>
-            <span v-if="tableOptions.pagination" class="kirh-page-info mx-1">{{ currentPage }}/{{ totalPages }}</span>
+            <span v-if="tableOptions.pagination" class="kirh-page-info mx-0.5 text-xs">{{ currentPage }}/{{ totalPages }}</span>
             <button
                 v-if="tableOptions.pagination"
                 :disabled="currentPage === totalPages || loading"
-                class="kirh-pagination-btn px-1.5 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
+                class="kirh-pagination-btn px-1 py-0.5 rounded-sm disabled:opacity-50 hover:bg-gray-50"
                 @click="nextPage"
             >
-              <Icon name="emojione-v1:right-arrow" size="2em" />
+              <Icon name="emojione-v1:right-arrow" size="1.5em" />
             </button>
 
-            <!-- Кнопка обновления таблицы -->
+            
+          </div>
+
+          <div class="flex flex-row gap-1">
+
+<!-- Кнопка обновления таблицы -->
             <button
                 :disabled="loading"
-                class="refresh-btn text-xs bg-blue-500 hover:bg-blue-400 text-gray-50 px-3 py-1 mb-1 rounded-md flex items-center gap-1 transition-colors shadow-sm"
+                class="refresh-btn text-xs bg-blue-500 hover:bg-blue-400 text-gray-50 px-3 py-1 rounded-md flex items-left gap-1 transition-colors shadow-sm"
                 title="Обновить данные"
                 @click="fetchData"
             >
@@ -118,7 +136,7 @@
             <!-- Кнопка сброса фильтров -->
             <button
                 v-if="tableOptions.enableResetFilters"
-                :class="tableOptions.resetFiltersClass || 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'"
+                :class="tableOptions.resetFiltersClass || 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed'"
                 :disabled="isResetDisabled"
                 @click="resetAllFilters"
             >
@@ -133,20 +151,18 @@
 
           </div>
 
-          <div class="kirh-pagination flex items-center gap-2 text-xs">
-
-            <!-- Дополнительные фильтры -->
+            <div class="kirh-pagination flex items-center gap-2 text-xs">
+              <!-- Дополнительные фильтры -->
             <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
-
               <ToggleFilter
                   v-if="filter.type === 'toggle'"
                   v-model="selectedFilters[filter.field]"
                   :active-class="filter.activeClass || 'bg-blue-500 text-white'"
                   :filter="filter"
                   :disabled="!!idFilter"
+                  class="hidden md:block"
                   @update:modelValue="applyFilters"
               />
-
             </div>
 
             <!-- Строковый фильтр -->
@@ -175,19 +191,15 @@
 
             <!-- Информация об отключении редактирования -->
             <div class="bg-red-600 text-gray-50 px-2" v-if="!tableOptions.editable">
-            Ред.выкл
+              Ред.выкл
             </div>
-
           </div>
-
         </div>
 
         <!-- Кнопка управления панелью выбора полей и фильтры -->
-        <div class="flex mb-1 justify-between items-center">
-
+        <div class="flex flex-wrap gap-2 mb-1 justify-between items-center w-full">
           <!-- Блок выбора полей -->
           <div class="flex items-center gap-2" v-if="tableOptions.separateFields">
-
             <!-- Кнопка управления панелью выбора полей -->
             <button
                 class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-2.5 rounded-md flex items-center gap-1 transition-colors shadow-sm"
@@ -199,374 +211,455 @@
               </svg>
               {{ showFieldSelector ? 'Закрыть панель' : 'Панель редактора отдельных полей' }}
             </button>
-
           </div>
 
           <!-- Блок Фильтры -->
           <div class="flex items-center gap-2">
+            <!-- Кнопка мобильного меню фильтров -->
+            <button
+                class="md:hidden text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-2.5 rounded-md flex items-center gap-1 transition-colors shadow-sm"
+                @click="showMobileFilters = !showMobileFilters"
+            >
+              <Icon name="material-symbols:filter-list" size="1.2em" />
+              Фильтры
+            </button>
 
-            <!-- Селект фильтры -->
-            <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
-              <KirhSelectField
-                  v-if="filter.type !== 'toggle'"
-                  v-model="selectedFilters[filter.field]"
-                  :api-params="filter.apiParams"
-                  :api-url="filter.apiUrl"
-                  :empty-option="filter.empty_option"
-                  :emptyable="filter.options?.emptyable"
-                  :enableSearch="filter.options?.enableSearch"
-                  :label="filter.label"
-                  :icon-field="filter.iconField"
-                  :image-field="filter.imageField"
-                  :key-field="filter.keyField || 'id'"
-                  :label-field="filter.labelField || 'name'"
-                  :limit="filter.limit || null"
-                  :list_item="filter.list_item || null"
-                  :options="filter.options"
-                  :options_list="filter.options_list || null"
-                  :placeholder="filter.placeholder || filter.label"
-                  :sel_class="filter.sel_class || null"
-                  :disabled="!!idFilter"
-                  @update:modelValue="applyFilters"
-              />
-
+            <!-- Десктопные фильтры -->
+            <div class="hidden md:flex flex-wrap items-center gap-2">
+              <!-- Селект фильтры -->
+              <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
+                <KirhSelectField
+                    v-if="filter.type !== 'toggle'"
+                    v-model="selectedFilters[filter.field]"
+                    :api-params="filter.apiParams"
+                    :api-url="filter.apiUrl"
+                    :emptyOption="filter.emptyOption"
+                    :emptyable="filter.options?.emptyable"
+                    :enableSearch="filter.options?.enableSearch"
+                    :label="filter.label"
+                    :icon-field="filter.iconField"
+                    :image-field="filter.imageField"
+                    :key-field="filter.keyField || 'id'"
+                    :label-field="filter.labelField || 'name'"
+                    :limit="filter.limit || null"
+                    :list_item="filter.list_item || null"
+                    :options="filter.options"
+                    :options_list="filter.options_list || null"
+                    :placeholder="filter.placeholder || filter.label"
+                    :sel_class="filter.sel_class || null"
+                    :disabled="!!idFilter"
+                    @update:modelValue="applyFilters"
+                />
+              </div>
             </div>
-
           </div>
-
         </div>
 
-        <!-- Таблица -->
-        <div class="kirh-table w-full">
-
-          <!-- Заголовки -->
-          <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
-            <!-- ID фильтр заголовок (отображается только если включен showIdFilter) -->
-            <div 
-                v-if="tableOptions.showIdFilter"
-                class="kirh-header-cell flex items-center justify-center group relative bg-gray-100 px-2 py-2 border border-gray-200 rounded"
-                style="flex: 0 0 60px;"
-            >
-              <Icon name="mdi:filter-outline" size="1.5em" class="text-gray-500"/>
-            </div>
-            
-            <div
-                v-for="(column, colIndex) in visibleColumns"
-                :key="`header-${column.name}-${colIndex}`"
-                :style="getColumnStyle(column)"
-                class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
-            >
-              <div class="flex items-center text-center mx-1">
-                <!-- Иконка (если есть title_icon, показываем только иконку) -->
-                <Icon 
-                    v-if="column.title_icon" 
-                    :name="column.title_icon" 
-                    size="1.5em" 
-                    class="flex-shrink-0"
-                    :title="column.displayLabel || column.label || ''"
-                />
-                
-                <!-- Текст заголовка (показываем только если label не пустой) -->
-                <span 
-                    v-if="!column.title_icon && column.label && column.label !== ''" 
-                    class="truncate"
-                >
-                  {{ column.label }}
-                </span>
-                
-                <!-- Индикатор активного фильтра для колонки -->
-                <div 
-                  v-if="column.filter_button && isColumnFilterActive(column)"
-                  class="ml-1 flex items-center"
-                >
-                  <div class="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                    <Icon name="material-symbols:filter-alt" size="0.7em" />
-                  </div>
-                  <button 
-                    class="ml-1 text-xs text-red-500 hover:text-red-700" 
-                    title="Сбросить фильтр"
-                    @click="clearColumnFilter(column)"
-                  >
-                    <Icon name="material-symbols:close" size="0.8em" />
-                  </button>
-                </div>
-                
-                <!-- Ссылка в заголовке -->
-                <a 
-                    v-if="column.options?.link_in_title" 
-                    :href="column.options?.link_in_title" 
-                    class="text-blue-600 hover:text-blue-500" 
-                    target="_blank"
-                >
-                  <Icon 
-                      name="lucide:external-link" 
-                      size="1.2em" 
-                      class="ml-1" 
-                      :title="column.options?.hint_in_link || ''"
-                  />
-                </a>
-                
-                <!-- Подсказка -->
-                <div v-if="column.options?.hint" class="relative">
-                  <svg 
-                      class="h-3 w-3 text-gray-400" 
-                      fill="currentColor" 
-                      viewBox="0 0 20 20"
-                      xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                        clip-rule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
-                        fill-rule="evenodd"
-                    ></path>
-                  </svg>
-                  <div
-                      class="absolute z-20 bottom-full -left-20 mb-2 hidden group-hover:block bg-gray-700 text-white text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg"
-                  >
-                    {{ column.options.hint }}
-                  </div>
-                </div>
-              </div>
+        <!-- Мобильное меню фильтров -->
+        <div v-if="showMobileFilters" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 md:hidden">
+          <div class="bg-white rounded-lg shadow-xl p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-medium text-gray-900">Фильтры</h3>
               <button
-                  v-if="tableOptions.sortable && column.sortable !== false"
-                  class="kirh-sort-btn ml-0.5 text-gray-500 hover:text-gray-800 transition-colors text-xs"
-                  @click="sortBy(column.name)"
+                  class="text-gray-500 hover:text-gray-700"
+                  @click="showMobileFilters = false"
               >
-                {{ sortField === column.name ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}
+                <Icon name="material-symbols:close" size="1.5em" />
               </button>
             </div>
-            <div
-                v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
-                class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
-                style="flex: 0 0 80px;"
-            >
-              <span class="text-xs">Действия</span>
+            
+            <div class="flex flex-col gap-4">
+              <!-- Мобильные фильтры -->
+              <div v-for="(filter, index) in additionalFilters" :key="index" class="flex flex-col gap-2">
+                <label class="text-sm font-medium text-gray-700">{{ filter.label }}</label>
+                <KirhSelectField
+                    v-if="filter.type !== 'toggle'"
+                    v-model="selectedFilters[filter.field]"
+                    :api-params="filter.apiParams"
+                    :api-url="filter.apiUrl"
+                    :emptyOption="filter.emptyOption"
+                    :emptyable="filter.options?.emptyable"
+                    :enableSearch="filter.options?.enableSearch"
+                    :label="filter.label"
+                    :icon-field="filter.iconField"
+                    :image-field="filter.imageField"
+                    :key-field="filter.keyField || 'id'"
+                    :label-field="filter.labelField || 'name'"
+                    :limit="filter.limit || null"
+                    :list_item="filter.list_item || null"
+                    :options="filter.options"
+                    :options_list="filter.options_list || null"
+                    :placeholder="filter.placeholder || filter.label"
+                    :sel_class="filter.sel_class || null"
+                    :disabled="!!idFilter"
+                    @update:modelValue="applyFilters"
+                />
+                <ToggleFilter
+                    v-if="filter.type === 'toggle'"
+                    v-model="selectedFilters[filter.field]"
+                    :active-class="filter.activeClass || 'bg-blue-500 text-white'"
+                    :filter="filter"
+                    :disabled="!!idFilter"
+                    class="hidden md:block"
+                    @update:modelValue="applyFilters"
+                />
+              </div>
+              
+              <div class="flex justify-end gap-2 mt-4">
+                <button
+                    class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    @click="showMobileFilters = false"
+                >
+                  Закрыть
+                </button>
+                <button
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    @click="applyFilters"
+                >
+                  Применить
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          <!-- Тело таблицы -->
-          <div class="kirh-body">
-            <div
-                v-for="(row, rowIndex) in displayedData"
-                :key="row.id || `row-${rowIndex}`"
-                :class="{'bg-gray-50': rowIndex % 2 === 0}"
-                class="kirh-row flex hover:bg-gray-50 text-xs"
-            >
-              <!-- ID фильтр ячейка (отображается только если включен showIdFilter) -->
+        <!-- Контейнер с горизонтальной прокруткой для таблицы -->
+        <div class="kirh-table-scroll-container overflow-x-auto">
+          <!-- Таблица -->
+          <div class="kirh-table w-full min-w-max">
+
+            <!-- Заголовки -->
+            <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
+              <!-- ID фильтр заголовок (отображается только если включен showIdFilter) -->
               <div 
                   v-if="tableOptions.showIdFilter"
-                  class="kirh-cell border-b border-gray-100 flex items-center justify-center"
+                  class="kirh-header-cell flex items-center justify-center group relative bg-gray-100 px-2 py-2 border border-gray-200 rounded"
                   style="flex: 0 0 60px;"
               >
-                <button 
-                    class="text-xs px-2 py-1 transition-colors"
-                    @click="toggleIdFilter(row.id)"
-                    :title="idFilter === row.id ? 'Отменить фильтр по ID: ' + row.id : 'Фильтровать по ID: ' + row.id"
-                >
-                  <Icon 
-                    :name="idFilter === row.id ? 'mdi:filter-remove' : 'mdi:filter'" 
-                    :class="idFilter === row.id ? 'text-red-600' : 'text-blue-600'"
-                    size="1.5em"
-                  />
-                  <span class="sr-only">{{ row.id }}</span>
-                </button>
+                <Icon name="mdi:filter-outline" size="1.5em" class="text-gray-500"/>
               </div>
               
               <div
                   v-for="(column, colIndex) in visibleColumns"
-                  :key="`cell-${rowIndex}-${column.name}-${colIndex}`"
+                  :key="`header-${column.name}-${colIndex}`"
                   :style="getColumnStyle(column)"
-                  class="kirh-cell border-b border-gray-100 text-center"
+                  class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
               >
-                <!-- Select-поле -->
-                <template v-if="column.type === 'select'">
-                  <!-- Локальный селект -->
-                  <KirhSelectField
-                      v-if="column.options?.options"
-                      v-model="row[column.name]"
-                      :icon-field="column.options.iconField"
-                      :image-field="column.options.imageField"
-                      :label="column.label"
-                      :key-field="column.options.keyField || 'id'"
-                      :label-field="column.options.labelField || 'name'"
-                      :limit="column.options.limit || null"
-                      :options="column.options.options"
-                      :emptyable="column.options?.emptyable"
-                      :enablSearch="column.options?.enableSearch"
-                      @update:modelValue="(val) => handleSelectChange(row, column.name, val)"
+                <div class="flex items-center text-center mx-1">
+                  
+                  <Icon 
+                      v-if="column.title_icon" 
+                      :name="column.title_icon" 
+                      size="1.5em" 
+                      class="flex-shrink-0 mr-1"
+                      :title="column.displayLabel || column.label || ''"
                   />
-
-                  <!-- API селект -->
-                  <div v-else class="border border-gray-200 h-8 rounded">
-                    <!-- Статическое отображение -->
-                    <div
-                        v-if="!isActiveSelect(row.id, column.name)"
-                        class="flex items-center justify-between cursor-pointer hover:bg-gray-200 rounded h-8 p-1"
-                        @click="openInlineSelect(row, column)"
-                    >
-                      <div class="flex items-center min-w-0">
-                        <!-- Изображение -->
-                        <img
-                            v-if="getSelectImage(row, column)"
-                            :src="getSelectImage(row, column)"
-                            class="h-5 w-5 rounded-full mr-2 object-cover flex-shrink-0"
-                        />
-                        <!-- Иконка -->
-                        <Icon
-                            v-else-if="getSelectIcon(row, column)"
-                            :name="getSelectIcon(row, column)"
-                            class="h-5 w-5 mr-2 text-gray-600 flex-shrink-0"
-                        />
-                        <!-- Текст -->
-                        <span class="truncate">
-                          {{ getSelectLabel(row, column) || 'Не выбрано' }}
-                        </span>
-                      </div>
-                      <div class="flex items-center">
-                        <!-- Кнопка фильтрации (если настроена) -->
-                        <button 
-                          v-if="column.filter_button && column.filter_button.enabled && row[column.name]"
-                          class="mr-1"
-                          :class="column.filter_button.class || 'text-blue-500 hover:text-blue-700'"
-                          :title="isColumnFiltered(column, row[column.name]) 
-                            ? `Отменить фильтр по ${column.label}` 
-                            : `Фильтровать по ${column.label}`"
-                          @click.stop="filterByColumnValue(column, row[column.name])"
-                        >
-                          <Icon 
-                            :name="isColumnFiltered(column, row[column.name]) 
-                              ? (column.filter_button.active_icon || 'material-symbols:filter-alt-off') 
-                              : (column.filter_button.icon || 'material-symbols:filter-alt')" 
-                            :class="isColumnFiltered(column, row[column.name]) 
-                              ? 'text-red-500' 
-                              : ''"
-                            :size="column.filter_button.icon_size || '1.2em'"
-                          />
-                        </button>
-                        <Icon class="text-gray-400" name="mingcute:pencil-fill" size="16"/>
-                      </div>
+                  
+                  <!-- Текст заголовка (показываем только если label не пустой) -->
+                  <span 
+                      v-if="column.label && column.label !== ''" 
+                      class="truncate"
+                  >
+                    {{ column.label }}
+                  </span>
+                  
+                  <!-- Индикатор активного фильтра для колонки -->
+                  <div 
+                    v-if="column.filter_button && isColumnFilterActive(column)"
+                    class="ml-1 flex items-center"
+                  >
+                    <div class="bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                      <Icon name="material-symbols:filter-alt" size="0.7em" />
                     </div>
+                    <button 
+                      class="ml-1 text-xs text-red-500 hover:text-red-700" 
+                      title="Сбросить фильтр"
+                      @click="clearColumnFilter(column)"
+                    >
+                      <Icon name="material-symbols:close" size="1em" />
+                    </button>
+                  </div>
+                  
+                  <!-- Ссылка в заголовке -->
+                  <a 
+                      v-if="column.options?.link_in_title" 
+                      :href="column.options?.link_in_title" 
+                      class="text-blue-600 hover:text-blue-500" 
+                      target="_blank"
+                  >
+                    <Icon 
+                        name="lucide:external-link" 
+                        size="1.2em" 
+                        class="ml-1" 
+                        :title="column.options?.hint_in_link || ''"
+                    />
+                  </a>
+                  
+                  <!-- Подсказка -->
+                  <div v-if="column.options?.hint" class="relative ml-1">
+                    <svg 
+                        class="h-3 w-3 text-gray-400" 
+                        fill="currentColor" 
+                        viewBox="0 0 20 20"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path 
+                          clip-rule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z"
+                          fill-rule="evenodd"
+                      ></path>
+                    </svg>
+                    <div
+                        class="absolute z-20 hidden group-hover:block bg-white text-gray-700 text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg border border-gray-200"
+                        style="transform: translate(-50%, 10px); left: 50%;"
+                    >
+                      {{ column.options.hint }}
+                    </div>
+                  </div>
 
-                    <!-- Редактируемый селект -->
+                </div>
+                <button
+                    v-if="tableOptions.sortable && column.sortable !== false"
+                    class="kirh-sort-btn ml-0.5 text-gray-500 hover:text-gray-800 transition-colors text-xs"
+                    @click="sortBy(column.name)"
+                >
+                  {{ sortField === column.name ? (sortDirection === 'asc' ? '↑' : '↓') : '↕' }}
+                </button>
+              </div>
+              <div
+                  v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
+                  class="kirh-header-cell flex items-center justify-between group relative bg-gray-100 px-2 py-2 w-full border border-gray-200 rounded"
+                  style="flex: 0 0 80px;"
+              >
+              <Icon name="fluent:table-edit-20-regular" size="1.5em" class="text-green-600 mx-auto" />
+              </div>
+            </div>
+
+            <!-- Тело таблицы -->
+            <div class="kirh-body">
+              <div
+                  v-for="(row, rowIndex) in displayedData"
+                  :key="row.id || `row-${rowIndex}`"
+                  :class="{'bg-gray-50': rowIndex % 2 === 0}"
+                  class="kirh-row flex hover:bg-gray-50 text-xs"
+              >
+                <!-- ID фильтр ячейка (отображается только если включен showIdFilter) -->
+                <div 
+                    v-if="tableOptions.showIdFilter"
+                    class="kirh-cell border-b border-gray-100 flex items-center justify-center"
+                    style="flex: 0 0 60px;"
+                >
+                  <button 
+                      class="text-xs px-2 py-1 transition-colors"
+                      @click="toggleIdFilter(row.id)"
+                      :title="idFilter === row.id ? 'Отменить фильтр по ID: ' + row.id : 'Фильтровать по ID: ' + row.id"
+                  >
+                    <Icon 
+                      :name="idFilter === row.id ? 'mdi:filter-remove' : 'mdi:filter'" 
+                      :class="idFilter === row.id ? 'text-red-600' : 'text-blue-600'"
+                      size="1.5em"
+                    />
+                    <span class="sr-only">{{ row.id }}</span>
+                  </button>
+                </div>
+                
+                <div
+                    v-for="(column, colIndex) in visibleColumns"
+                    :key="`cell-${rowIndex}-${column.name}-${colIndex}`"
+                    :style="getColumnStyle(column)"
+                    class="kirh-cell border-b border-gray-100 text-center"
+                >
+                  <!-- Select-поле -->
+                  <template v-if="column.type === 'select'">
+                    <!-- Локальный селект -->
                     <KirhSelectField
-                        v-else
-                        ref="inlineSelectRef"
-                        v-model="selectValues[row.id][column.name]"
-                        :api-params="getSelectApiParams(column, row)"
-                        :api-url="column.options.apiUrl"
-                        :class="column.options.sel_class || 'w-full'"
+                        v-if="column.options?.options"
+                        v-model="row[column.name]"
                         :icon-field="column.options.iconField"
                         :image-field="column.options.imageField"
-                        :key-field="column.options.keyField || 'id'"
                         :label="column.label"
+                        :key-field="column.options.keyField || 'id'"
                         :label-field="column.options.labelField || 'name'"
+                        :emptyOption="column.emptyOption"
                         :limit="column.options.limit || null"
-                        :list_item="column.options.list_item || null"
                         :options="column.options.options"
-                        :enableSearch="column.options?.enableSearch"
                         :emptyable="column.options?.emptyable"
-                        :options_list="column.options.options_list || null"
-                        :placeholder="column.options.placeholder || column.label"
-                        :sel_class="column.options.sel_class || null"
-                        auto-focus
-                        @blur="handleSelectBlur(row, column)"
+                        :enablSearch="column.options?.enableSearch"
                         @update:modelValue="(val) => handleSelectChange(row, column.name, val)"
                     />
-                  </div>
-                </template>
 
-                <template v-else-if="column.type === 'image'">
-                  <KirhImageField
-                      :value="row[column.name]"
-                      :options="column.options"
-                      @click="() => openInlineSelect(row, column)"
-                      :row-data="row"
-                      :error="imageErrors[`${row.id}-${column.name}`]"
-                      @update:modelValue="(val) => handleImageChange(row, column.name, val)"
-                      @change="(val) => handleImageChange(row, column.name, val)"
-                      @clear-error="clearImageError(row.id, column.name)"
-                  />
-                </template>
-
-                <!-- Другие типы полей -->
-                <template v-else>
-                  <component
-                      :is="getFieldComponent(column.type)"
-                      :error="error"
-                      :options="column.options"
-                      :readonly="column.options.readonly"
-                      :type="column.type"
-                      :value="row[column.name]"
-                      :modelValue="row[column.name]"
-                      :row-data="row"
-                      @blur="handleBlur(row, column.name)"
-                      @update:modelValue="updateValue(row, column.name, $event)"
-                      @change="(val) => handleSelectChange(row, column.name, val)"
-                      @keyup.enter="handleBlur(row, column.name)"
-                  />
-                </template>
-              </div>
-
-              <div v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
-                   class="kirh-actions-cell border-b border-gray-100 flex gap-1 items-center justify-center"
-                   style="flex: 0 0 80px;"
-              >
-                <button v-if="tableOptions.editrow && tableOptions.editable"
-                        class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
-                        title="Редактировать"
-                        @click="editRow(row)"
-                >
-                  <Icon name="akar-icons:edit" size="1.5em"/>
-                </button>
-                <button v-if="tableOptions.deleteable"
-                        class="kirh-delete-btn text-red-500 hover:text-red-700 transition-colors p-0.5"
-                        title="Удалить"
-                        @click="confirmDelete(row)"
-                >
-                  <Icon name="mynaui:trash" size="1.5em"/>
-                </button>
-
-                <!-- Модальное окно подтверждения удаления -->
-                <div v-if="showDeleteModal"
-                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Подтверждение удаления</h3>
-                    <p class="text-sm text-gray-600 mb-2">
-                      Вы собираетесь удалить запись:<br/><span class="font-medium">{{ deleteItemName }}</span>
-                    </p>
-                    <p class="text-sm text-gray-600 mb-6">
-                      Запись невозможно будет восстановить. Подтвердите свои намерения.
-                    </p>
-                    <div class="flex justify-end gap-3">
-                      <button
-                          class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          @click="showDeleteModal = false"
+                    <!-- API селект -->
+                    <div v-else class="border border-gray-200 h-8 rounded">
+                      <!-- Статическое отображение -->
+                      <div
+                          v-if="!isActiveSelect(row.id, column.name)"
+                          class="flex items-center justify-between cursor-pointer hover:bg-gray-200 rounded h-8 p-1"
+                          @click="openInlineSelect(row, column)"
                       >
-                        Отмена
-                      </button>
-                      <button
-                          class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          @click="executeDelete"
-                      >
-                        Подтверждаю, УДАЛИТЬ
-                      </button>
+                        <div class="flex items-center min-w-0">
+                          <!-- Изображение -->
+                          <img
+                              v-if="getSelectImage(row, column)"
+                              :src="getSelectImage(row, column)"
+                              class="h-5 w-5 rounded-full mr-2 object-cover flex-shrink-0"
+                          />
+                          <!-- Иконка -->
+                          <Icon
+                              v-else-if="getSelectIcon(row, column)"
+                              :name="getSelectIcon(row, column)"
+                              class="h-5 w-5 mr-2 text-gray-600 flex-shrink-0"
+                          />
+                          <!-- Текст -->
+                          <span class="truncate">
+                            {{ getSelectLabel(row, column) || column.emptyOption?.label || 'Не выбрано' }}
+                          </span>
+                        </div>
+                        <div class="flex items-center">
+                          <!-- Кнопка фильтрации (если настроена) -->
+                          <button 
+                            v-if="column.filter_button && column.filter_button.enabled && row[column.name]"
+                            class="mr-1"
+                            :class="column.filter_button.class || 'text-blue-500 hover:text-blue-700'"
+                            :title="isColumnFiltered(column, row[column.name]) 
+                              ? `Отменить фильтр по ${column.label}` 
+                              : `Фильтровать по ${column.label}`"
+                            @click.stop="filterByColumnValue(column, row[column.name])"
+                          >
+                            <Icon 
+                              :name="isColumnFiltered(column, row[column.name]) 
+                                ? (column.filter_button.active_icon || 'material-symbols:filter-alt-off') 
+                                : (column.filter_button.icon || 'material-symbols:filter-alt')" 
+                              :class="isColumnFiltered(column, row[column.name]) 
+                                ? 'text-red-500' 
+                                : ''"
+                              :size="column.filter_button.icon_size || '1.2em'"
+                            />
+                          </button>
+                          <Icon class="text-gray-400" name="mingcute:pencil-fill" size="16"/>
+                        </div>
+                      </div>
+
+                      <!-- Редактируемый селект -->
+                      <KirhSelectField
+                          v-else
+                          ref="inlineSelectRef"
+                          v-model="selectValues[row.id][column.name]"
+                          :api-params="getSelectApiParams(column, row)"
+                          :api-url="column.options.apiUrl"
+                          :class="column.options.sel_class || 'w-full'"
+                          :icon-field="column.options.iconField"
+                          :image-field="column.options.imageField"
+                          :key-field="column.options.keyField || 'id'"
+                          :label="column.label"
+                          :label-field="column.options.labelField || 'name'"
+                          :limit="column.options.limit || null"
+                          :list_item="column.options.list_item || null"
+                          :options="column.options.options"
+                          :enableSearch="column.options?.enableSearch"
+                          :emptyable="column.options?.emptyable"
+                          :emptyOption="column.emptyOption"
+                          :options_list="column.options.options_list || null"
+                          :placeholder="column.options.placeholder || column.label"
+                          :sel_class="column.options.sel_class || null"
+                          auto-focus
+                          @blur="handleSelectBlur(row, column)"
+                          @update:modelValue="(val) => handleSelectChange(row, column.name, val)"
+                      />
+                    </div>
+                  </template>
+
+                  <template v-else-if="column.type === 'image'">
+                    <KirhImageField
+                        :value="row[column.name]"
+                        :options="column.options"
+                        @click="() => openInlineSelect(row, column)"
+                        :row-data="row"
+                        :error="imageErrors[`${row.id}-${column.name}`]"
+                        @update:modelValue="(val) => handleImageChange(row, column.name, val)"
+                        @change="(val) => handleImageChange(row, column.name, val)"
+                        @clear-error="clearImageError(row.id, column.name)"
+                    />
+                  </template>
+
+                  <!-- Другие типы полей -->
+                  <template v-else>
+                    <component
+                        :is="getFieldComponent(column.type)"
+                        :error="error"
+                        :options="column.options"
+                        :readonly="column.options.readonly"
+                        :type="column.type"
+                        :value="row[column.name]"
+                        :modelValue="row[column.name]"
+                        :row-data="row"
+                        @blur="handleBlur(row, column.name)"
+                        @update:modelValue="updateValue(row, column.name, $event)"
+                        @keyup.enter="handleBlur(row, column.name)"
+                    />
+                  </template>
+                </div>
+
+                <div v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
+                     class="kirh-actions-cell border-b border-gray-100 flex gap-1 items-center justify-center"
+                     style="flex: 0 0 80px;"
+                >
+                  <button v-if="tableOptions.editrow && tableOptions.editable"
+                          class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
+                          title="Редактировать"
+                          @click="editRow(row)"
+                  >
+                    <Icon name="akar-icons:edit" size="1.5em"/>
+                  </button>
+                  <button v-if="tableOptions.deleteable"
+                          class="kirh-delete-btn text-red-500 hover:text-red-700 transition-colors p-0.5"
+                          title="Удалить"
+                          @click="confirmDelete(row)"
+                  >
+                    <Icon name="mynaui:trash" size="1.5em"/>
+                  </button>
+
+                  <!-- Модальное окно подтверждения удаления -->
+                  <div v-if="showDeleteModal"
+                       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+                      <h3 class="text-lg font-medium text-gray-900 mb-4">Подтверждение удаления</h3>
+                      <p class="text-sm text-gray-600 mb-2">
+                        Вы собираетесь удалить запись:<br/><span class="font-medium">{{ deleteItemName }}</span>
+                      </p>
+                      <p class="text-sm text-gray-600 mb-6">
+                        Запись невозможно будет восстановить. Подтвердите свои намерения.
+                      </p>
+                      <div class="flex justify-end gap-3">
+                        <button
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            @click="showDeleteModal = false"
+                        >
+                          Отмена
+                        </button>
+                        <button
+                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            @click="executeDelete"
+                        >
+                          Подтверждаю, УДАЛИТЬ
+                        </button>
+                      </div>
                     </div>
                   </div>
+                  <a
+                      v-if="tableOptions.link"
+                      :href="link_to_site(row)"
+                      class="kirh-delete-btn text-green-500 hover:text-green-700 transition-colors p-0.5"
+                      target="_blank"
+                      title="в новом окне"
+                  >
+                    <Icon name="iconamoon:link-external-fill" size="1.5em"/>
+                  </a>
                 </div>
-                <a
-                    v-if="tableOptions.link"
-                    :href="link_to_site(row)"
-                    class="kirh-delete-btn text-green-500 hover:text-green-700 transition-colors p-0.5"
-                    target="_blank"
-                    title="в новом окне"
-                >
-                  <Icon name="iconamoon:link-external-fill" size="1.5em"/>
-                </a>
+
               </div>
-
             </div>
-          </div>
 
+          </div>
         </div>
 
         <!-- Ошибки -->
@@ -692,6 +785,8 @@ export default {
     const selectedFields = ref([...props.defaultVisibleFields]);
     const clickOutsideHandler = ref(null);
     const idFilter = ref(null);
+    const showMobileFilters = ref(false);
+    const isFieldSelectorCollapsed = ref(false);
 
     // Методы
     const getFieldComponent = (type) => {
@@ -1103,6 +1198,9 @@ export default {
         loading.value = true;
         error.value = null;
 
+        // Временная задержка для отладки прелоадера
+        //await new Promise(resolve => setTimeout(resolve, 300000));
+
         const filterParams = {};
         if (searchQuery.value) {
           filterParams.q = searchQuery.value;
@@ -1118,9 +1216,18 @@ export default {
               filterParams[filter.field] = selectedFilters.value[filter.field];
             }
           });
+          
+          // Добавляем фильтры из кнопок в колонках
+          Object.entries(selectedFilters.value).forEach(([key, value]) => {
+            if (value !== undefined && value !== '' && value !== null) {
+              filterParams[key] = value;
+            }
+          });
         }
 
-        const params = new URLSearchParams({
+        console.log('Filter params:', filterParams); // Добавляем логирование
+
+        const queryParams = new URLSearchParams({
           page: currentPage.value,
           per_page: props.tableOptions.pageSize,
           ...(sortField.value && {sort_field: sortField.value}),
@@ -1129,7 +1236,7 @@ export default {
           ...filterParams
         });
 
-        const response = await fetch(`${props.apiUrl}?${params.toString()}`);
+        const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
         const data = await response.json();
 
         closeInlineSelect();
@@ -1515,11 +1622,6 @@ export default {
       // Получаем имя параметра для фильтрации
       const paramName = column.filter_button?.param_name || column.name;
       
-      // Сбрасываем фильтр по ID, если он активен
-      if (idFilter.value) {
-        idFilter.value = null;
-      }
-      
       // Проверяем, активен ли уже этот фильтр
       if (selectedFilters.value[paramName] === value) {
         // Если да, сбрасываем фильтр
@@ -1555,6 +1657,11 @@ export default {
       selectedFilters.value[paramName] = '';
       currentPage.value = 1;
       fetchData();
+    };
+
+    // Метод для переключения состояния панели
+    const toggleFieldSelectorCollapse = () => {
+      isFieldSelectorCollapsed.value = !isFieldSelectorCollapsed.value;
     };
 
     return {
@@ -1627,7 +1734,10 @@ export default {
       filterByColumnValue,
       isColumnFiltered,
       isColumnFilterActive,
-      clearColumnFilter
+      clearColumnFilter,
+      showMobileFilters,
+      isFieldSelectorCollapsed,
+      toggleFieldSelectorCollapse,
     };
   }
 };
@@ -1642,6 +1752,36 @@ export default {
   height: 100%;
   min-width: 14rem;
   max-height: calc(100vh - 200px);
+  transition: all 0.3s ease;
+}
+
+.kirh-field-selector-collapsed {
+  min-width: 0;
+  width: 0;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Стили для кнопки управления панелью */
+.kirh-field-selector-toggle {
+  position: fixed;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem 0 0 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  padding: 0.375rem;
+  cursor: pointer;
+}
+
+.kirh-field-selector-toggle:hover {
+  background-color: #f9fafb;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
 }
 
 .kirh-table-container {
@@ -1674,16 +1814,37 @@ export default {
   background-color: #d6d6d6;
 }
 
-.loader {
-  animation: spin 1s linear infinite;
+/* Стили для прелоадера */
+.loader-image {
+  width: 4rem;
+  height: 4rem;
+  animation: pulse 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
 }
 
-@keyframes spin {
+/* Контейнер прелоадера */
+.absolute.inset-0 {
+  position: absolute;
+  top: 4rem;
+  left: 0;
+  right: 0;
+  height: 6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  z-index: 50;
+}
+
+@keyframes pulse {
   0% {
-    transform: rotate(0deg);
+    transform: scale(0.95);
+  }
+  50% {
+    transform: scale(1.05);
   }
   100% {
-    transform: rotate(360deg);
+    transform: scale(0.95);
   }
 }
 
@@ -1746,5 +1907,340 @@ export default {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Стили для контейнера с горизонтальной прокруткой */
+.kirh-table-scroll-container {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Обновленные стили для таблицы */
+.kirh-table {
+  min-width: max-content;
+  width: 100%;
+}
+
+/* Обновленные стили для заголовков и строк */
+.kirh-header {
+  display: flex;
+  width: 100%;
+  min-width: max-content;
+}
+
+.kirh-row {
+  display: flex;
+  width: 100%;
+  min-width: max-content;
+}
+
+/* Стили для панелей управления */
+.kirh-controls {
+  flex-shrink: 0;
+  white-space: normal;
+}
+
+/* Стили для блока с фильтрами */
+.flex.justify-between.items-center {
+  flex-shrink: 0;
+  white-space: normal;
+}
+
+/* Стили для элементов панели управления */
+.kirh-pagination {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kirh-pagination-btn {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.kirh-pagination-btn:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.kirh-page-info {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0 0.125rem;
+}
+
+/* Стили для мобильного меню фильтров */
+@media (max-width: 768px) {
+  .kirh-controls {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .kirh-pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Перенос кнопок и галочек на отдельные строки в мобильной версии */
+  .flex.items-center.gap-2 {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .flex.items-center.gap-2 button {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Позиционирование мобильного меню фильтров */
+  .fixed.inset-0 {
+    padding-bottom: 3.125rem; /* 50px */
+  }
+
+  .bg-white.rounded-lg {
+    margin-bottom: 3.125rem; /* 50px */
+  }
+}
+
+/* Стили для десктопных фильтров */
+@media (min-width: 768px) {
+  .hidden.md\:flex {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .hidden.md\:flex .KirhSelectField {
+    min-width: 200px;
+    flex: 1 1 auto;
+  }
+}
+
+/* Стили для модального окна фильтров */
+.fixed.inset-0 {
+  z-index: 50;
+}
+
+.bg-white.rounded-lg {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Стили для элементов фильтров в модальном окне */
+.flex.flex-col.gap-4 {
+  padding: 0.5rem;
+}
+
+.flex.flex-col.gap-4 .KirhSelectField,
+.flex.flex-col.gap-4 .ToggleFilter {
+  width: 100%;
+}
+
+/* Обновленные стили для подсказок */
+.relative {
+  position: relative;
+}
+
+.relative .absolute {
+  position: absolute;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.relative:hover .absolute {
+  opacity: 1;
+  transform: translate(-50%, 10px);
+}
+
+/* Убираем старые стили для подсказок */
+.relative .absolute {
+  bottom: auto;
+  left: auto;
+  transform: none;
+  opacity: 0;
+  color: inherit;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  white-space: normal;
+  max-width: 14rem;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: opacity 0.2s ease;
+}
+
+/* Обновленные стили для кнопок в мобильной версии */
+@media (max-width: 768px) {
+  .kirh-controls button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .kirh-controls .flex.items-center {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kirh-controls .flex.items-center button {
+    margin-bottom: 0.25rem;
+  }
+}
+
+/* Стили для элементов панели управления */
+.kirh-controls button,
+.kirh-controls .kirh-pagination-btn,
+.kirh-controls input {
+  flex-shrink: 0;
+}
+
+/* Стили для блока фильтров */
+.flex.items-center.gap-2 {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Стили для селектов и других элементов фильтров */
+.KirhSelectField,
+.ToggleFilter {
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+/* Стили для мобильного меню фильтров */
+@media (max-width: 768px) {
+  .kirh-controls .kirh-pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .kirh-controls button,
+  .kirh-controls input {
+    flex: 1 1 auto;
+    min-width: 120px;
+  }
+
+  /* Скрываем переключатели на мобильных устройствах */
+  .ToggleFilter {
+    display: none;
+  }
+}
+
+/* Стили для мобильной версии */
+@media (max-width: 768px) {
+  /* Основной контейнер панели управления */
+  .kirh-controls {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  /* Верхняя строка с пагинацией и кнопками */
+  .kirh-controls > div:first-child {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Пагинация */
+  .kirh-pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .kirh-pagination-btn {
+    padding: 0.375rem;
+    min-width: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .kirh-page-info {
+    white-space: nowrap;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  /* Кнопки управления */
+  .kirh-controls button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    min-width: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  /* Строка поиска */
+  .kirh-controls .relative {
+    width: 100%;
+  }
+
+  .kirh-controls .relative input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  /* Стили для формы */
+  .kirh-table-form .flex.items-center {
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .kirh-table-form .flex.items-center button,
+  .kirh-table-form .flex.items-center .flex.items-center {
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .kirh-table-form .flex.items-center .flex.items-center {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  /* Общие стили для кнопок */
+  button {
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Стили для отключенных кнопок */
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Стили для инпутов */
+  input {
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+  }
+
+  input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
 }
 </style>

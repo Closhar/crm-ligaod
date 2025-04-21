@@ -112,7 +112,7 @@ export default {
       default: () => ({})
     }
   },
-  emits: ['input', 'change', 'cancel'],
+  emits: ['input', 'change', 'cancel', 'start-edit'],
   data() {
     return {
       localValue: '',
@@ -211,8 +211,6 @@ export default {
       } else {
         this.validateInput();
         this.$emit('input', value);
-        // Добавляем эмит события change, чтобы таблица могла корректно обработать изменения
-        this.$emit('change', value);
       }
     },
 
@@ -365,6 +363,10 @@ export default {
 
     handleFocus() {
       if (this.readonly) return;
+      
+      // Emit start-edit event before starting edit
+      this.$emit('start-edit');
+      
       this.isEditing = true;
       // При фокусе сохраняем текущее значение как pending
       if (this.isDateType) {
@@ -385,6 +387,10 @@ export default {
 
     startEdit() {
       if (this.readonly || this.showOnlyIcon) return;
+      
+      // Emit start-edit event before starting edit
+      this.$emit('start-edit');
+      
       this.isEditing = true;
       this.$nextTick(() => {
         this.$refs.inputField?.focus();
@@ -401,7 +407,7 @@ export default {
 
     handleClickOutside() {
       if (this.isEditing) {
-        this.finalizeChanges();
+        this.submitChanges();
       }
     },
 

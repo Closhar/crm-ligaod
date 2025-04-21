@@ -52,16 +52,16 @@ const {data} = await useAsyncData('globals', async () => {
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 const site = config.public.SITE_URL;
-const api_addr = api + '/api/admin-pages';
+const api_addr = api + '/api/series';
 
 // Используем useSeoMeta с данными из хранилища
 useSeoMeta({
-  title: ((params.value as any).adminka_name || 'Админка') + ' - Страницы админки',
-  description: 'Страницы админки',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Серии',
+  description: 'Управление сериями',
 });
 
-const p_icon = "iconoir:multiple-pages";
-const p_description = 'Страницы админки';
+const p_icon = "fluent:document-queue-24-filled";
+const p_description = 'Серии';
 const breadcrumbs = [
   {
     id: 1,
@@ -90,7 +90,7 @@ const tableOptions = ref({
       name: 'title',
       label: 'Название',
       type: 'text',
-      min_width: '200px',
+      min_width: '300px',
       sortable: true,
       options: {
         readonly: false,
@@ -98,49 +98,24 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'slug',
-      label: 'Слаг',
+      name: 'title_short',
+      label: 'Сокращение',
       type: 'text',
-      min_width: '150px',
+      width: '150px',
       sortable: true,
       options: {
         readonly: false,
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'icon',
-      label: 'Иконка страницы',
-      type: 'icon',
-      width: '220px',
-      sortable: false,
-      options: {
-        //hint: '123',
-        readonly: false,
-        only_icon: false,
-        link_in_title: 'https://icon-sets.iconify.design/',
-        hint_in_link: 'возьми код иконки на iconify по ссылке',
-        cellClass: 'bg-gray-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-left cursor-default'
       }
     },
     {
       name: 'description',
       label: 'Описание',
-      type: 'text',
-      min_width: '250px',
+      type: 'textarea',
+      width: '80px',
       sortable: false,
       options: {
-        readonly: false,
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'menu',
-      label: 'В меню',
-      type: 'toggle',
-      width: '80px',
-      sortable: true,
-      options: {
+        enableEdit: true,
         readonly: false,
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
       }
@@ -170,7 +145,7 @@ const formOptions = ref({
   keepFormAfterSubmit: false, // не обнулять форму после отправки данных
   autoOpen: true,
   containerClass: 'bg-gray-50',
-  formTitle: 'Добавление страницы админки',
+  formTitle: 'Добавление серии',
   hideButtons: false,
   hideCancelButton: false,
   cancelButtonText: 'Сбросить',
@@ -186,65 +161,42 @@ const formOptions = ref({
       width: '300px',
       options: {
         readonly: false,
-        placeholder: 'Название страницы',
-        hint: 'Название страницы админки',
+        placeholder: 'Название серии',
+        hint: 'Полное название серии',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
       }
     },
     {
-      name: 'slug',
-      label: 'Слаг',
+      name: 'title_short',
+      label: 'Сокращение',
       required: true,
       type: 'text',
       sortable: true,
-      width: '200px',
+      width: '150px',
       options: {
         readonly: false,
-        placeholder: 'slug',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'icon',
-      label: 'Иконка страницы',
-      type: 'text',
-      required: true,
-      width: '250px',
-      options: {
-        readonly: false,
-        placeholder: 'иконка',
-        link_in_title: 'https://icon-sets.iconify.design/',
-        hint_in_link: 'возьми код иконки на iconify по ссылке',
+        placeholder: 'Сокращенное название',
+        hint: 'Сокращенное название серии',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
     },
     {
       name: 'description',
-      label: 'Описание',
+      label: 'описание серии',
+      type: 'editor',
       required: false,
-      type: 'text',
-      sortable: false,
-      width: '250px',
+      //width: '250px',
       options: {
+        editorEnabled: true,
         readonly: false,
-        placeholder: 'Описание страницы',
+        placeholder: 'Введите описание серии...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
-      }
-    },
-    {
-      name: 'menu',
-      label: 'Отображать в меню',
-      required: false,
-      type: 'toggle',
-      sortable: true,
-      width: '160px',
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
       }
     },
   ]
@@ -256,22 +208,11 @@ const extraFields = ref([]);
 // Поля, видимые по умолчанию в доп.таблице
 const defaultVisibleFields: string[] = [];
 
-// Фильтры-селкты и фильтры-переключатели (type: 'toggle')
-const additionalFilters = ref([
-  {
-    name: 'menu',
-    label: 'В меню',
-    type: 'toggle',
-    options: [
-      { label: 'Все', value: null },
-      { label: 'Да', value: true },
-      { label: 'Нет', value: false }
-    ]
-  }
-]);
+// Фильтры-селекты
+const additionalFilters = ref([]);
 
 </script>
 
 <style scoped>
 
-</style>
+</style> 

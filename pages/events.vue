@@ -65,7 +65,7 @@ useSeoMeta({
   description: 'Матчи и события',
 });
 
-const p_icon = "i-guidance:calendar menu-icon";
+const p_icon = "i-guidance:calendar";
 const p_description = 'Матчи и события';
 const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [
 
@@ -87,6 +87,31 @@ const tableOptions = ref({
         readonly: true,
         cellClass: 'text-xs font-bold bg-yellow-50 rounded h-8 text-gray-60 border px-1 pt-2 w-full text-center cursor-default'
       }
+    },
+    {
+      name: 'region_id',
+      label: '',
+      title_icon: 'i-ph:map-pin-area',
+      type: 'select',
+      width: '70px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/regions?type=async',
+        keyField: 'id',
+        emptyable: true,
+      hint: 'Регион',
+        labelField: 'title_short',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'region.title_short', 
+      },
+      emptyOption: {
+        value: null,
+        label: '-',
+      },
     },
     {
       name: 'date_from',
@@ -150,7 +175,7 @@ const tableOptions = ref({
       name: 'competition_id',
       label: 'Соревнование',
       type: 'select',
-      min_width: '150px',
+      min_width: '140px',
       sortable: false,
       options: {
         apiUrl: api + '/api/v1/competitions?type=async',
@@ -167,14 +192,6 @@ const tableOptions = ref({
         //displayImageField: 'club_info.logo', // Вложенное поле
         //displayIconField: 'icon' // Плоское поле
       },
-      filter_button: {
-        enabled: true,
-        icon: 'iconamoon:arrow-right-6-circle-fill',
-        tooltip: 'Фильтровать по соревнованию',
-        class: 'ml-1 p-1 text-blue-800 rounded hover:text-blue-600 transition-colors',
-        param_name: 'competition_id',
-        icon_size: '1.4em'
-      }
     },
     {
       name: 'club1_id',
@@ -224,32 +241,14 @@ const tableOptions = ref({
     },
     {
       name: 'title',
-      label: 'Название/этап/стадия',
+      label: 'Название/этап',
       type: 'text',
-      min_width: '150px',
+      min_width: '110px',
       sortable: true,
       options: {
         readonly: false,
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
       }
-    },
-    {
-      name: 'arena_id',
-      label: 'Арена',
-      type: 'select',
-      min_width: '150px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/arenas?type=async',
-        keyField: 'id',
-        emptyable: false,
-        labelField: 'title',
-        enableSearch: true,
-        sel_class: "",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        displayLabelField: 'arena.title'
-      },
     },
     {
       name: 'result',
@@ -278,6 +277,40 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'series_id',
+      label: 'серия',
+      title_icon: 'i-fluent-mdl2:chart-series',
+      type: 'select',
+      width: '110px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/series?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title_short',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-red-800 rounded-md",
+        sel_class: "text-xs text-red-800 font-bold",
+        list_item: null,
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'series.title_short', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
+      emptyOption: {
+        value: null,
+        label: '-',
+      },
+      filter_button: {
+        enabled: true,
+        icon: 'iconamoon:arrow-right-6-circle-fill',
+        tooltip: 'Фильтровать по серии',
+        class: 'ml-1 p-1 text-red-600 rounded hover:text-red-500 transition-colors',
+        param_name: 'series_id',
+        icon_size: '1.4em'
+      }
+    },
+    {
       name: 'is_active',
       label: 'акт.',
       type: 'toggle',
@@ -299,8 +332,8 @@ const tableOptions = ref({
   editrow: false, // редактирование строки
   deleteable: true, // удаление
   sortable: true, // сортировка
-  defaultSortField: 'id', // Поле для сортировки по умолчанию
-  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
+  defaultSortField: 'date_from', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'asc', // Направление сортировки по умолчанию (asc или desc)
   separateFields: true, // разделять поля в форме
   showIdFilter: true, // отображать фильтр по ID
   link: 'id',
@@ -311,7 +344,7 @@ const tableOptions = ref({
   searchable: true,
   enableResetFilters: true,
   resetFiltersLabel: 'Очистить',
-  resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
+  resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 rounded-md transition-colors shadow-sm ' +
       'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed',
 
 });
@@ -329,6 +362,27 @@ const formOptions = ref({
   hideSubmitButton: false,
   submitButtonText: 'Добавить',
   columns: [
+    {
+      name: 'region_id',
+      label: 'Регион',
+      type: 'select',
+      width: '100px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/regions?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title_short',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs max-h-[200px] border border-gray-300 text-gray-800 rounded-md",
+        sel_class: "text-xs text-gray-800",
+        list_item: null,
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'region.title_short', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
+    },
     {
       name: 'date_from',
       required: true,
@@ -430,7 +484,7 @@ const formOptions = ref({
     },
     {
       name: 'title',
-      label: 'Название/этап/стадия',
+      label: 'Название/этап',
       type: 'text',
       sortable: true,
       width: '250px',
@@ -441,6 +495,27 @@ const formOptions = ref({
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
+    },
+    {
+      name: 'series_id',
+      label: 'Cерия',
+      type: 'select',
+      width: '120px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/series?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title_short',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs max-h-[200px] border border-gray-300 text-gray-800 rounded-md",
+        sel_class: "text-xs text-gray-800",
+        list_item: null,
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'series.title_short', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
     },
     {
       name: 'result',
@@ -478,14 +553,51 @@ const formOptions = ref({
       sortable: false,
       options: {
         defaultChecked: true,
-        display: 'switch', // или 'switch' для классического вида
-        items: [
-          {value: true, label: 'Вкл'},
-          {value: false, label: 'Выкл'}
-        ],
+        display: 'switch',
         activeClass: 'bg-green-500 text-white',
-        inactiveClass: 'bg-red-100 text-red-800'
+        inactiveClass: 'bg-red-400 text-red-800'
       }
+    }
+  ],
+  quickAdd: [
+    {
+      label: 'СТАДИЯ', // Текст кнопки
+      icon: 'i-fluent-mdl2:chart-series', // Опциональная иконка (имя иконки из библиотеки)
+      title: 'Добавление серии', // Заголовок модального окна
+      instruction: 'Заполните данные для создания серии.', // Инструкция (необязательно)
+      apiUrl: '/api/series', // URL для отправки данных
+      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
+      successMessage: 'Серия успешно добавлена', // Сообщение при успешном добавлении
+      fillField: 'series_id', // Поле в основной форме, которое нужно заполнить после добавления
+      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
+      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
+      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
+      fields: [ // Массив полей формы
+        {
+          name: 'title', // Имя поля (ключ при отправке на сервер)
+          label: 'Название серии', // Отображаемая метка поля
+          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
+          required: true, // Обязательное поле
+          placeholder: 'Введите название серии', // Подсказка в поле
+          defaultValue: '' // Значение по умолчанию
+        },
+        {
+          name: 'title_short',
+          label: 'Краткое название',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите краткое название серии',
+          defaultValue: ''
+        },
+        {
+          name: 'description',
+          label: 'Описание',
+          type: 'textarea',
+          required: true,
+          placeholder: 'Введите описание серии',
+          defaultValue: ''
+        }
+      ],
     }
   ]
 });
@@ -501,6 +613,24 @@ const extraFields = ref([
         readonly: false,
         cellClass: 'text-xs font-bold bg-blue-100 rounded h-8 text-gray-800 border px-1 w-full',
       }
+    },
+    {
+      name: 'arena_id',
+      label: 'Арена',
+      type: 'select',
+      min_width: '150px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/arenas?type=async',
+        keyField: 'id',
+        emptyable: false,
+        labelField: 'title',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        displayLabelField: 'arena.title'
+      },
     },
     {
       name: 'image',
@@ -696,6 +826,25 @@ const additionalFilters = ref([
     ]
   },
   {
+    field: 'is_active',
+    type: 'toggle',
+    label: '',
+    initialLabel: 'активность',
+    initialClass: 'text-sm text-gray-500 bg-gray-300 hover:bg-gray-400', // Класс для начальной кнопки
+    options: [
+      {
+        value: true,
+        label: 'активные',
+        activeClass: 'text-sm text-gray-50 bg-green-600 hover:bg-green-700' // Индивидуальный класс для этого варианта
+      },
+      {
+        value: false,
+        label: 'неактивные',
+        activeClass: 'text-sm text-gray-50 bg-red-600 hover:bg-red-700' // Индивидуальный класс для этого варианта
+      },
+    ]
+  },
+  {
     field: 'show',
     type: 'toggle',
     label: '',
@@ -717,25 +866,6 @@ const additionalFilters = ref([
         label: 'прошедшие',
         activeClass: 'text-sm text-gray-50 bg-red-600 hover-red-700' // Индивидуальный класс для этого варианта
       }
-    ]
-  },
-  {
-    field: 'is_active',
-    type: 'toggle',
-    label: '',
-    initialLabel: 'активность',
-    initialClass: 'text-sm text-gray-500 bg-gray-300 hover:bg-gray-400', // Класс для начальной кнопки
-    options: [
-      {
-        value: true,
-        label: 'активные',
-        activeClass: 'text-sm text-gray-50 bg-green-600 hover:bg-green-700' // Индивидуальный класс для этого варианта
-      },
-      {
-        value: false,
-        label: 'неактивные',
-        activeClass: 'text-sm text-gray-50 bg-red-600 hover:bg-red-700' // Индивидуальный класс для этого варианта
-      },
     ]
   },
   {

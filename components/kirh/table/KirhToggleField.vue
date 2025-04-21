@@ -5,7 +5,7 @@
         :checked="internalValue"
         class="toggle-input mx-auto"
         type="checkbox"
-        @change="handleSingleChange"
+        @input="handleSingleChange"
     />
     <span class="toggle-track"></span>
     <span class="toggle-label">{{ labelText }}</span>
@@ -49,9 +49,7 @@ export default {
       if (this.lastEmittedValue === newValue) return;
 
       this.lastEmittedValue = newValue;
-      this.$emit('input', newValue);
-      this.$emit('change', newValue);
-      this.$emit('update:modelValue', newValue); // Добавляем эмит события для v-model в Vue 3
+      this.$emit('update:modelValue', newValue);
     }
   }
 }

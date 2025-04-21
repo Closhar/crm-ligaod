@@ -253,7 +253,7 @@
                     :limit="column.options?.limit"
                     :placeholder="column.options?.placeholder || column.label"
                     :class="['w-full', column.options?.inputClass]"
-                    :empty-option="column.options?.empty_option"
+                    :emptyOption="column.emptyOption"
                     :list-item="column.options?.list_item"
                     :options-list="column.options?.options_list"
                     :sel_class="column.options?.sel_class || null"
@@ -267,15 +267,15 @@
                       v-model="formData[column.name]"
                       :disabled="column.options?.readonly || formOptions.readonly"
                       class="sr-only peer"
+                      :checked="column.options?.defaultChecked"
                   >
                   <div
-                      class="relative w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
+                      class="relative cursor-pointer w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
                       :class="[
                         column.options?.inputClass,
-                        formData[column.name] ?
+                        formData[column.name] || (formData[column.name] === undefined && column.options?.defaultChecked) ?
                           (column.options?.activeClass || 'bg-blue-500') :
                           (column.options?.inactiveClass || 'bg-gray-200'),
-                        validationErrors?.[column.name] ? 'border-red-500' : 'border-gray-300'
                       ]"
                   ></div>
                   <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
@@ -752,8 +752,8 @@ const initForm = () => {
         formData.value[column.name] = null;
         break;
       case 'toggle':
-        // Для переключателя устанавливаем false
-        formData.value[column.name] = column.options?.defaultChecked === true ? true : false;
+        // Для переключателя устанавливаем значение из defaultChecked
+        formData.value[column.name] = column.options?.defaultChecked;
         break;
       case 'number':
         // Для числовых полей устанавливаем null

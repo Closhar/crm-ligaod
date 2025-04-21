@@ -494,7 +494,8 @@ const formOptions = ref({
         required: true,
         minLength: 1
       }
-    },{
+    },
+    {
       name: 'city_title',
       label: 'Город',
       required: true,

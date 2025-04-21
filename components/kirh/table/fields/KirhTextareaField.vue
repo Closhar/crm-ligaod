@@ -37,7 +37,7 @@
 
         <div v-if="editorEnabled" class="flex-1 overflow-auto">
           <RichTextEditor
-              v-model="localValue"
+              :model-value="localValue"
               :editor-enabled="editorEnabled"
               :placeholder="options.placeholder"
               :upload-options="{
@@ -45,7 +45,7 @@
                 maxWidth: options.imageMaxWidth || 1200,
                 quality: options.imageQuality || 0.8
               }"
-              @update:modelValue="localValue = $event"
+              @update:model-value="localValue = $event"
               @toggle-fullscreen="toggleFullscreen"
           />
         </div>
@@ -105,11 +105,11 @@
 </template>
 
 <script setup>
-import {ref, computed} from 'vue'
+import {ref, computed, watch} from 'vue'
 import RichTextEditor from "./../editor/RichTextEditor.vue";
 
 const props = defineProps({
-  value: String,
+  modelValue: String,
   error: [String, Boolean],
   options: {
     type: Object,
@@ -129,12 +129,14 @@ const props = defineProps({
   type: String
 })
 
-const emit = defineEmits(['input', 'blur'])
+const emit = defineEmits(['update:modelValue', 'blur'])
 
 const showModal = ref(false)
-const localValue = ref(props.value)
+const localValue = ref(props.modelValue)
 const isFullscreen = ref(false)
 const editorContainer = ref(null)
+const isSaving = ref(false)
+const hasChanges = ref(false)
 
 const editorEnabled = computed(() => props.options.editorEnabled !== false)
 
@@ -186,13 +188,13 @@ const parsedItems = computed(() => {
 })
 
 const displayValue = computed(() => {
-  return props.value || '<p></p>'
+  return props.modelValue || '<p></p>'
 })
 
 const dynamicClass = computed(() => {
   if (props.options.check_empty) {
     // Remove all HTML tags except iframe
-    const strippedValue = (props.value || '')
+    const strippedValue = (props.modelValue || '')
       .replace(/<(?!iframe\b)[^>]*>/g, '') // Remove all tags except iframe
       .replace(/<\/iframe>/g, '') // Remove iframe closing tags
       .trim();
@@ -206,7 +208,7 @@ const dynamicClass = computed(() => {
 
 const buttonTitle = computed(() => {
   if (props.options.check_empty) {
-    const strippedValue = (props.value || '').replace(/<[^>]*>/g, '').trim();
+    const strippedValue = (props.modelValue || '').replace(/<[^>]*>/g, '').trim();
     if (!strippedValue) {
       return (props.options.title || 'Редактировать') + ' (данные отсутствуют)';
     }
@@ -216,7 +218,9 @@ const buttonTitle = computed(() => {
 
 const openModal = () => {
   if (props.readonly) return
-  localValue.value = props.value
+  localValue.value = props.modelValue
+  isSaving.value = false
+  hasChanges.value = false
   showModal.value = true
 }
 
@@ -227,8 +231,24 @@ const closeModal = () => {
   emit('blur')
 }
 
+watch(() => props.modelValue, (newValue) => {
+  localValue.value = newValue
+})
+
+const handleValueUpdate = (newValue) => {
+  localValue.value = newValue
+}
+
 const saveChanges = () => {
-  emit('input', localValue.value)
+  if (isSaving.value) return
+  if (localValue.value === props.modelValue) {
+    closeModal()
+    return
+  }
+  
+  isSaving.value = true
+  emit('update:modelValue', localValue.value)
+  isSaving.value = false
   closeModal()
 }
 
