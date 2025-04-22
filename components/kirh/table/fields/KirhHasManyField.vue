@@ -398,6 +398,7 @@ import KirhSelectField from './KirhSelectField.vue';
 import KirhTextareaField from './KirhTextareaField.vue';
 import KirhToggleField from './KirhToggleField.vue';
 import KirhImageField from './KirhImageField.vue';
+import KirhDateTimeField from './KirhDateTimeField.vue';
 
 /**
  * Компонент для управления связями HasMany (один ко многим)
@@ -483,7 +484,8 @@ export default {
     KirhSelectField,
     KirhTextareaField,
     KirhToggleField,
-    KirhImageField
+    KirhImageField,
+    KirhDateTimeField
   },
   props: {
     modelValue: [Array, Object],
@@ -1122,10 +1124,10 @@ export default {
     const getFieldComponent = (type) => {
       const componentMap = {
         text: KirhTextField,
+        date: KirhDateTimeField,
+        time: KirhDateTimeField,
+        datetime: KirhDateTimeField,
         textarea: KirhTextareaField,
-        date: KirhTextField,
-        time: KirhTextField,
-        datetime: KirhTextField,
         select: KirhSelectField,
         toggle: KirhToggleField,
         image: KirhImageField

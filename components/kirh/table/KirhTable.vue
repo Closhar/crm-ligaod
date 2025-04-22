@@ -704,6 +704,7 @@ import { debounce } from 'lodash-es';
 import KirhTextField from './fields/KirhTextField.vue';
 import KirhSelectField from './fields/KirhSelectField.vue';
 import KirhToggleField from './fields/KirhToggleField.vue';
+import KirhDateTimeField from './fields/KirhDateTimeField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhTextareaField from "./fields/KirhTextareaField.vue";
@@ -717,6 +718,7 @@ export default {
     KirhTextField,
     KirhSelectField,
     KirhToggleField,
+    KirhDateTimeField,
     KirhImageField,
     KirhTextareaField,
     KirhHasManyField,
@@ -819,10 +821,10 @@ export default {
     const getFieldComponent = (type) => {
       const componentMap = {
         text: KirhTextField,
+        date: KirhDateTimeField,
+        time: KirhDateTimeField,
+        datetime: KirhDateTimeField,
         textarea: KirhTextareaField,
-        date: KirhTextField,
-        time: KirhTextField,
-        datetime: KirhTextField,
         select: KirhSelectField,
         toggle: KirhToggleField,
         image: KirhImageField,
@@ -969,12 +971,15 @@ export default {
           case 'toggle':
             handleSelectChange(row, fieldName, actualValue);
             break;
-          case 'text':
-          case 'textarea':
           case 'date':
           case 'time':
           case 'datetime':
-            // Для текстовых полей и полей даты/времени отправляем изменения напрямую
+            // Для полей даты/времени отправляем изменения на сервер
+            handleDateTimeChange(row, fieldName, actualValue);
+            break;
+          case 'text':
+          case 'textarea':
+            // Для текстовых полей отправляем изменения напрямую
             handleTextChange(row, fieldName, actualValue);
             break;
           default:
@@ -984,6 +989,45 @@ export default {
       } else {
         // Если тип поля не определен, используем handleTextChange
         handleTextChange(row, fieldName, actualValue);
+      }
+    };
+
+    // Новый метод для обработки изменений полей даты/времени
+    const handleDateTimeChange = async (row, fieldName, value) => {
+      try {
+        // Обновляем локальное значение
+        row[fieldName] = value;
+
+        // Отправляем изменения на сервер
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            [fieldName]: value
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Обновляем значение в таблице
+          row[fieldName] = data[fieldName];
+          // Обновляем все данные таблицы
+          await fetchData();
+        } else {
+          // В случае ошибки возвращаем старое значение
+          row[fieldName] = value;
+          // Показываем сообщение об ошибке
+          alert(data.message || 'Ошибка при обновлении значения');
+        }
+      } catch (error) {
+        console.error('Error updating datetime value:', error);
+        // В случае ошибки возвращаем старое значение
+        row[fieldName] = value;
+        // Показываем сообщение об ошибке
+        alert('Ошибка при обновлении значения');
       }
     };
 
@@ -1301,8 +1345,6 @@ export default {
             }
           });
         }
-
-        console.log('Filter params:', filterParams); // Добавляем логирование
 
         const queryParams = new URLSearchParams({
           page: currentPage.value,
@@ -2099,6 +2141,7 @@ export default {
   min-height: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 100px;
 }
 
 /* Обновленные стили для таблицы */

@@ -219,9 +219,6 @@ export default {
         this.pendingDateValue = value;
       } else {
         this.validateInput();
-        // Убираем отправку событий при вводе
-        // this.$emit('input', value);
-        // this.$emit('update:modelValue', value);
       }
     },
 
@@ -229,12 +226,10 @@ export default {
       if (this.readonly || !this.isEditing) return;
 
       if (this.isDateType && this.pendingDateValue !== null) {
-        // При потере фокуса для типов даты/времени - обрабатываем и отправляем значение
         this.processDateValue(this.pendingDateValue);
       } else {
-        // Для текстовых полей отправляем текущее значение только при потере фокуса
         this.validateInput();
-        if (!this.hasError) {
+        if (!this.hasError && this.localValue !== this.originalValue) {
           this.$emit('input', this.localValue);
           this.$emit('update:modelValue', this.localValue);
           this.originalValue = this.localValue;
@@ -246,12 +241,10 @@ export default {
 
     handleEnter() {
       if (this.isDateType && this.pendingDateValue !== null) {
-        // При нажатии Enter для типов даты/времени - обрабатываем и отправляем значение
         this.processDateValue(this.pendingDateValue);
       } else {
-        // Для текстовых полей отправляем текущее значение только при нажатии Enter
         this.validateInput();
-        if (!this.hasError) {
+        if (!this.hasError && this.localValue !== this.originalValue) {
           this.$emit('input', this.localValue);
           this.$emit('update:modelValue', this.localValue);
           this.originalValue = this.localValue;
@@ -263,10 +256,11 @@ export default {
 
     processDateValue(value) {
       this.localValue = value;
-      this.pendingDateValue = null; // Сбрасываем pending значение после обработки
+      this.pendingDateValue = null;
 
       if (!value) {
         this.$emit('input', null);
+        this.$emit('update:modelValue', null);
         return;
       }
 
@@ -275,20 +269,27 @@ export default {
 
       switch (this.type) {
         case 'date':
-          result = `${value}`; // Только дата, без времени
+          result = `${value} 00:00:00`;
           break;
         case 'time':
-          result = `${value}`; // Только время, без даты
+          result = `1970-01-01 ${value}:00`;
           break;
         case 'datetime':
           const dt = new Date(value);
+          if (isNaN(dt.getTime())) {
+            this.hasError = true;
+            this.errorMessage = 'Некорректный формат даты и времени';
+            return;
+          }
           result = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
           break;
       }
 
-      this.originalValue = result; // Обновляем originalValue чтобы submitChanges не эмитил лишний запрос
-      this.$emit('input', result);
-      this.$emit('update:modelValue', result);
+      if (result !== (this.value || this.modelValue)) {
+        this.$emit('input', result);
+        this.$emit('update:modelValue', result);
+        this.originalValue = result;
+      }
     },
 
     finalizeChanges() {
@@ -401,11 +402,9 @@ export default {
     handleFocus() {
       if (this.readonly) return;
       
-      // Emit start-edit event before starting edit
       this.$emit('start-edit');
-      
       this.isEditing = true;
-      // При фокусе сохраняем текущее значение как pending
+      
       if (this.isDateType) {
         this.pendingDateValue = this.localValue;
       }
@@ -425,10 +424,13 @@ export default {
     startEdit() {
       if (this.readonly || this.showOnlyIcon) return;
       
-      // Emit start-edit event before starting edit
       this.$emit('start-edit');
-      
       this.isEditing = true;
+      
+      if (this.isDateType) {
+        this.pendingDateValue = this.localValue;
+      }
+      
       this.$nextTick(() => {
         this.$refs.inputField?.focus();
         this.moveCursorToEnd();
