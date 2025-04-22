@@ -382,15 +382,94 @@
                 <span v-if="field.required" class="text-red-500">*</span>
               </label>
               
-              <!-- Текстовое поле -->
+              <!-- Текстовое поле с автоподсказками -->
+              <div 
+                v-if="field.type === 'text' && field.options?.autoSuggest" 
+                class="relative"
+                :ref="el => { autoSuggestRefs[field.name] = el }"
+              >
+                <div class="relative">
+                  <input 
+                    :id="`quick-add-field-${fieldIndex}`"
+                    v-model="quickAddFormData[field.name]" 
+                    type="text"
+                    :required="field.required"
+                    :placeholder="field.placeholder"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm pr-8', field.options?.inputClass]"
+                    @input="handleQuickAddAutoSuggest(field.name, field.options?.autoSuggest); handleQuickAddFieldInput(field.name)"
+                    @focus="isActiveSuggestion[field.name] = true"
+                  />
+                </div>
+                <div 
+                  v-if="(suggestions[field.name]?.length > 0 || suggestionsLoading[field.name]) && isActiveSuggestion[field.name]" 
+                  class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                >
+                  <!-- Индикатор загрузки -->
+                  <div v-if="suggestionsLoading[field.name]" class="p-2 text-center text-gray-500">
+                    <div class="inline-block animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                    Загрузка...
+                  </div>
+                  
+                  <!-- Сообщение, если нет результатов -->
+                  <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-center text-gray-500">
+                    Нет результатов
+                  </div>
+                  
+                  <!-- Список подсказок -->
+                  <ul v-else class="py-1">
+                    <li 
+                      v-for="(suggestion, i) in suggestions[field.name]" 
+                      :key="i" 
+                      class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                      :class="{'bg-blue-50 hover:bg-blue-100': field.options?.autoSuggest?.clickable}"
+                      @mousedown="handleQuickAddSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <span class="font-medium">{{ 
+                            suggestion[field.options?.autoSuggest?.labelField || 'name'] || suggestion.name || suggestion.title || suggestion.label || JSON.stringify(suggestion) 
+                          }}</span>
+                          
+                          <!-- Дополнительная информация -->
+                          <span v-if="suggestion.message" class="ml-2 text-xs text-gray-500">
+                            {{ suggestion.message }}
+                          </span>
+                          
+                          <!-- Доп. данные -->
+                          <div v-if="suggestion.email && suggestion.email !== suggestion[field.options?.autoSuggest?.labelField || 'name']" 
+                            class="text-xs text-gray-500 mt-1">
+                            {{ suggestion.email }}
+                          </div>
+                        </div>
+                        
+                        <!-- Счетчик -->
+                        <span v-if="field.options?.autoSuggest?.showCount && suggestion.count" 
+                              class="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                          {{ suggestion.count }}
+                        </span>
+                        
+                        <!-- Иконка для кликабельных подсказок -->
+                        <span v-if="field.options?.autoSuggest?.clickable" class="text-blue-500 ml-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              
+              <!-- Обычное текстовое поле -->
               <input 
-                v-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
+                v-else-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
                 :type="field.type" 
                 :id="`quick-add-field-${fieldIndex}`"
                 v-model="quickAddFormData[field.name]" 
                 :required="field.required"
                 :placeholder="field.placeholder"
-                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                @input="handleQuickAddFieldInput(field.name)"
               />
               
               <!-- Текстовая область -->
@@ -402,21 +481,34 @@
                 :placeholder="field.placeholder"
                 :rows="field.rows || 3"
                 class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
+                @input="handleQuickAddFieldInput(field.name)"
               ></textarea>
               
               <!-- Селект -->
-              <select 
-                v-else-if="field.type === 'select'" 
-                :id="`quick-add-field-${fieldIndex}`"
-                v-model="quickAddFormData[field.name]" 
+              <KirhSelectField
+                v-else-if="field.type === 'select'"
+                v-model="quickAddFormData[field.name]"
+                :key="`quick-add-select-${field.name}-${forceRerenderSelects}`"
+                :options="field.options?.options"
+                :api-url="field.options?.apiUrl"
+                :api-params="field.options?.apiParams"
                 :required="field.required"
-                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              >
-                <option value="" disabled selected>{{ field.placeholder || 'Выберите...' }}</option>
-                <option v-for="option in field.options" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+                :enable-search="field.options?.enableSearch"
+                :emptyable="field.options?.emptyable"
+                :icon-field="field.options?.iconField"
+                :image-field="field.options?.imageField"
+                :key-field="field.options?.keyField || 'id'"
+                :label-field="field.options?.labelField || 'name'"
+                :label="field.label"
+                :limit="field.options?.limit"
+                :placeholder="field.options?.placeholder || field.label"
+                class="w-full"
+                :emptyOption="field.emptyOption"
+                :list-item="field.options?.list_item"
+                :options-list="field.options?.options_list"
+                :sel_class="field.options?.sel_class || null"
+                :error="!!quickAddValidationErrors?.[field.name]"
+              />
               
               <!-- Переключатель -->
               <div v-else-if="field.type === 'toggle'" class="flex items-center">
@@ -1086,6 +1178,27 @@ const openQuickAddModal = (quickAddItem) => {
   // Инициализация значений полей по умолчанию
   if (quickAddItem.fields) {
     quickAddItem.fields.forEach(field => {
+      if (field.type === 'select') {
+        // Добавляем только отсутствующие параметры, не перезаписывая существующие
+        if (!field.options) {
+          field.options = {};
+        }
+        if (!field.options.apiUrl) {
+          field.options.apiUrl = field.apiUrl;
+        }
+        if (!field.options.enableSearch) {
+          field.options.enableSearch = true;
+        }
+        if (!field.options.apiParams) {
+          field.options.apiParams = {};
+        }
+        if (!field.options.keyField) {
+          field.options.keyField = 'id';
+        }
+        if (!field.options.labelField) {
+          field.options.labelField = 'title';
+        }
+      }
       if (field.defaultValue !== undefined && quickAddFormData.value[field.name] === undefined) {
         if (field.type === 'toggle') {
           quickAddFormData.value[field.name] = !!field.defaultValue;
@@ -1406,6 +1519,176 @@ watch(() => quickAddModalVisible.value, (newVal) => {
     }, 100);
   }
 });
+
+// Добавим наблюдатель за изменением параметров селекта
+watch(() => currentQuickAddItem.value, (newVal) => {
+  if (newVal && newVal.fields) {
+    newVal.fields.forEach(field => {
+      if (field.type === 'select') {
+        // Убрал console.log
+      }
+    });
+  }
+}, { deep: true });
+
+const handleQuickAddAutoSuggest = (fieldName, suggestOptions) => {
+  if (!suggestOptions?.apiUrl) {
+    return;
+  }
+  
+  // Очищаем предыдущий таймер, если он существует
+  if (suggestDebounceTimers.value[fieldName]) {
+    clearTimeout(suggestDebounceTimers.value[fieldName]);
+  }
+  
+  // Устанавливаем новый таймер для предотвращения частых запросов
+  suggestDebounceTimers.value[fieldName] = setTimeout(async () => {
+    const query = quickAddFormData.value[fieldName];
+    
+    // Если запрос пустой или слишком короткий, очищаем подсказки
+    if (!query || query.length < (suggestOptions.minLength || 2)) {
+      suggestions.value[fieldName] = [];
+      return;
+    }
+    
+    try {
+      // Устанавливаем состояние загрузки
+      suggestionsLoading.value[fieldName] = true;
+      
+      const params = new URLSearchParams();
+      params.append('q', query);
+      
+      // Используем field_name из опций, если указан, иначе используем имя поля формы
+      const fieldForApi = suggestOptions.field_name || fieldName;
+      params.append('field', fieldForApi);
+      
+      // Добавляем дополнительные параметры
+      if (suggestOptions.apiParams) {
+        Object.entries(suggestOptions.apiParams).forEach(([key, value]) => {
+          params.append(key, value);
+        });
+      }
+      
+      // Получаем конфигурацию для API
+      const config = useRuntimeConfig();
+      const baseApiUrl = config.public.API_URL || '';
+      
+      // Формируем полный URL
+      let fullApiUrl = suggestOptions.apiUrl;
+      // Проверяем, нужно ли обрабатывать URL как локальный
+      const forceLocalApi = suggestOptions.forceLocalApi === true;
+      if (fullApiUrl.startsWith('/api/') && baseApiUrl && !forceLocalApi) {
+        fullApiUrl = `${baseApiUrl}${suggestOptions.apiUrl}`;
+      }
+      
+      const response = await fetch(`${fullApiUrl}?${params.toString()}`);
+      if (!response.ok) throw new Error('Ошибка при получении подсказок');
+      
+      const data = await response.json();
+      suggestions.value[fieldName] = Array.isArray(data) ? data : data.data || [];
+    } catch (error) {
+      console.error('Ошибка автоподсказок:', error);
+      suggestions.value[fieldName] = [];
+    } finally {
+      // Сбрасываем состояние загрузки
+      suggestionsLoading.value[fieldName] = false;
+    }
+  }, suggestOptions.debounce || 300);
+};
+
+// Добавляем новый обработчик для модального окна
+const handleQuickAddSuggestionSelect = (fieldName, suggestion, autoSuggestOptions, event) => {
+  // Предотвращаем стандартное поведение и всплытие события
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  
+  selectQuickAddSuggestion(fieldName, suggestion, autoSuggestOptions);
+};
+
+// Выбор значения из подсказок для модального окна
+const selectQuickAddSuggestion = (fieldName, suggestion, autoSuggestOptions) => {
+  if (!suggestion) {
+    return;
+  }
+  
+  // Проверяем, разрешен ли выбор
+  if (autoSuggestOptions && !autoSuggestOptions.clickable) {
+    return;
+  }
+  
+  // Определяем поле для отображения (labelField)
+  const labelField = autoSuggestOptions?.labelField || 'name';
+  
+  // Устанавливаем значение в поле формы модального окна
+  quickAddFormData.value[fieldName] = suggestion[labelField];
+  
+  // Если есть дополнительные поля для заполнения из подсказки
+  if (autoSuggestOptions?.fillFields) {
+    for (const [targetField, sourceField] of Object.entries(autoSuggestOptions.fillFields)) {
+      if (suggestion[sourceField] !== undefined) {
+        quickAddFormData.value[targetField] = suggestion[sourceField];
+      }
+    }
+  }
+  
+  // Очищаем подсказки и скрываем выпадающий список
+  suggestions.value[fieldName] = [];
+  isActiveSuggestion.value[fieldName] = false;
+};
+
+// Добавляем вычисляемое свойство для полей с транслитерацией в модальном окне
+const quickAddFieldsWithTransliterate = computed(() => {
+  if (!currentQuickAddItem.value?.fields) return {};
+  
+  // Собираем отображение полей для транслитерации
+  const result = {};
+  
+  currentQuickAddItem.value.fields.forEach(field => {
+    if (field.options?.transliterateFrom) {
+      // Если для поля задано значение transliterateFrom
+      result[field.name] = field.options.transliterateFrom;
+    }
+  });
+  
+  return result;
+});
+
+// Обработка изменений в полях, от которых зависит транслитерация в модальном окне
+watch(quickAddFormData, (newData, oldData) => {
+  // Для каждого поля с настройкой transliterateFrom
+  applyQuickAddTransliteration(newData, oldData);
+}, { deep: true });
+
+// Функция для применения транслитерации в модальном окне
+const applyQuickAddTransliteration = (currentData, previousData) => {
+  if (!currentQuickAddItem.value?.fields) return;
+  
+  currentQuickAddItem.value.fields.forEach(field => {
+    if (field.options?.transliterateFrom) {
+      const sourceField = field.options.transliterateFrom;
+      const targetField = field.name;
+      
+      // Если изменилось значение исходного поля или previousData пустой (инициализация)
+      if (!previousData || currentData[sourceField] !== previousData[sourceField]) {
+        // Обновляем значение целевого поля через транслитерацию
+        quickAddFormData.value[targetField] = transliterate(currentData[sourceField] || '');
+      }
+    }
+  });
+};
+
+// Добавляем обработчик ввода текста в поля модального окна
+const handleQuickAddFieldInput = (fieldName) => {
+  // Проверяем, влияет ли это поле на поле с транслитерацией
+  Object.entries(quickAddFieldsWithTransliterate.value).forEach(([targetField, sourceField]) => {
+    if (sourceField === fieldName) {
+      // Если да, применяем транслитерацию немедленно
+      quickAddFormData.value[targetField] = transliterate(quickAddFormData.value[sourceField] || '');
+    }
+  });
+};
 </script>
 
 <!-- 

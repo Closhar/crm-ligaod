@@ -52,19 +52,16 @@ const {data} = await useAsyncData('globals', async () => {
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 const site = config.public.SITE_URL;
-const api_addr = api + '/api/clubs'
+const api_addr = api + '/api/arenas'
 
 // Используем useSeoMeta с данными из хранилища
-// const route = useRoute();
-// const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
-
 useSeoMeta({
-  title: ((params.value as any)?.adminka_name || 'Админка') + ' - Команды',
-  description: 'Команды',
+  title: ((params.value as any)?.adminka_name || 'Админка') + ' - Спортсооружения',
+  description: 'Спортсооружения',
 });
 
-const p_icon = "i-bxl:microsoft-teams";
-const p_description = 'Команды';
+const p_icon = "i-mdi:stadium";
+const p_description = 'Спортсооружения';
 const breadcrumbs: Array<{id?: number, title?: string, icon?: string, slug?: string}> = [
 
 ];
@@ -87,29 +84,29 @@ const tableOptions = ref({
     {
       name: 'image',
       label: '',
-      displayLabel: 'Логотип',
+      displayLabel: 'Изображение',
       title_icon: 'ep:picture-rounded',
       type: 'image',
       width: '70px',
       sortable: false,
       options: {
-        image_path: 'full_image_path', // поле для текущего изображения
-        hint: 'Логотип команды',
+        image_path: 'full_image_path',
+        hint: 'Изображение спортсооружения',
         thumbnailWidth: 46,
         thumbnailHeight: 46,
         previewMaxHeight: '500px',
-        modalTitle: 'Логотип клуба:',
-        modalTitleAddField: 'club_info', // добавление значения поля к заголовку модалки
+        modalTitle: 'Изображение спортсооружения:',
+        modalTitleAddField: 'arena_info',
         cellClass: 'w-full mx-auto',
-        info: 'Загрузите изображение в формате PNG. Изображение приведется кразмеру 512x512px',
+        info: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 512x512px',
         resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 512,          // Ширина (px)
-          height: 512,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 1,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/png' // Тип выходного файла
+          enabled: true,
+          width: 512,
+          height: 512,
+          crop: true,
+          quality: 1,
+          maxSizeMB: 1,
+          mimeType: 'image/png'
         }
       },
     },
@@ -122,22 +119,6 @@ const tableOptions = ref({
       options: {
         readonly: false,
         placeholder: 'название',
-        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'title_short',
-      label: '',
-      title_icon: 'simple-icons:shortcut',
-      displayLabel: 'Краткое обозначение',
-      type: 'text',
-      width: '60px',
-      sortable: false,
-      options: {
-        readonly: false,
-      hint: 'Краткое обозначение команды',
-        placeholder: 'кратко',
         cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
         input_class: 'text-red-500'
       }
@@ -156,109 +137,22 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'gender_id',
-      label: 'Пол',
-      displayLabel: 'Пол',
-      type: 'select',
-      width: '80px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/genders',
-        emptyable: false,
-        keyField: 'id',
-        labelField: 'title_short',
-        iconField: 'icon',
-        enableSearch: false,
-        sel_class: "font-bold text-gray-700 bg-gray-50 hover:bg-gray-200",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-green-600 rounded-md",
-        list_item: null,
-
-        // Поля для отображения в статическом режиме - значение из базы
-        displayLabelField: 'gender.title_short', // Вложенное поле
-        //displayImageField: 'club_info.logo', // Вложенное поле
-        displayIconField: 'gender.icon', // Плоское поле
-        ev: [{
-          warn_ev: 1,
-          class_warn_ev: "bg-blue-100 rounded h-8 text-blue-600 border px-1 pt-2 w-full text-center cursor-default"
-        },
-          {
-            warn_ev: 2,
-            class_warn_ev: "bg-pink-200 rounded h-8 text-pink-800 border px-1 pt-2 w-full text-center cursor-default"
-          }],
-      }
-
-    },
-    {
       name: 'city_id',
       label: 'Город',
       type: 'select',
       width: '150px',
       sortable: false,
       options: {
-        apiUrl: api + '/api/v1/cities',
-        emptyable: false,
+        apiUrl: api + '/api/cities?type=async',
         keyField: 'id',
         labelField: 'title',
         enableSearch: true,
+        emptyable: false,
         sel_class: "",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         limit: 10,
-        // Поля для отображения в статическом режиме
-        displayLabelField: 'city.title', 
-      }
-
-    },
-    {
-      name: 'sport_id',
-      label: 'вид спорта',
-      type: 'select',
-      width: '150px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/sports',
-        keyField: 'id',
-        enableSearch: true,
-        emptyable: false,
-        labelField: 'title',
-        iconField: 'icon',
-        sel_class: "",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        limit: 10,
-        // Поля для отображения в статическом режиме
-        displayLabelField: 'sport.title', // Вложенное поле
-        //displayImageField: 'club2.image', // Вложенное поле
-        displayIconField: 'sport.icon' // Плоское поле
-      }
-
-    },
-    {
-      name: 'image_bg',
-      label: '',
-      displayLabel: 'Изображение в шапке',
-      title_icon: 'stash:image',
-      type: 'image',
-      width: '50px',
-      sortable: false,
-      options: {
-        hint: 'изображение в шапке раздела команды',
-        image_path: 'bg_club_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение для команды:',
-        modalTitleAddField: 'club_info', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
+        displayLabelField: 'city.title',
       }
     },
     {
@@ -272,7 +166,7 @@ const tableOptions = ref({
       sortable: false,
       options: {
         editorEnabled: true,
-        hint: 'Информация о команде',
+        hint: 'Информация о спортсооружении',
         icon: 'icon-park-outline:text',
         title: 'Редактирование описания',
         readonly: false,
@@ -296,7 +190,7 @@ const tableOptions = ref({
       sortable: false,
       options: {
         editorEnabled: true,
-        hint: 'Адрес команды',
+        hint: 'Адрес спортсооружения',
         icon: 'mdi:map-marker',
         title: 'Редактирование адреса',
         readonly: false,
@@ -320,12 +214,36 @@ const tableOptions = ref({
       sortable: false,
       options: {
         editorEnabled: true,
-        hint: 'Карта расположения офиса команды',
+        hint: 'Карта расположения спортсооружения',
         icon: 'lets-icons:map',
         title: 'Редактирование карты',
         readonly: false,
         sel_class: "text-green-800 hover:text-green-700",
         placeholder: 'Перейдите в режим источника и вставьте код карты...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
+      name: 'dop_info',
+      label: '',
+      displayLabel: 'Доп. информация',
+      title_icon: 'healthicons:info-outline',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        hint: 'Дополнительная информация о спортсооружении',
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование дополнительной информации',
+        readonly: false,
+        sel_class: "text-gray-900 hover:text-blue-800",
+        placeholder: 'Введите дополнительную информацию...',
         uploadUrl: api + '/api/upload-image',
         imageMaxWidth: 1200,
         imageQuality: 0.8,
@@ -346,7 +264,7 @@ const tableOptions = ref({
         editorEnabled: false,
         visual_type: 'email',
         instruction: 'Введите электронные почты в формате: yourmail@mail.yes|описание. Каждый e-mail через запятую или с новой строчки.',
-        hint: 'Электронные почты команды',
+        hint: 'Электронные почты спортсооружения',
         icon: 'fluent:mail-copy-20-filled',
         title: 'Редактирование электронных почт',
         readonly: false,
@@ -370,7 +288,7 @@ const tableOptions = ref({
       sortable: false,
       options: {
         editorEnabled: false,
-        hint: 'Телефоны команды',
+        hint: 'Телефоны спортсооружения',
         visual_type: 'phone',
         instruction: 'Введите номера телефонов в формате: <b class="text-red-600">+79991234567|описание</b>. Каждый телефон через запятую или с новой строчки.',
         icon: 'majesticons:phone-retro',
@@ -398,7 +316,7 @@ const tableOptions = ref({
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите сайты в формате: <b class="text-red-600">https://site.yes|описание</b>. Каждый сайт через запятую или с новой строчки.',
-        hint: 'Интернет-сайты команды',
+        hint: 'Интернет-сайты спортсооружения',
         icon: 'material-symbols:captive-portal-rounded',
         title: 'Редактирование сайтов',
         readonly: false,
@@ -422,14 +340,13 @@ const tableOptions = ref({
         apiUrl: api + '/api/regions?type=async',
         keyField: 'id',
         emptyable: true,
-      hint: 'Регион',
+        hint: 'Регион',
         labelField: 'title_short',
         enableSearch: true,
         options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
         sel_class: "text-xs text-blue-800 font-bold",
         list_item: null,
-        // Поля для отображения в статическом режиме
-        displayLabelField: 'region.title_short', 
+        displayLabelField: 'region.title_short',
       },
       emptyOption: {
         value: null,
@@ -437,25 +354,24 @@ const tableOptions = ref({
       },
     },
   ],
-  // Колонка Действия
-  editable: true, // редактирование записи
-  editrow: false, // кнопка редактирования записи
-  deleteable: true, // кнопка удаления записи
-  sortable: true, // сортировка полей
-  separateFields: true, // редактирование отдельных полей
-  defaultSortField: 'id', // Поле для сортировки по умолчанию
-  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
-  link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
-  link_prefix: site + '/clubs', // префикс ссылки
-  pagination: true, // пагинация
-  main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
-  pageSize: 30, // записей на страницу
-  searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  enableResetFilters: true, // Кнопка очистки фильтров
+  editable: true,
+  editrow: false,
+  deleteable: true,
+  sortable: true,
+  separateFields: true,
+  defaultSortField: 'id',
+  defaultSortDirection: 'desc',
+  link: 'slug',
+  link_prefix: site + '/arenas',
+  pagination: true,
+  main_field: 'title',
+  pageSize: 30,
+  searchable: true,
+  enableResetFilters: true,
   showIdFilter: true,
-  resetFiltersLabel: 'Очистить', // Подпись для кнопки Очистить
+  resetFiltersLabel: 'Очистить',
   resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
-      'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed' // Дополнительные классы
+      'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
 });
 
 // Поля формы
@@ -464,13 +380,13 @@ const formOptions = ref({
   autoOpen: true,
   keepFormAfterSubmit: false,
   containerClass: 'bg-gray-50',
-  formTitle: 'Добавление команды',
+  formTitle: 'Добавление спортсооружения',
   hideButtons: false,
   hideCancelButton: false,
   cancelButtonText: 'Сбросить',
   hideSubmitButton: false,
   submitButtonText: 'Добавить',
-  gridClass: 'grid-cols-1', // Общая сетка формы
+  gridClass: 'grid-cols-1',
   columns: [
     {
       name: 'region_id',
@@ -487,42 +403,23 @@ const formOptions = ref({
         options_list: "bg-gray-100 font-xs max-h-[200px] border border-gray-300 text-gray-800 rounded-md",
         sel_class: "text-xs text-gray-800",
         list_item: null,
-        // Поля для отображения в статическом режиме
-        displayLabelField: 'region.title_short', // Вложенное поле
-        //displayImageField: 'club_info.logo', // Вложенное поле
-        //displayIconField: 'icon' // Плоское поле
+        displayLabelField: 'region.title_short',
       },
     },
     {
       name: 'title',
-      label: 'Название команды',
+      label: 'Название спортсооружения',
       type: 'text',
       required: true,
       options: {
         readonly: false,
-      placeholder: 'команда',
-      cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
-      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-    },
+        placeholder: 'название',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+        inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
+      },
       validation: {
         required: true,
         minLength: 2
-      }
-    },
-    {
-      name: 'title_short',
-      label: 'Кратко',
-      type: 'text',
-      required: true,
-      options: {
-        readonly: false,
-        placeholder: 'сокр.',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-24',
-      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-    },
-    validation: {
-        required: true,
-        minLength: 1
       }
     },
     {
@@ -538,14 +435,14 @@ const formOptions = ref({
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
         autoSuggest: {
           apiUrl: '/api/cities',
-      field_name: 'title',
+          field_name: 'title',
           minLength: 2,
           debounce: 300,
           clickable: true,
           labelField: 'title',
           valueField: 'id',
-        showCount: false,
-      }
+          showCount: false,
+        }
       }
     },
     {
@@ -557,114 +454,27 @@ const formOptions = ref({
         readonly: false,
         placeholder: 'slug',
         transliterateFrom: 'title',
-      cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
-      inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+        inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
         autoSuggest: {
-          apiUrl: '/api/clubs',
+          apiUrl: '/api/arenas',
           minLength: 2,
           debounce: 300,
           clickable: false,
           labelField: 'slug',
           valueField: 'id',
-        showCount: false,
-      }
-    },
+          showCount: false,
+        }
+      },
       validation: {
         required: true,
         minLength: 2
       }
     },
-    {
-      name: 'gender_id',
-      required: true,
-      label: 'Пол',
-      type: 'select',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/genders?type=async',
-        keyField: 'id',
-        labelField: 'title',
-        iconField: 'icon',
-        enableSearch: false,
-        emptyable: false,
-        cellClass: 'bg-gray-100 rounded border px-1 w-64',
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        displayLabelField: 'gender.title',
-      }
-    },
-    {
-      name: 'sport_id',
-      required: true,
-      label: 'Вид спорта',
-      type: 'select',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/sports?type=async',
-        keyField: 'id',
-        labelField: 'title',
-        iconField: 'icon',
-        enableSearch: true,
-        emptyable: false,
-        cellClass: 'bg-gray-100 rounded border px-1 w-64',
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        displayLabelField: 'sport.title',
-      }
-    },
-  ],
-  quickAdd: [
-    {
-      label: 'ВИД СПОРТА', // Текст кнопки
-      icon: 'i-ic:round-sports-kabaddi', // Опциональная иконка (имя иконки из библиотеки)
-      title: 'Добавление нового вида спорта', // Заголовок модального окна
-      instruction: 'Заполните данные для создания нового вида спорта. Не забудьте позже в разделе Виды спорта добавить описание и изображение для вида спорта.', // Инструкция (необязательно)
-      apiUrl: '/api/sports', // URL для отправки данных
-      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
-      successMessage: 'Вид спорта успешно добавлен', // Сообщение при успешном добавлении
-      fillField: 'sport_id', // Поле в основной форме, которое нужно заполнить после добавления
-      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
-      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
-      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
-      fields: [ // Массив полей формы
-        {
-          name: 'title', // Имя поля (ключ при отправке на сервер)
-          label: 'Название вида спорта', // Отображаемая метка поля
-          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
-          required: true, // Обязательное поле
-          placeholder: 'Введите название вида спорта', // Подсказка в поле
-          defaultValue: '' // Значение по умолчанию
-        },
-        {
-          name: 'slug',
-          label: 'Слаг',
-          type: 'text',
-          required: true,
-          placeholder: 'Введите слаг вида спорта',
-          defaultValue: ''
-        },
-        {
-          name: 'title_short',
-          label: 'Краткое название',
-          type: 'text',
-          required: true,
-          placeholder: 'Введите краткое название вида спорта',
-          defaultValue: ''
-        },
-        {
-          name: 'icon',
-          label: 'Иконка',
-          type: 'text',
-          required: true,
-          placeholder: 'Введите иконку вида спорта',
-          defaultValue: ''
-        }
-      ],
-    }
   ]
 });
 
-// Дополнитнльные поля в секции редактирования отдельных полей
+// Дополнительные поля в секции редактирования отдельных полей
 const extraFields = ref([
     {
       name: 'vks',
@@ -679,7 +489,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса ВКонтакте в формате: <b class="text-red-600">https://vk.com/id1234567890|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Страницы ВКонтакте команды',
+        hint: 'Страницы ВКонтакте спортсооружения',
         icon: 'fa6-brands:vk',
         title: 'Редактирование страниц ВКонтакте',
         readonly: false,
@@ -705,7 +515,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса YouTube в формате: <b class="text-red-600">https://www.youtube.com/channel/UC1234567890|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Каналы YouTube команды',
+        hint: 'Каналы YouTube спортсооружения',
         icon: 'tdesign:logo-youtube-filled',
         title: 'Редактирование каналов YouTube',
         readonly: false,
@@ -731,7 +541,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса Telegram в формате: <b class="text-red-600">https://t.me/channel1|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Каналы Telegram команды',
+        hint: 'Каналы Telegram спортсооружения',
         icon: 'jam:telegram',
         title: 'Редактирование каналов Telegram',
         readonly: false,
@@ -757,7 +567,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса Instagram в формате: <b class="text-red-600">https://www.instagram.com/channel1|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Страницы Instagram команды',
+        hint: 'Страницы Instagram спортсооружения',
         icon: 'teenyicons:instagram-solid',
         title: 'Редактирование страниц Instagram',
         readonly: false,
@@ -783,7 +593,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса Facebook в формате: <b class="text-red-600">https://www.facebook.com/channel1|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Страницы Facebook команды',
+        hint: 'Страницы Facebook спортсооружения',
         icon: 'qlementine-icons:facebook-fill-24',
         title: 'Редактирование страниц Facebook',
         readonly: false,
@@ -809,7 +619,7 @@ const extraFields = ref([
         editorEnabled: false,
         visual_type: 'site',
         instruction: 'Введите адреса X в формате: <b class="text-red-600">https://www.x.com/channel1|описание</b>. Каждый адрес через запятую или с новой строчки.',
-        hint: 'Страницы X команды',
+        hint: 'Страницы X спортсооружения',
         icon: 'fa6-brands:square-x-twitter',
         title: 'Редактирование страниц X',
         readonly: false,
@@ -822,55 +632,23 @@ const extraFields = ref([
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
-  {
-    name: 'club_info',
-    label: 'Команда',
-    type: 'text',
-    min_width: '160px',
-    options: {
-      readonly: true,
-      cellClass: 'text-xs bg-gray-50 rounded text-gray-60 font-bold border px-1 pt-2 w-full min-h-8 text-left cursor-default'
-    }
-  },
+    {
+      name: 'arena_info',
+      label: 'Спортсооружение',
+      type: 'text',
+      min_width: '160px',
+      options: {
+        readonly: true,
+        cellClass: 'text-xs bg-gray-50 rounded text-gray-60 font-bold border px-1 pt-2 w-full min-h-8 text-left cursor-default'
+      }
+    },
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['club_info'];
+const defaultVisibleFields = ['arena_info'];
 
-// Фильтры-селкты и фильтры-переключатели (type: 'toggle')
+// Фильтры-селкты и фильтры-переключатели
 const additionalFilters = ref([
-
-  {
-    field: 'sport_id',
-    label: 'Вид спорта',
-    apiUrl: api + '/api/v1/sports',
-    keyField: 'id',
-    limit: 10,
-    labelField: 'title',
-    iconField: 'icon',
-    options: {
-      enableSearch: true,
-    },
-    sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
-    options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-    list_item: null,
-    empty_option: {value: '', label: 'Все виды спорта'}
-  },
-  {
-    field: 'gender_id',
-    label: 'Пол',
-    apiUrl: api + '/api/v1/genders',
-    keyField: 'id',
-    labelField: 'title',
-    iconField: 'icon',
-    options: {
-      enableSearch: false,
-    },
-    sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
-    options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-    list_item: null,
-    empty_option: {value: '', label: 'Все'}
-  }, 
   {
     field: 'city_id',
     label: 'Город',
@@ -886,19 +664,7 @@ const additionalFilters = ref([
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
     list_item: null,
     empty_option: {value: '', label: 'Все города'}
-  }, 
-  // {
-  //   field: 'competition_id',
-  //   label: 'Соревнование',
-  //   apiUrl: api + '/api/v1/competitions?type=async',
-  //   keyField: 'id',
-  //   labelField: 'title_short',
-  //   enableSearch: true,
-  //   sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
-  //   options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-  //   list_item: null,
-  //   empty_option: {value: '', label: 'Все соревнования'}
-  // }, 
+  },
   {
     field: 'region_id',
     label: 'Регион',
@@ -917,4 +683,4 @@ const additionalFilters = ref([
 
 <style scoped>
 
-</style>
+</style> 

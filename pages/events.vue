@@ -599,7 +599,125 @@ const formOptions = ref({
           placeholder: 'Введите описание серии',
           defaultValue: ''
         }
-      ],
+      ]
+    },
+    {
+      label: 'Команда', // Текст кнопки
+      icon: 'i-bxl:microsoft-teams', // Опциональная иконка (имя иконки из библиотеки)
+      title: 'Добавление команды', // Заголовок модального окна
+      instruction: 'Заполните данные для создания команды. Не забудьте позже в разделе Команды добавить логотип и изображение команды.', // Инструкция (необязательно)
+      apiUrl: '/api/clubs', // URL для отправки данных
+      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
+      successMessage: 'Команда успешно добавлена', // Сообщение при успешном добавлении
+      fillField: false, // Поле в основной форме, которое нужно заполнить после добавления
+      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
+      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
+      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
+      fields: [ // Массив полей формы
+        {
+          name: 'title', // Имя поля (ключ при отправке на сервер)
+          label: 'Название команды', // Отображаемая метка поля
+          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
+          required: true, // Обязательное поле
+          placeholder: 'Введите название команды', // Подсказка в поле
+          defaultValue: '', // Значение по умолчанию
+        },
+        {
+          name: 'title_short',
+          label: 'Краткое название',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите краткое название команды',
+          defaultValue: ''
+        },
+        {
+          name: 'gender_id',
+          label: 'Пол',
+          type: 'select',
+          required: true,
+          defaultValue: null,
+          options: {
+            apiUrl: api + '/api/v1/genders?type=async',
+            keyField: 'id',
+            labelField: 'title',
+            iconField: 'icon',
+            enableSearch: true,
+            emptyable: false,
+            sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+            options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100 text-gray-600 rounded-md",
+            list_item: null,
+            displayLabelField: 'title'
+          }
+        },
+        {
+          name: 'city_title',
+          label: 'Город',
+          required: true,
+          type: 'text',
+          width: '250px',
+          options: {
+            readonly: false,
+            placeholder: 'название города',
+            cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+            inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+            autoSuggest: {
+              apiUrl: '/api/cities',
+              field_name: 'title',
+              minLength: 2,
+              debounce: 300,
+              clickable: true,
+              labelField: 'title',
+              valueField: 'id',
+              showCount: false,
+            }
+          }
+        },
+        {
+          name: 'slug',
+          label: 'Слаг',
+          type: 'text',
+          required: true,
+          options: {
+            readonly: false,
+            placeholder: 'slug',
+            transliterateFrom: 'title',
+            cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+            inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
+            autoSuggest: {
+              apiUrl: '/api/clubs',
+              minLength: 2,
+              debounce: 300,
+              clickable: false,
+              labelField: 'slug',
+              valueField: 'id',
+              showCount: false,
+            }
+          },
+          validation: {
+            required: true,
+            minLength: 2
+          }
+        },
+    {
+      name: 'sport_id',
+      required: true,
+      label: 'Вид спорта',
+      type: 'select',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/sports?type=async',
+        keyField: 'id',
+        labelField: 'title',
+        iconField: 'icon',
+        enableSearch: true,
+        emptyable: false,
+        cellClass: 'bg-gray-100 rounded border px-1 w-64',
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        displayLabelField: 'sport.title',
+      }
+    },
+      ]
     }
   ]
 });

@@ -1319,9 +1319,6 @@ export default {
         loading.value = true;
         error.value = null;
 
-        // Временная задержка для отладки прелоадера
-        //await new Promise(resolve => setTimeout(resolve, 300000));
-
         const filterParams = {};
         if (searchQuery.value) {
           filterParams.q = searchQuery.value;
@@ -1333,7 +1330,9 @@ export default {
         } else {
           // Добавляем остальные фильтры только если нет фильтра по ID
           props.additionalFilters.forEach(filter => {
-            if (selectedFilters.value[filter.field] !== undefined && selectedFilters.value[filter.field] !== '') {
+            if (selectedFilters.value[filter.field] !== undefined && 
+                selectedFilters.value[filter.field] !== '' && 
+                selectedFilters.value[filter.field] !== null) {
               filterParams[filter.field] = selectedFilters.value[filter.field];
             }
           });
