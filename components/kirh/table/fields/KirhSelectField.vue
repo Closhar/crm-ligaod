@@ -161,6 +161,10 @@ const props = defineProps({
   disabled: {
     type: Boolean,
     default: false,
+  },
+  field: {
+    type: String,
+    default: '',
   }
 });
 
@@ -212,32 +216,22 @@ const filteredOptions = computed(() => {
 
 // Добавляем вычисляемое свойство для отображения значения
 const getDisplayValue = computed(() => {
-  // Проверяем глобальное хранилище объектов
-  if (props.modelValue && window._selectObjects) {
-    const key = Object.keys(window._selectObjects).find(k => k.endsWith(`_${props.modelValue}`));
-    if (key && window._selectObjects[key]) {
-      const obj = window._selectObjects[key];
-      if (obj[props.labelField]) {
-        selectedOption.value = obj;
-        return obj[props.labelField];
-      }
-    }
+  if (!selectedOption.value) {
+    return props.placeholder;
   }
 
-  if (selectedOption.value && selectedOption.value[props.labelField]) {
-    return selectedOption.value[props.labelField];
+  // Сначала пытаемся получить значение из selectedOption (данные из API)
+  const value = getNestedValue(selectedOption.value, props.labelField);
+  if (value) {
+    return value;
   }
-  if (props.modelValue && typeof props.modelValue === 'object') {
-    // Проверяем, не является ли modelValue объектом с null значениями
-    const isEmptyObject = Object.values(props.modelValue).every(val => val === null);
-    if (isEmptyObject) {
-      return props.placeholder;
-    }
-    return props.modelValue[props.labelField] || props.modelValue.title_short || props.modelValue.label || props.placeholder;
+
+  // Если значение не найдено, пробуем получить title_short
+  if (selectedOption.value.title_short) {
+    return selectedOption.value.title_short;
   }
-  if (props.modelValue) {
-    return props.modelValue;
-  }
+
+  // Если значение не найдено, возвращаем placeholder
   return props.placeholder || props.label;
 });
 
@@ -260,10 +254,22 @@ const initializeDefaultValue = () => {
 const selectOption = (option) => {
   // Если селект отключен, не обрабатываем выбор
   if (props.disabled) return;
-  
+
   const selectedValue = option[props.keyField];
   emit('update:modelValue', selectedValue);
-  selectedOption.value = option;
+  
+  // Создаем новый объект с нужными полями
+  const newSelectedOption = {
+    [props.keyField]: option[props.keyField],
+    [props.labelField]: option[props.labelField],
+    title: option.title,
+    title_short: option.title_short,
+    icon: option.icon,
+    image: option.image
+  };
+  
+  selectedOption.value = newSelectedOption;
+  
   isOpen.value = false;
   searchQuery.value = '';
 };
@@ -306,7 +312,24 @@ const fetchOptions = async (query = '') => {
     if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
 
     const data = await response.json();
-    apiOptions.value = Array.isArray(data) ? data : [];
+
+    // Проверяем, что данные в правильном формате
+    if (!Array.isArray(data)) {
+      console.error('API вернул не массив:', data);
+      apiOptions.value = [];
+      return;
+    }
+
+    // Проверяем, что у всех элементов есть нужные поля
+    const validData = data.filter(item => {
+      const hasRequiredFields = item[props.keyField] !== undefined && item[props.labelField] !== undefined;
+      if (!hasRequiredFields) {
+        console.warn('Элемент без обязательных полей:', item);
+      }
+      return hasRequiredFields;
+    });
+
+    apiOptions.value = validData;
 
     // После загрузки данных инициализируем значение по умолчанию
     initializeDefaultValue();
@@ -351,42 +374,35 @@ watch(
     () => props.modelValue,
     (newValue) => {
       if (newValue || newValue === 0) {
-        // Сначала проверяем глобальное хранилище объектов
-        if (window._selectObjects) {
-          const key = Object.keys(window._selectObjects).find(k => k.endsWith(`_${newValue}`));
-          if (key && window._selectObjects[key]) {
-            const obj = window._selectObjects[key];
-            if (obj[props.keyField] == newValue) {
-              selectedOption.value = obj;
-              return;
-            }
-          }
-        }
-      
-        // Преобразуем options в массив, если это объект
-        const optionsArray = Array.isArray(props.options) ? props.options : 
-                          (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
-        const allOptions = [...optionsArray, ...apiOptions.value];
+        // Получаем реальные значения из Proxy
+        const optionsArray = Array.isArray(props.options) ? props.options : [];
+        const apiOptionsArray = Array.isArray(apiOptions.value) ? apiOptions.value : [];
+        const allOptions = [...optionsArray, ...apiOptionsArray];
+        
+        // Ищем опцию, учитывая возможные типы данных
         const foundOption = allOptions.find(
-            option => option[props.keyField] === newValue
+            option => {
+              const optionId = option[props.keyField];
+              return optionId == newValue; // Используем нестрогое сравнение
+            }
         );
         
         if (foundOption) {
-          selectedOption.value = foundOption;
+          // Создаем новый объект с нужными полями
+          const newSelectedOption = {
+            [props.keyField]: foundOption[props.keyField],
+            [props.labelField]: foundOption[props.labelField],
+            title: foundOption.title,
+            title_short: foundOption.title_short,
+            icon: foundOption.icon,
+            image: foundOption.image
+          };
+          selectedOption.value = newSelectedOption;
         } else if (props.emptyable) {
           selectedOption.value = props.emptyOption;
-        } else {
-          // Если emptyable=false и значение не найдено, берем первую доступную опцию
-          selectedOption.value = allOptions[0] || null;
         }
       } else if (props.emptyable) {
         selectedOption.value = props.emptyOption;
-      } else {
-        // Если emptyable=false и нет значения, берем первую доступную опцию
-        const optionsArray = Array.isArray(props.options) ? props.options : 
-                          (typeof props.options === 'object' && props.options !== null) ? Object.values(props.options) : [];
-        const allOptions = [...optionsArray, ...apiOptions.value];
-        selectedOption.value = allOptions[0] || null;
       }
     },
     {immediate: true}

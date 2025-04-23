@@ -179,14 +179,13 @@ const tableOptions = ref({
         displayIconField: 'gender.icon', // Плоское поле
         ev: [{
           warn_ev: 1,
-          class_warn_ev: "bg-blue-100 rounded h-8 text-blue-600 border px-1 pt-2 w-full text-center cursor-default"
+          class_warn_ev: "bg-blue-100 rounded h-8 text-blue-600 border w-full text-center cursor-default"
         },
           {
             warn_ev: 2,
-            class_warn_ev: "bg-pink-200 rounded h-8 text-pink-800 border px-1 pt-2 w-full text-center cursor-default"
+            class_warn_ev: "bg-pink-200 rounded h-8 text-pink-800 border w-full text-center cursor-default"
           }],
       }
-
     },
     {
       name: 'city_id',
@@ -615,7 +614,7 @@ const formOptions = ref({
   ],
   quickAdd: [
     {
-      label: 'ВИД СПОРТА', // Текст кнопки
+      label: 'Вид спорта', // Текст кнопки
       icon: 'i-ic:round-sports-kabaddi', // Опциональная иконка (имя иконки из библиотеки)
       title: 'Добавление нового вида спорта', // Заголовок модального окна
       instruction: 'Заполните данные для создания нового вида спорта. Не забудьте позже в разделе Виды спорта добавить описание и изображение для вида спорта.', // Инструкция (необязательно)
@@ -627,21 +626,47 @@ const formOptions = ref({
       labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
       emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
       fields: [ // Массив полей формы
-        {
-          name: 'title', // Имя поля (ключ при отправке на сервер)
-          label: 'Название вида спорта', // Отображаемая метка поля
-          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
-          required: true, // Обязательное поле
-          placeholder: 'Введите название вида спорта', // Подсказка в поле
-          defaultValue: '' // Значение по умолчанию
-        },
+        
+    {
+      name: 'title',
+      label: 'Вид спорта',
+      required: true,
+      type: 'text',
+        placeholder: 'Введите название вида спорта',
+      options: {
+        readonly: false,
+        autoSuggest: {
+          apiUrl: '/api/sports',
+          field_name: 'title',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: true,
+      }
+      }
+    },
         {
           name: 'slug',
           label: 'Слаг',
           type: 'text',
           required: true,
           placeholder: 'Введите слаг вида спорта',
-          defaultValue: ''
+          defaultValue: '',
+      options: {
+        readonly: false,
+        autoSuggest: {
+          apiUrl: '/api/sports',
+          field_name: 'slug',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'slug',
+          valueField: 'id',
+        showCount: true,
+      }
+      }
         },
         {
           name: 'title_short',
@@ -887,18 +912,6 @@ const additionalFilters = ref([
     list_item: null,
     empty_option: {value: '', label: 'Все города'}
   }, 
-  // {
-  //   field: 'competition_id',
-  //   label: 'Соревнование',
-  //   apiUrl: api + '/api/v1/competitions?type=async',
-  //   keyField: 'id',
-  //   labelField: 'title_short',
-  //   enableSearch: true,
-  //   sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
-  //   options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-  //   list_item: null,
-  //   empty_option: {value: '', label: 'Все соревнования'}
-  // }, 
   {
     field: 'region_id',
     label: 'Регион',

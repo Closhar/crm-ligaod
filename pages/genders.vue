@@ -92,7 +92,7 @@ const tableOptions = ref({
       name: 'title_short',
       label: 'Сокращение',
       type: 'text',
-      min_width: '150px',
+      width: '150px',
       sortable: true,
       options: {
         readonly: false,
@@ -200,14 +200,15 @@ const formOptions = ref({
     {
       name: 'icon',
       label: 'Иконка',
+      type: 'text',
       required: true,
-      type: 'icon',
       sortable: true,
-      width: '200px',
+      width: '250px',
       options: {
         readonly: false,
-        placeholder: 'Выберите иконку',
-        hint: 'Иконка для отображения',
+        placeholder: 'иконка',
+        link_in_title: 'https://icon-sets.iconify.design/',
+        hint_in_link: 'возьми код иконки на iconify по ссылке',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }

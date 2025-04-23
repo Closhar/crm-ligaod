@@ -459,7 +459,6 @@ const formOptions = ref({
         displayImageField: 'club1.image', // Вложенное поле
 //displayIconField: 'icon' // Плоское поле
       }
-
     },
     {
       name: 'club2_id',
@@ -482,7 +481,6 @@ const formOptions = ref({
         displayImageField: 'club2.image', // Вложенное поле
 //displayIconField: 'icon' // Плоское поле
       }
-
     },
     {
       name: 'title',
@@ -615,6 +613,25 @@ const formOptions = ref({
       emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
       fields: [ // Массив полей формы
         {
+          name: 'region_id',
+          label: 'Регион',
+          type: 'select',
+          required: true,
+          defaultValue: null,
+          options: {
+            apiUrl: api + '/api/regions?type=async',
+            keyField: 'id',
+            labelField: 'title',
+            iconField: 'icon',
+            enableSearch: true,
+            emptyable: false,
+            sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+            options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100 text-gray-600 rounded-md",
+            list_item: null,
+            displayLabelField: 'title'
+          }
+        },
+        {
           name: 'title', // Имя поля (ключ при отправке на сервер)
           label: 'Название команды', // Отображаемая метка поля
           type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
@@ -623,12 +640,65 @@ const formOptions = ref({
           defaultValue: '', // Значение по умолчанию
         },
         {
+          name: 'city_title',
+          label: 'Город',
+          required: true,
+          type: 'text',
+          width: '250px',
+          options: {
+            readonly: false,
+            placeholder: 'название города',
+            cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+            inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+            autoSuggest: {
+              apiUrl: '/api/cities',
+              field_name: 'title',
+              minLength: 2,
+              debounce: 300,
+              clickable: true,
+              labelField: 'title',
+              valueField: 'id',
+              showCount: false,
+            }
+          }
+        },
+        {
           name: 'title_short',
           label: 'Краткое название',
           type: 'text',
           required: true,
           placeholder: 'Введите краткое название команды',
-          defaultValue: ''
+          defaultValue: '',
+          options: {
+            half_str: true
+          }
+        },
+        {
+          name: 'slug',
+          label: 'Слаг',
+          type: 'text',
+          required: true,
+          options: {
+            readonly: false,
+            half_str: true,
+            placeholder: 'slug',
+            transliterateFrom: 'title',
+            cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
+            inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
+            autoSuggest: {
+              apiUrl: '/api/clubs',
+              minLength: 2,
+              debounce: 300,
+              clickable: false,
+              labelField: 'slug',
+              valueField: 'id',
+              showCount: false,
+            }
+          },
+          validation: {
+            required: true,
+            minLength: 2
+          }
         },
         {
           name: 'gender_id',
@@ -641,6 +711,7 @@ const formOptions = ref({
             keyField: 'id',
             labelField: 'title',
             iconField: 'icon',
+            half_str: true,
             enableSearch: true,
             emptyable: false,
             sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
@@ -648,6 +719,68 @@ const formOptions = ref({
             list_item: null,
             displayLabelField: 'title'
           }
+        },
+    {
+      name: 'sport_id',
+      required: true,
+      label: 'Вид спорта',
+      type: 'select',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/sports?type=async',
+        keyField: 'id',
+        labelField: 'title',
+        iconField: 'icon',
+        half_str: true,
+        enableSearch: true,
+        emptyable: false,
+        cellClass: 'bg-gray-100 rounded border px-1 w-64',
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        displayLabelField: 'sport.title',
+      }
+    },
+      ]
+    },
+    {
+      label: 'Спортсооружение', // Текст кнопки
+      icon: 'i-material-symbols-light:stadium-outline', // Опциональная иконка (имя иконки из библиотеки)
+      title: 'Добавление спортсооружения', // Заголовок модального окна
+      instruction: 'Заполните данные для создания спортсооружения.', // Инструкция (необязательно)
+      apiUrl: '/api/arenas', // URL для отправки данных
+      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
+      successMessage: 'Спортсооружение успешно добавлено', // Сообщение при успешном добавлении
+      fillField: false, // Поле в основной форме, которое нужно заполнить после добавления
+      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
+      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
+      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
+      fields: [ // Массив полей форм
+        {
+          name: 'region_id',
+          label: 'Регион',
+          type: 'select',
+          required: true,
+          defaultValue: null,
+          options: {
+            apiUrl: api + '/api/regions?type=async',
+            keyField: 'id',
+            labelField: 'title',
+            iconField: 'icon',
+            enableSearch: true,
+            emptyable: false,
+            sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+            options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100 text-gray-600 rounded-md",
+            list_item: null,
+            displayLabelField: 'title'
+          }
+        },
+        {
+          name: 'title', // Имя поля (ключ при отправке на сервер)
+          label: 'Название спортсооружения', // Отображаемая метка поля
+          type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
+          required: true, // Обязательное поле
+          placeholder: 'Введите название спортсооружения', // Подсказка в поле
+          defaultValue: '', // Значение по умолчанию
         },
         {
           name: 'city_title',
@@ -698,6 +831,91 @@ const formOptions = ref({
             minLength: 2
           }
         },
+      ]
+    },
+     {
+      label: 'Соревнование', // Текст кнопки
+      icon: 'i-game-icons:trophy-cup', // Опциональная иконка (имя иконки из библиотеки)
+      title: 'Добавление соревнования', // Заголовок модального окна
+      instruction: 'Заполните данные для создания соревнования.', // Инструкция (необязательно)
+      apiUrl: '/api/competitions', // URL для отправки данных
+      forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
+      successMessage: 'Соревнование успешно добавлено', // Сообщение при успешном добавлении
+      fillField: 'competition_id', // Поле в основной форме, которое нужно заполнить после добавления
+      valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
+      labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
+      emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
+      fields: [ // Массив полей формы
+        
+    {
+      name: 'title',
+      label: 'Название соревнования',
+      required: true,
+      type: 'text',
+        placeholder: 'Введите название соревнования',
+      options: {
+        autoSuggest: {
+          apiUrl: '/api/competitions',
+          field_name: 'title',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'title',
+          valueField: 'id',
+        showCount: true,
+      }
+      }
+    },
+        {
+          name: 'title_short',
+          label: 'Обозначение для crm',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите обозначение соревнования для системы',
+          defaultValue: ''
+        },
+        {
+          name: 'slug',
+          label: 'Слаг',
+          type: 'text',
+          required: true,
+          placeholder: 'Введите слаг соревнования',
+          defaultValue: '',
+      options: {
+        readonly: false,
+        transliterateFrom: 'title',
+        autoSuggest: {
+          apiUrl: '/api/competitions',
+          field_name: 'slug',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'slug',
+          valueField: 'id',
+        showCount: true,
+        }
+      }
+        },
+        {
+          name: 'gender_id',
+          label: 'Пол',
+          type: 'select',
+          required: true,
+          defaultValue: null,
+          options: {
+            apiUrl: api + '/api/v1/genders?type=async',
+            keyField: 'id',
+            labelField: 'title',
+            iconField: 'icon',
+            enableSearch: true,
+            emptyable: false,
+            sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+            options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100 text-gray-600 rounded-md",
+            list_item: null,
+            displayLabelField: 'title',
+            half_str: true
+          }
+        },
     {
       name: 'sport_id',
       required: true,
@@ -715,9 +933,32 @@ const formOptions = ref({
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
         displayLabelField: 'sport.title',
+        half_str: true
       }
     },
-      ]
+        {
+          name: 'date_from',
+          label: 'Дата начала соревнования',
+          type: 'date',
+          required: true,
+          placeholder: 'Введите дату начала соревнования',
+          defaultValue: '',
+          options: {
+            half_str: true
+          }
+        },
+        {
+          name: 'date_to',
+          label: 'Дата окончания соревнования',
+          type: 'date',
+          required: true,
+          placeholder: 'Введите дату окончания соревнования',
+          defaultValue: '',
+          options: {
+            half_str: true
+          }
+        },
+      ],
     }
   ]
 });

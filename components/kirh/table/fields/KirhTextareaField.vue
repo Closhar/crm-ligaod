@@ -45,7 +45,7 @@
                 maxWidth: options.imageMaxWidth || 1200,
                 quality: options.imageQuality || 0.8
               }"
-              @update:model-value="localValue = $event"
+              @update:model-value="handleValueUpdate"
               @toggle-fullscreen="toggleFullscreen"
           />
         </div>
@@ -109,7 +109,16 @@ import {ref, computed, watch} from 'vue'
 import RichTextEditor from "./../editor/RichTextEditor.vue";
 
 const props = defineProps({
-  modelValue: String,
+  modelValue: {
+    type: [String, Object],
+    default: '',
+    validator: (value) => {
+      if (typeof value === 'object' && value !== null) {
+        return value.target !== undefined; // Проверяем, что это InputEvent
+      }
+      return typeof value === 'string';
+    }
+  },
   error: [String, Boolean],
   options: {
     type: Object,
@@ -132,7 +141,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'blur'])
 
 const showModal = ref(false)
-const localValue = ref(props.modelValue)
+const localValue = ref('')
 const isFullscreen = ref(false)
 const editorContainer = ref(null)
 const isSaving = ref(false)
@@ -188,15 +197,24 @@ const parsedItems = computed(() => {
 })
 
 const displayValue = computed(() => {
-  return props.modelValue || '<p></p>'
+  if (typeof props.modelValue === 'object' && props.modelValue !== null) {
+    return props.modelValue.target?.value || '<p></p>';
+  }
+  return props.modelValue || '<p></p>';
 })
 
 const dynamicClass = computed(() => {
   if (props.options.check_empty) {
+    let valueToCheck = props.modelValue;
+    
+    if (typeof props.modelValue === 'object' && props.modelValue !== null) {
+      valueToCheck = props.modelValue.target?.value || '';
+    }
+    
     // Remove all HTML tags except iframe
-    const strippedValue = (props.modelValue || '')
-      .replace(/<(?!iframe\b)[^>]*>/g, '') // Remove all tags except iframe
-      .replace(/<\/iframe>/g, '') // Remove iframe closing tags
+    const strippedValue = (valueToCheck || '')
+      .replace(/<(?!iframe\b)[^>]*>/g, '')
+      .replace(/<\/iframe>/g, '')
       .trim();
     
     if (!strippedValue) {
@@ -208,7 +226,13 @@ const dynamicClass = computed(() => {
 
 const buttonTitle = computed(() => {
   if (props.options.check_empty) {
-    const strippedValue = (props.modelValue || '').replace(/<[^>]*>/g, '').trim();
+    let valueToCheck = props.modelValue;
+    
+    if (typeof props.modelValue === 'object' && props.modelValue !== null) {
+      valueToCheck = props.modelValue.target?.value || '';
+    }
+    
+    const strippedValue = (valueToCheck || '').replace(/<[^>]*>/g, '').trim();
     if (!strippedValue) {
       return (props.options.title || 'Редактировать') + ' (данные отсутствуют)';
     }
@@ -217,40 +241,65 @@ const buttonTitle = computed(() => {
 })
 
 const openModal = () => {
-  if (props.readonly) return
-  localValue.value = props.modelValue
-  isSaving.value = false
-  hasChanges.value = false
-  showModal.value = true
+  if (props.readonly) return;
+  
+  // Нормализуем значение перед открытием модального окна
+  const normalizedValue = getNormalizedValue(props.modelValue);
+  localValue.value = normalizedValue;
+  
+  isSaving.value = false;
+  hasChanges.value = false;
+  showModal.value = true;
 }
 
 const closeModal = () => {
-  showModal.value = false
-  isFullscreen.value = false
-  document.body.classList.remove('overflow-hidden')
-  emit('blur')
+  showModal.value = false;
+  isFullscreen.value = false;
+  document.body.classList.remove('overflow-hidden');
+  emit('blur');
 }
 
-watch(() => props.modelValue, (newValue) => {
-  localValue.value = newValue
-})
+const getNormalizedValue = (value) => {
+  if (typeof value === 'object' && value !== null) {
+    if (value.target) {
+      return value.target.value;
+    }
+    if (value.data) {
+      return value.data;
+    }
+    return '';
+  }
+  return value || '';
+}
 
 const handleValueUpdate = (newValue) => {
-  localValue.value = newValue
+  localValue.value = getNormalizedValue(newValue);
 }
 
 const saveChanges = () => {
-  if (isSaving.value) return
-  if (localValue.value === props.modelValue) {
-    closeModal()
-    return
+  if (isSaving.value) return;
+  if (localValue.value === getNormalizedValue(props.modelValue)) {
+    closeModal();
+    return;
   }
   
-  isSaving.value = true
-  emit('update:modelValue', localValue.value)
-  isSaving.value = false
-  closeModal()
+  isSaving.value = true;
+  emit('update:modelValue', localValue.value);
+  isSaving.value = false;
+  closeModal();
 }
+
+// Добавляем computed для нормализованного значения
+const normalizedModelValue = computed(() => {
+  return getNormalizedValue(props.modelValue);
+})
+
+// Обновляем watcher
+watch(normalizedModelValue, (newValue) => {
+  if (!showModal.value) {
+    localValue.value = newValue;
+  }
+}, { immediate: true });
 
 const toggleFullscreen = (value) => {
   isFullscreen.value = value

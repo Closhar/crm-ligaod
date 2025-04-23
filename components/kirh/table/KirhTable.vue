@@ -176,17 +176,6 @@
                   :disabled="!!idFilter"
                   @input="debouncedSearch"
               >
-              <button
-                  v-if="searchQuery"
-                  class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  @click="clearSearch"
-              >
-                <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <path clip-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        fill-rule="evenodd"/>
-                </svg>
-              </button>
             </div>
 
             <!-- Информация об отключении редактирования -->
@@ -396,7 +385,7 @@
                   </a>
                   
                   <!-- Подсказка -->
-                  <div v-if="column.options?.hint" class="relative ml-1">
+                  <div v-if="column.options?.hint" class="relative">
                     <svg 
                         class="h-3 w-3 text-gray-400" 
                         fill="currentColor" 
@@ -485,11 +474,12 @@
                         :options="column.options.options"
                         :emptyable="column.options?.emptyable"
                         :enablSearch="column.options?.enableSearch"
+                        :class="getSelectCellClass(row, column)"
                         @update:modelValue="(val) => handleSelectChange(row, column.name, val)"
                     />
 
                     <!-- API селект -->
-                    <div v-else class="border border-gray-200 h-8 rounded">
+                    <div v-else class="border border-gray-200 h-8 rounded" :class="getSelectCellClass(row, column)">
                       <!-- Статическое отображение -->
                       <div
                           v-if="!isActiveSelect(row.id, column.name)"
@@ -1019,15 +1009,15 @@ export default {
         } else {
           // В случае ошибки возвращаем старое значение
           row[fieldName] = value;
-          // Показываем сообщение об ошибке
-          alert(data.message || 'Ошибка при обновлении значения');
+          // Устанавливаем сообщение об ошибке
+          error.value = data.message || 'Ошибка при обновлении значения';
         }
       } catch (error) {
         console.error('Error updating datetime value:', error);
         // В случае ошибки возвращаем старое значение
         row[fieldName] = value;
-        // Показываем сообщение об ошибке
-        alert('Ошибка при обновлении значения');
+        // Устанавливаем сообщение об ошибке
+        error.value = 'Ошибка при обновлении значения';
       }
     };
 
@@ -1186,7 +1176,7 @@ export default {
         .filter(col => !props.excludedFields.includes(col.name))
         .map(col => ({
           name: col.name,
-          label: col.label || col.name,
+          label: col.label,
           type: col.type || 'text',
           width: col.width || null,
           min_width: col.min_width || null,
@@ -1201,7 +1191,7 @@ export default {
       // Поля extraEditableFields всегда включаются
       const extraFields = props.extraEditableFields.map(field => ({
         name: field.name,
-        label: field.label || field.name,
+        label: field.label,
         type: field.type || 'text',
         width: field.width || null,
         min_width: field.min_width || null,
@@ -1882,6 +1872,16 @@ export default {
       });
     };
 
+    // Метод для получения класса ячейки select-поля
+    const getSelectCellClass = (row, column) => {
+      if (!column.options?.ev) return '';
+      
+      const value = row[column.name];
+      const classConfig = column.options.ev.find(c => c.warn_ev === value);
+      
+      return classConfig ? classConfig.class_warn_ev : '';
+    };
+
     return {
       tableData,
       loading,
@@ -1963,6 +1963,7 @@ export default {
       updateCellValue,
       handleCellClick,
       formatDate, // Добавляем метод в возвращаемый объект
+      getSelectCellClass,
     };
   }
 };

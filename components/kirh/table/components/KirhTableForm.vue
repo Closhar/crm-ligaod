@@ -206,6 +206,26 @@
                     :placeholder="column.options?.placeholder"
                 />
 
+                <input
+                    v-else-if="column.type === 'date'"
+                    v-model="formData[column.name]"
+                    type="date"
+                    :required="column.required"
+                    :readonly="column.options?.readonly || formOptions.readonly"
+                    :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                    :placeholder="column.options?.placeholder"
+                />
+
+                <input
+                    v-else-if="column.type === 'time'"
+                    v-model="formData[column.name]"
+                    type="time"
+                    :required="column.required"
+                    :readonly="column.options?.readonly || formOptions.readonly"
+                    :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                    :placeholder="column.options?.placeholder"
+                />
+
                 <!-- Textarea поле -->
                 <textarea
                     v-else-if="column.type === 'textarea'"
@@ -376,183 +396,204 @@
           
           <!-- Форма быстрого добавления -->
           <form v-if="!quickAddSuccess" @submit.prevent="submitQuickAddForm" class="space-y-4">
-            <div v-for="(field, fieldIndex) in currentQuickAddItem?.fields" :key="fieldIndex" class="space-y-1">
-              <label :for="`quick-add-field-${fieldIndex}`" class="block text-sm font-medium text-gray-700">
-                {{ field.label }}
-                <span v-if="field.required" class="text-red-500">*</span>
-              </label>
-              
-              <!-- Текстовое поле с автоподсказками -->
-              <div 
-                v-if="field.type === 'text' && field.options?.autoSuggest" 
-                class="relative"
-                :ref="el => { autoSuggestRefs[field.name] = el }"
-              >
-                <div class="relative">
+            <div class="grid grid-cols-2 gap-4">
+              <template v-for="(field, fieldIndex) in currentQuickAddItem?.fields" :key="fieldIndex">
+                <div :class="['space-y-1', field.options?.half_str ? '' : 'col-span-2']">
+                  <label :for="`quick-add-field-${fieldIndex}`" class="block text-sm font-medium text-gray-700">
+                    {{ field.label }}
+                    <span v-if="field.required" class="text-red-500">*</span>
+                  </label>
+                  
+                  <!-- Текстовое поле с автоподсказками -->
+                  <div 
+                    v-if="field.type === 'text' && field.options?.autoSuggest" 
+                    class="relative"
+                    :ref="el => { autoSuggestRefs[field.name] = el }"
+                  >
+                    <div class="relative">
+                      <input
+                          v-model="quickAddFormData[field.name]"
+                          type="text"
+                          :required="field.required"
+                          :readonly="field.options?.readonly"
+                          :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                          :placeholder="field.options?.placeholder"
+                          @input="handleQuickAddAutoSuggest(field.name, field.options?.autoSuggest); handleQuickAddFieldInput(field.name)"
+                          @focus="isActiveSuggestion[field.name] = true"
+                      />
+                      <!-- Кнопка вставки из буфера -->
+                      <button 
+                        v-if="field.options?.pasteFromClipboard" 
+                        type="button" 
+                        @click="pasteFromClipboard(field.name)"
+                        class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                        :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div 
+                      v-if="(suggestions[field.name]?.length > 0 || suggestionsLoading[field.name]) && isActiveSuggestion[field.name]" 
+                      class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    >
+                      <!-- Индикатор загрузки -->
+                      <div v-if="suggestionsLoading[field.name]" class="p-2 text-center text-gray-500">
+                        <div class="inline-block animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                        Загрузка...
+                      </div>
+                      
+                      <!-- Сообщение, если нет результатов -->
+                      <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-center text-gray-500">
+                        Нет результатов
+                      </div>
+                      
+                      <!-- Список подсказок -->
+                      <ul v-else class="py-1">
+                        <li 
+                          v-for="(suggestion, i) in suggestions[field.name]" 
+                          :key="i" 
+                          class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                          :class="{'bg-blue-50 hover:bg-blue-100': field.options?.autoSuggest?.clickable}"
+                          @mousedown="handleQuickAddSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
+                        >
+                          <div class="flex items-center justify-between">
+                            <div>
+                              <span class="font-medium">{{ 
+                                suggestion[field.options?.autoSuggest?.labelField || 'name'] || suggestion.name || suggestion.title || suggestion.label || JSON.stringify(suggestion) 
+                              }}</span>
+                              
+                              <!-- Дополнительная информация -->
+                              <span v-if="suggestion.message" class="ml-2 text-xs text-gray-500">
+                                {{ suggestion.message }}
+                              </span>
+                              
+                              <!-- Доп. данные -->
+                              <div v-if="suggestion.email && suggestion.email !== suggestion[field.options?.autoSuggest?.labelField || 'name']" 
+                                class="text-xs text-gray-500 mt-1">
+                                {{ suggestion.email }}
+                              </div>
+                            </div>
+                            
+                            <!-- Счетчик -->
+                            <span v-if="field.options?.autoSuggest?.showCount && suggestion.count" 
+                                  class="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                              {{ suggestion.count }}
+                            </span>
+                            
+                            <!-- Иконка для кликабельных подсказок -->
+                            <span v-if="field.options?.autoSuggest?.clickable" class="text-blue-500 ml-2">
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Обычное текстовое поле -->
                   <input 
+                    v-else-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
+                    :type="field.type" 
                     :id="`quick-add-field-${fieldIndex}`"
                     v-model="quickAddFormData[field.name]" 
-                    type="text"
                     :required="field.required"
                     :placeholder="field.placeholder"
-                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm pr-8', field.options?.inputClass]"
-                    @input="handleQuickAddAutoSuggest(field.name, field.options?.autoSuggest); handleQuickAddFieldInput(field.name)"
-                    @focus="isActiveSuggestion[field.name] = true"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                    @input="handleQuickAddFieldInput(field.name)"
                   />
-                </div>
-                <div 
-                  v-if="(suggestions[field.name]?.length > 0 || suggestionsLoading[field.name]) && isActiveSuggestion[field.name]" 
-                  class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                >
-                  <!-- Индикатор загрузки -->
-                  <div v-if="suggestionsLoading[field.name]" class="p-2 text-center text-gray-500">
-                    <div class="inline-block animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
-                    Загрузка...
+                  
+
+                  <!-- Текстовая область -->
+                  <textarea 
+                    v-else-if="field.type === 'textarea'" 
+                    :id="`quick-add-field-${fieldIndex}`"
+                    v-model="quickAddFormData[field.name]" 
+                    :required="field.required"
+                    :placeholder="field.placeholder"
+                    :rows="field.rows || 3"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                    @input="handleQuickAddFieldInput(field.name)"
+                  ></textarea>
+                  
+                  <!-- Селект -->
+                  <KirhSelectField
+                    v-else-if="field.type === 'select'"
+                    v-model="quickAddFormData[field.name]"
+                    :key="`quick-add-select-${field.name}-${forceRerenderSelects}`"
+                    :options="field.options?.options"
+                    :api-url="field.options?.apiUrl"
+                    :api-params="field.options?.apiParams"
+                    :required="field.required"
+                    :enable-search="field.options?.enableSearch"
+                    :emptyable="field.options?.emptyable"
+                    :icon-field="field.options?.iconField"
+                    :image-field="field.options?.imageField"
+                    :key-field="field.options?.keyField || 'id'"
+                    :label-field="field.options?.labelField || 'name'"
+                    :label="field.label"
+                    :limit="field.options?.limit"
+                    :placeholder="field.options?.placeholder || field.label"
+                    :class="['w-full', field.options?.inputClass]"
+                    :emptyOption="field.emptyOption"
+                    :list-item="field.options?.list_item"
+                    :options-list="field.options?.options_list"
+                    :sel_class="field.options?.sel_class || null"
+                    :error="!!quickAddValidationErrors?.[field.name]"
+                  />
+                  
+                  <!-- Переключатель -->
+                  <div v-else-if="field.type === 'toggle'" class="flex items-center">
+                    <input 
+                      :id="`quick-add-field-${fieldIndex}`"
+                      type="checkbox"
+                      v-model="quickAddFormData[field.name]"
+                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label :for="`quick-add-field-${fieldIndex}`" class="ml-2 block text-sm text-gray-700">
+                      {{ field.toggleLabel || field.label }}
+                    </label>
                   </div>
                   
-                  <!-- Сообщение, если нет результатов -->
-                  <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-center text-gray-500">
-                    Нет результатов
-                  </div>
+                  <!-- Дата -->
+                  <input 
+                    v-else-if="field.type === 'date'" 
+                    type="date" 
+                    :id="`quick-add-field-${fieldIndex}`"
+                    v-model="quickAddFormData[field.name]" 
+                    :required="field.required"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                  />
                   
-                  <!-- Список подсказок -->
-                  <ul v-else class="py-1">
-                    <li 
-                      v-for="(suggestion, i) in suggestions[field.name]" 
-                      :key="i" 
-                      class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
-                      :class="{'bg-blue-50 hover:bg-blue-100': field.options?.autoSuggest?.clickable}"
-                      @mousedown="handleQuickAddSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
-                    >
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <span class="font-medium">{{ 
-                            suggestion[field.options?.autoSuggest?.labelField || 'name'] || suggestion.name || suggestion.title || suggestion.label || JSON.stringify(suggestion) 
-                          }}</span>
-                          
-                          <!-- Дополнительная информация -->
-                          <span v-if="suggestion.message" class="ml-2 text-xs text-gray-500">
-                            {{ suggestion.message }}
-                          </span>
-                          
-                          <!-- Доп. данные -->
-                          <div v-if="suggestion.email && suggestion.email !== suggestion[field.options?.autoSuggest?.labelField || 'name']" 
-                            class="text-xs text-gray-500 mt-1">
-                            {{ suggestion.email }}
-                          </div>
-                        </div>
-                        
-                        <!-- Счетчик -->
-                        <span v-if="field.options?.autoSuggest?.showCount && suggestion.count" 
-                              class="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
-                          {{ suggestion.count }}
-                        </span>
-                        
-                        <!-- Иконка для кликабельных подсказок -->
-                        <span v-if="field.options?.autoSuggest?.clickable" class="text-blue-500 ml-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                          </svg>
-                        </span>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-              
-              <!-- Обычное текстовое поле -->
-              <input 
-                v-else-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
-                :type="field.type" 
-                :id="`quick-add-field-${fieldIndex}`"
-                v-model="quickAddFormData[field.name]" 
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
-                @input="handleQuickAddFieldInput(field.name)"
-              />
-              
-              <!-- Текстовая область -->
-              <textarea 
-                v-else-if="field.type === 'textarea'" 
-                :id="`quick-add-field-${fieldIndex}`"
-                v-model="quickAddFormData[field.name]" 
-                :required="field.required"
-                :placeholder="field.placeholder"
-                :rows="field.rows || 3"
-                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-                @input="handleQuickAddFieldInput(field.name)"
-              ></textarea>
-              
-              <!-- Селект -->
-              <KirhSelectField
-                v-else-if="field.type === 'select'"
-                v-model="quickAddFormData[field.name]"
-                :key="`quick-add-select-${field.name}-${forceRerenderSelects}`"
-                :options="field.options?.options"
-                :api-url="field.options?.apiUrl"
-                :api-params="field.options?.apiParams"
-                :required="field.required"
-                :enable-search="field.options?.enableSearch"
-                :emptyable="field.options?.emptyable"
-                :icon-field="field.options?.iconField"
-                :image-field="field.options?.imageField"
-                :key-field="field.options?.keyField || 'id'"
-                :label-field="field.options?.labelField || 'name'"
-                :label="field.label"
-                :limit="field.options?.limit"
-                :placeholder="field.options?.placeholder || field.label"
-                class="w-full"
-                :emptyOption="field.emptyOption"
-                :list-item="field.options?.list_item"
-                :options-list="field.options?.options_list"
-                :sel_class="field.options?.sel_class || null"
-                :error="!!quickAddValidationErrors?.[field.name]"
-              />
-              
-              <!-- Переключатель -->
-              <div v-else-if="field.type === 'toggle'" class="flex items-center">
-                <input 
-                  :id="`quick-add-field-${fieldIndex}`"
-                  type="checkbox"
-                  v-model="quickAddFormData[field.name]"
-                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label :for="`quick-add-field-${fieldIndex}`" class="ml-2 block text-sm text-gray-700">
-                  {{ field.toggleLabel || field.label }}
-                </label>
-              </div>
-              
-              <!-- Дата/время -->
-              <input 
-                v-else-if="field.type === 'datetime'" 
-                type="datetime-local" 
-                :id="`quick-add-field-${fieldIndex}`"
-                v-model="quickAddFormData[field.name]" 
-                :required="field.required"
-                class="w-full p-2 border border-gray-300 rounded-md shadow-sm"
-              />
-              
-              <!-- Сообщение об ошибке поля -->
-              <p v-if="quickAddValidationErrors?.[field.name]" class="text-sm text-red-600 mt-1">
-                {{ quickAddValidationErrors[field.name].join(', ') }}
-              </p>
-            </div>
-            
-            <!-- Ошибка формы -->
-            <div v-if="quickAddError" class="bg-red-50 border-l-4 border-red-500 p-4">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <p class="text-sm text-red-700">
-                    {{ quickAddError }}
+                  <!-- Время -->
+                  <input 
+                    v-else-if="field.type === 'time'" 
+                    type="time" 
+                    :id="`quick-add-field-${fieldIndex}`"
+                    v-model="quickAddFormData[field.name]" 
+                    :required="field.required"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                  />
+                  
+                  <!-- Дата и время -->
+                  <input 
+                    v-else-if="field.type === 'datetime'" 
+                    type="datetime-local" 
+                    :id="`quick-add-field-${fieldIndex}`"
+                    v-model="quickAddFormData[field.name]" 
+                    :required="field.required"
+                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
+                  />
+                  
+                  <!-- Сообщение об ошибке поля -->
+                  <p v-if="quickAddValidationErrors?.[field.name]" class="text-sm text-red-600 mt-1">
+                    {{ quickAddValidationErrors[field.name].join(', ') }}
                   </p>
                 </div>
-              </div>
+              </template>
             </div>
           </form>
         </div>

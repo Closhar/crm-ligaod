@@ -90,19 +90,19 @@ const tableOptions = ref({
       width: '70px',
       sortable: false,
       options: {
-        image_path: 'full_image_path',
+        image_path: 'image_path',
         hint: 'Изображение спортсооружения',
-        thumbnailWidth: 46,
+        thumbnailWidth: 80,
         thumbnailHeight: 46,
         previewMaxHeight: '500px',
         modalTitle: 'Изображение спортсооружения:',
         modalTitleAddField: 'arena_info',
         cellClass: 'w-full mx-auto',
-        info: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 512x512px',
+        info: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 800x500px',
         resize: {
           enabled: true,
-          width: 512,
-          height: 512,
+          width: 800,
+          height: 500,
           crop: true,
           quality: 1,
           maxSizeMB: 1,
@@ -332,6 +332,7 @@ const tableOptions = ref({
     {
       name: 'region_id',
       label: '',
+      displayLabel: 'Регион',
       title_icon: 'i-ph:map-pin-area',
       type: 'select',
       width: '70px',
@@ -632,20 +633,10 @@ const extraFields = ref([
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
-    {
-      name: 'arena_info',
-      label: 'Спортсооружение',
-      type: 'text',
-      min_width: '160px',
-      options: {
-        readonly: true,
-        cellClass: 'text-xs bg-gray-50 rounded text-gray-60 font-bold border px-1 pt-2 w-full min-h-8 text-left cursor-default'
-      }
-    },
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['arena_info'];
+const defaultVisibleFields = ['title'];
 
 // Фильтры-селкты и фильтры-переключатели
 const additionalFilters = ref([
