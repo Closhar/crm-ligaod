@@ -85,12 +85,37 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'region_id',
+      label: '',
+      title_icon: 'i-ph:map-pin-area',
+      type: 'select',
+      width: '70px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/regions?type=async',
+        keyField: 'id',
+        emptyable: true,
+      hint: 'Регион',
+        labelField: 'title_short',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'region.title_short', 
+      },
+      emptyOption: {
+        value: null,
+        label: '-',
+      },
+    },
+    {
       name: 'image',
       label: '',
       displayLabel: 'Логотип',
       title_icon: 'ep:picture-rounded',
       type: 'image',
-      width: '70px',
+      width: '48px',
       sortable: false,
       options: {
         image_path: 'full_image_path', // поле для текущего изображения
@@ -114,6 +139,34 @@ const tableOptions = ref({
       },
     },
     {
+      name: 'image_bg',
+      label: '',
+      displayLabel: 'Изображение в шапке',
+      title_icon: 'stash:image',
+      type: 'image',
+      width: '82px',
+      sortable: false,
+      options: {
+        hint: 'изображение в шапке раздела команды',
+        image_path: 'bg_club_image_path', // поле для текущего изображения
+        thumbnailWidth: 80,
+        thumbnailHeight: 46,
+        previewMaxHeight: '500px',
+        modalTitle: 'Изображение для команды:',
+        modalTitleAddField: 'club_info', // добавление значения поля к заголовку модалки
+        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
+        resize: {
+          enabled: true,       // Включить обработку изображений
+          width: 800,          // Ширина (px)
+          height: 500,         // Высота (px)
+          crop: true,          // Обрезать до точных размеров
+          quality: 0.8,         // Качество (0-1)
+          maxSizeMB: 1,         // Максимальный размер (MB)
+          mimeType: 'image/jpeg' // Тип выходного файла
+        }
+      }
+    },
+    {
       name: 'title',
       label: 'Название',
       type: 'text',
@@ -123,35 +176,6 @@ const tableOptions = ref({
         readonly: false,
         placeholder: 'название',
         cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'title_short',
-      label: '',
-      title_icon: 'simple-icons:shortcut',
-      displayLabel: 'Краткое обозначение',
-      type: 'text',
-      width: '60px',
-      sortable: false,
-      options: {
-        readonly: false,
-      hint: 'Краткое обозначение команды',
-        placeholder: 'кратко',
-        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      width: '130px',
-      sortable: false,
-      options: {
-        readonly: false,
-        placeholder: 'slug',
-        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
         input_class: 'text-red-500'
       }
     },
@@ -185,6 +209,35 @@ const tableOptions = ref({
             warn_ev: 2,
             class_warn_ev: "bg-pink-200 rounded h-8 text-pink-800 border w-full text-center cursor-default"
           }],
+      }
+    },
+    {
+      name: 'title_short',
+      label: '',
+      title_icon: 'simple-icons:shortcut',
+      displayLabel: 'Краткое обозначение',
+      type: 'text',
+      width: '60px',
+      sortable: false,
+      options: {
+        readonly: false,
+      hint: 'Краткое обозначение команды',
+        placeholder: 'кратко',
+        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
+        input_class: 'text-red-500'
+      }
+    },
+    {
+      name: 'slug',
+      label: 'слаг',
+      type: 'text',
+      width: '200px',
+      sortable: false,
+      options: {
+        readonly: false,
+        placeholder: 'slug',
+        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        input_class: 'text-red-500'
       }
     },
     {
@@ -231,34 +284,6 @@ const tableOptions = ref({
         displayIconField: 'sport.icon' // Плоское поле
       }
 
-    },
-    {
-      name: 'image_bg',
-      label: '',
-      displayLabel: 'Изображение в шапке',
-      title_icon: 'stash:image',
-      type: 'image',
-      width: '50px',
-      sortable: false,
-      options: {
-        hint: 'изображение в шапке раздела команды',
-        image_path: 'bg_club_image_path', // поле для текущего изображения
-        thumbnailWidth: 46,
-        thumbnailHeight: 31,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение для команды:',
-        modalTitleAddField: 'club_info', // добавление значения поля к заголовку модалки
-        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
-        resize: {
-          enabled: true,       // Включить обработку изображений
-          width: 800,          // Ширина (px)
-          height: 500,         // Высота (px)
-          crop: true,          // Обрезать до точных размеров
-          quality: 0.8,         // Качество (0-1)
-          maxSizeMB: 1,         // Максимальный размер (MB)
-          mimeType: 'image/jpeg' // Тип выходного файла
-        }
-      }
     },
     {
       name: 'about',
@@ -410,31 +435,6 @@ const tableOptions = ref({
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
-    {
-      name: 'region_id',
-      label: '',
-      title_icon: 'i-ph:map-pin-area',
-      type: 'select',
-      width: '70px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/regions?type=async',
-        keyField: 'id',
-        emptyable: true,
-      hint: 'Регион',
-        labelField: 'title_short',
-        enableSearch: true,
-        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
-        sel_class: "text-xs text-blue-800 font-bold",
-        list_item: null,
-        // Поля для отображения в статическом режиме
-        displayLabelField: 'region.title_short', 
-      },
-      emptyOption: {
-        value: null,
-        label: '-',
-      },
-    },
   ],
   // Колонка Действия
   editable: true, // редактирование записи
@@ -497,6 +497,7 @@ const formOptions = ref({
       label: 'Название команды',
       type: 'text',
       required: true,
+      width: '250px',
       options: {
         readonly: false,
       placeholder: 'команда',
@@ -513,6 +514,7 @@ const formOptions = ref({
       label: 'Кратко',
       type: 'text',
       required: true,
+      width: '100px',
       options: {
         readonly: false,
         placeholder: 'сокр.',
@@ -682,7 +684,11 @@ const formOptions = ref({
           type: 'text',
           required: true,
           placeholder: 'Введите иконку вида спорта',
-          defaultValue: ''
+          defaultValue: '',
+          options: {
+            link_in_title: 'https://icon-sets.iconify.design/',
+            hint_in_link: 'возьми код иконки на iconify по ссылке',
+              }
         }
       ],
     }

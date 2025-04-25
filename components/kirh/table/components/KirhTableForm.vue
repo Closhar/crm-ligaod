@@ -401,6 +401,9 @@
                 <div :class="['space-y-1', field.options?.half_str ? '' : 'col-span-2']">
                   <label :for="`quick-add-field-${fieldIndex}`" class="block text-sm font-medium text-gray-700">
                     {{ field.label }}
+                    <a v-if="field.options?.link_in_title" :href="field.options?.link_in_title" class="text-blue-600 hover:text-blue-500" target="_blank">
+                      <Icon name="lucide:external-link" size="1em" class="ml-1" :title="field.options?.hint_in_link || ''"/>
+                    </a>
                     <span v-if="field.required" class="text-red-500">*</span>
                   </label>
                   

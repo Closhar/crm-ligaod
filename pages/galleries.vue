@@ -82,35 +82,6 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'image_id',
-      label: '',
-      displayLabel: 'Изображение',
-      title_icon: 'ep:picture-rounded',
-      type: 'image',
-      width: '70px',
-      sortable: false,
-      options: {
-        image_path: 'full_image_path',
-        hint: 'Изображение галереи',
-        thumbnailWidth: 46,
-        thumbnailHeight: 46,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение галереи:',
-        modalTitleAddField: 'gallery_info',
-        cellClass: 'w-full mx-auto',
-        info: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 512x512px',
-        resize: {
-          enabled: true,
-          width: 512,
-          height: 512,
-          crop: true,
-          quality: 1,
-          maxSizeMB: 1,
-          mimeType: 'image/png'
-        }
-      },
-    },
-    {
       name: 'title',
       label: 'Название',
       type: 'text',
@@ -123,12 +94,39 @@ const tableOptions = ref({
         input_class: 'text-red-500'
       }
     },
+    {
+      name: 'image_id',
+      label: 'Обложка галереи',
+      title_icon: 'i-ph:map-pin-area',
+      type: 'select',
+      width: '270px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/images?type=async',
+        apiParams: { gallery_id: 'id' },
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title',
+        imageField: 'gallery_image_path',
+        img_size: 'w-16 h-10',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        displayLabelField: 'main_image.title',
+        displayImageField: 'main_image.gallery_image_path',
+      },
+      emptyOption: {
+        value: null,
+        label: '-',
+      },
+    },
   ],
   editable: true,
   editrow: false,
   deleteable: true,
   sortable: true,
-  separateFields: true,
+  separateFields: false,
   defaultSortField: 'id',
   defaultSortDirection: 'desc',
   link: 'id',
@@ -138,7 +136,7 @@ const tableOptions = ref({
   pageSize: 30,
   searchable: true,
   enableResetFilters: true,
-  showIdFilter: true,
+  showIdFilter: false,
   resetFiltersLabel: 'Очистить',
   resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
       'disabled:bg-gray-200 disabled:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed'
@@ -163,6 +161,7 @@ const formOptions = ref({
       label: 'Название галереи',
       type: 'text',
       required: true,
+      width: '100%',
       options: {
         readonly: false,
         placeholder: 'название',
@@ -174,31 +173,6 @@ const formOptions = ref({
         minLength: 2
       }
     },
-    {
-      name: 'image_id',
-      label: 'Изображение',
-      type: 'image',
-      required: true,
-      options: {
-        readonly: false,
-        placeholder: 'изображение',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
-        inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-        hint: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 512x512px',
-        resize: {
-          enabled: true,
-          width: 512,
-          height: 512,
-          crop: true,
-          quality: 1,
-          maxSizeMB: 1,
-          mimeType: 'image/png'
-        }
-      },
-      validation: {
-        required: true
-      }
-    }
   ]
 });
 

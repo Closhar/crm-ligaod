@@ -127,7 +127,7 @@ const tableOptions = ref({
       name: 'slug',
       label: 'слаг',
       type: 'text',
-      width: '130px',
+      width: '200px',
       sortable: false,
       options: {
         readonly: false,

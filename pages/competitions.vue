@@ -140,31 +140,6 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'title_short',
-      label: 'Обозначение для crm',
-      type: 'text',
-      min_width: '160px',
-      sortable: false,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      min_widthwidth: '160px',
-      sortable: false,
-      options: {
-        readonly: false,
-        placeholder: 'slug',
-        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
       name: 'gender_id',
       label: 'Пол',
       displayLabel: 'Пол',
@@ -194,6 +169,31 @@ const tableOptions = ref({
             warn_ev: 2,
             class_warn_ev: "bg-pink-200 rounded h-8 text-pink-800 border w-full text-center cursor-default"
           }],
+      }
+    },
+    {
+      name: 'title_short',
+      label: 'Обозначение для crm',
+      type: 'text',
+      min_width: '160px',
+      sortable: false,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        input_class: 'text-red-500'
+      }
+    },
+    {
+      name: 'slug',
+      label: 'слаг',
+      type: 'text',
+      min_widthwidth: '140px',
+      sortable: false,
+      options: {
+        readonly: false,
+        placeholder: 'slug',
+        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        input_class: 'text-red-500'
       }
     },
     {
@@ -233,7 +233,7 @@ const tableOptions = ref({
       width: '110px',
       options: {
         readonly: false,
-        cellClass: 'text-xs font-bold bg-blue-100 rounded h-8 text-gray-800 border px-1 w-full',
+        cellClass: 'text-xs font-bold bg-green-100 rounded h-8 text-gray-800 border px-1 w-full',
       }
     },
     {
@@ -300,6 +300,7 @@ const formOptions = ref({
       label: 'Название соревнования',
       type: 'text',
       required: true,
+      width: '400px',
       options: {
         readonly: false,
         placeholder: 'соревнование',
@@ -313,9 +314,10 @@ const formOptions = ref({
     },
     {
       name: 'title_short',
-      label: 'Кратко',
+      label: 'Обозначение для crm',
       type: 'text',
       required: true,
+      width: '400px',
       options: {
         readonly: false,
         placeholder: 'сокр.',

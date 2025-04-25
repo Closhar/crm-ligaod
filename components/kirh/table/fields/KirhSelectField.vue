@@ -12,7 +12,7 @@
             v-if="selectedOption?.[props.imageField]"
             :src="selectedOption[props.imageField]"
             alt=""
-            class="w-6 h-6 rounded"
+            :class="props.options?.img_size || 'w-6 h-6 rounded'"
         />
         <Icon
             v-else-if="selectedOption?.[props.iconField]"
@@ -52,13 +52,13 @@
           class="option"
           @click="selectOption(option)"
       >
-        <div class="flex items-center space-x-2 text-sm">
+        <div class="flex items-center space-x-2 text-xs">
           <!-- Изображение или иконка опции -->
           <img
               v-if="option[props.imageField]"
               :src="option[props.imageField]"
               alt=""
-              class="w-6 h-6 rounded"
+              :class="props.options?.img_size || 'w-6 h-6'"
           />
           <Icon
               v-else-if="option[props.iconField]"
@@ -199,7 +199,6 @@ const filteredOptions = computed(() => {
       [props.keyField]: props.emptyOption.value,
       [props.labelField]: props.emptyOption.label,
       [props.iconField]: props.emptyOption.icon,
-      [props.imageField]: props.emptyOption.image,
     });
   }
 

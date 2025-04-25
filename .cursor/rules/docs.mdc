@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+после изменений функционала веди историю версий в файле pages/docs/index.vue, обновляй документацию в соответствующих файлах в папке pages/docs

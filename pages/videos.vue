@@ -82,24 +82,6 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'src',
-      label: '',
-      displayLabel: 'Видео',
-      title_icon: 'i-mdi:video',
-      type: 'video',
-      width: '70px',
-      sortable: false,
-      options: {
-        hint: 'Ссылка на видео',
-        previewMaxHeight: '500px',
-        modalTitle: 'Видео:',
-        modalTitleAddField: 'video_info',
-        cellClass: 'w-full mx-auto',
-        info: 'Вставьте ссылку на видео (YouTube, Vimeo и т.д.)',
-        placeholder: 'https://www.youtube.com/watch?v=...'
-      },
-    },
-    {
       name: 'title',
       label: 'Название',
       type: 'text',
@@ -112,16 +94,32 @@ const tableOptions = ref({
         input_class: 'text-red-500'
       }
     },
+    {
+      name: 'src',
+      label: '',
+      title_icon: 'i-akar-icons:video',
+      type: 'textarea',
+      width: '50px',
+      sortable: false,
+      options: {
+        editorEnabled: false,
+        hint: 'Ссылка на видео',
+        icon: 'material-symbols:hangout-video-outline-rounded',
+        title: 'Редактирование ссылки на видео',
+        readonly: false,
+        sel_class: "text-gray-900 hover:text-blue-800",
+        placeholder: 'Введите ссылку...',
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
   ],
   editable: true,
   editrow: false,
   deleteable: true,
   sortable: true,
-  separateFields: true,
+  separateFields: false,
   defaultSortField: 'id',
   defaultSortDirection: 'desc',
-  link: 'id',
-  link_prefix: site + '/videos',
   pagination: true,
   main_field: 'title',
   pageSize: 30,
@@ -152,6 +150,7 @@ const formOptions = ref({
       label: 'Название видео',
       type: 'text',
       required: true,
+      width: '100%',
       options: {
         readonly: false,
         placeholder: 'название',
@@ -166,20 +165,15 @@ const formOptions = ref({
     {
       name: 'src',
       label: 'Ссылка на видео',
-      type: 'video',
+      type: 'textarea',
       required: true,
+      width: '100%',
       options: {
         readonly: false,
         placeholder: 'https://www.youtube.com/watch?v=...',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
         inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-        hint: 'Вставьте ссылку на видео (YouTube, Vimeo и т.д.)',
-        info: 'Поддерживаются ссылки на YouTube, Vimeo и другие популярные видеохостинги'
       },
-      validation: {
-        required: true,
-        pattern: '^(https?://)?(www\.)?(youtube\.com|youtu\.be|vimeo\.com|dailymotion\.com|rutube\.ru)/.+$'
-      }
     }
   ]
 });

@@ -41,6 +41,18 @@
           :class="{'kirh-field-selector-collapsed': isFieldSelectorCollapsed}"
           class="kirh-field-selector w-56 bg-gray-50 border-r border-gray-200 p-2 overflow-y-auto flex-shrink-0 transition-all duration-300 relative"
       >
+        <!-- Кнопка управления панелью для мобильной версии -->
+        <button
+            class="md:hidden text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md flex items-center gap-1 transition-colors shadow-sm mb-2 w-full justify-center"
+            @click="toggleFieldSelectorCollapse"
+        >
+          <Icon 
+              :name="isFieldSelectorCollapsed ? 'material-symbols:chevron-right' : 'material-symbols:chevron-left'" 
+              size="1.2em" 
+          />
+          {{ isFieldSelectorCollapsed ? 'Показать панель полей' : 'Убрать панель полей' }}
+        </button>
+
         <div class="flex justify-between items-center mb-2">
           <span class="text-xs font-medium text-gray-500">Выберите поля для редактирования</span>
           
@@ -89,8 +101,22 @@
 
         <!-- Панель управления с пагинацией, обновление/сброс, toggle-фильтры, текстовый поиск -->
         <div class="kirh-controls flex flex-wrap gap-1 items-center mb-1 p-1.5 bg-blue-50 w-full">
-          <div class="kirh-pagination flex items-left gap-1 text-xs">
+          <!-- Мобильные toggle-фильтры -->
+          <div class="md:hidden flex flex-col w-full gap-1 mb-2">
+            <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center w-full">
+              <ToggleFilter
+                  v-if="filter.type === 'toggle'"
+                  v-model="selectedFilters[filter.field]"
+                  :active-class="filter.activeClass || 'bg-blue-500 text-white'"
+                  :filter="filter"
+                  :disabled="!!idFilter"
+                  class="w-full"
+                  @update:modelValue="applyFilters"
+              />
+            </div>
+          </div>
 
+          <div class="kirh-pagination flex items-left gap-1 text-xs">
             <!-- Пагинация -->
             <span v-if="tableOptions.pagination" class="text-gray-500 text-xs">Всего: {{ totalItems }}</span>
             <button
@@ -110,13 +136,10 @@
             >
               <Icon name="emojione-v1:right-arrow" size="1.5em" />
             </button>
-
-            
           </div>
 
           <div class="flex flex-row gap-1">
-
-<!-- Кнопка обновления таблицы -->
+            <!-- Кнопка обновления таблицы -->
             <button
                 :disabled="loading"
                 class="refresh-btn text-xs bg-blue-500 hover:bg-blue-400 text-gray-50 px-3 py-1 rounded-md flex items-left gap-1 transition-colors shadow-sm"
@@ -148,21 +171,21 @@
               </svg>
               {{ tableOptions.resetFiltersLabel || 'Сбросить' }}
             </button>
-
           </div>
 
-            <div class="kirh-pagination flex items-center gap-2 text-xs">
-              <!-- Дополнительные фильтры -->
-            <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
-              <ToggleFilter
-                  v-if="filter.type === 'toggle'"
-                  v-model="selectedFilters[filter.field]"
-                  :active-class="filter.activeClass || 'bg-blue-500 text-white'"
-                  :filter="filter"
-                  :disabled="!!idFilter"
-                  class="hidden md:block"
-                  @update:modelValue="applyFilters"
-              />
+          <div class="kirh-pagination flex items-center gap-2 text-xs">
+            <!-- Дополнительные фильтры для десктопной версии -->
+            <div class="hidden md:flex items-center gap-2">
+              <div v-for="(filter, index) in additionalFilters" :key="index" class="flex items-center">
+                <ToggleFilter
+                    v-if="filter.type === 'toggle'"
+                    v-model="selectedFilters[filter.field]"
+                    :active-class="filter.activeClass || 'bg-blue-500 text-white'"
+                    :filter="filter"
+                    :disabled="!!idFilter"
+                    @update:modelValue="applyFilters"
+                />
+              </div>
             </div>
 
             <!-- Строковый фильтр -->
@@ -237,6 +260,7 @@
                     :placeholder="filter.placeholder || filter.label"
                     :sel_class="filter.sel_class || null"
                     :disabled="!!idFilter"
+                    class="w-48"
                     @update:modelValue="applyFilters"
                 />
               </div>
@@ -260,7 +284,7 @@
             <div class="flex flex-col gap-4">
               <!-- Мобильные фильтры -->
               <div v-for="(filter, index) in additionalFilters" :key="index" class="flex flex-col gap-2">
-                <label class="text-sm font-medium text-gray-700">{{ filter.label }}</label>
+                <label v-if="filter.type !== 'toggle'" class="text-sm font-medium text-gray-700">{{ filter.label }}</label>
                 <KirhSelectField
                     v-if="filter.type !== 'toggle'"
                     v-model="selectedFilters[filter.field]"
@@ -281,15 +305,7 @@
                     :placeholder="filter.placeholder || filter.label"
                     :sel_class="filter.sel_class || null"
                     :disabled="!!idFilter"
-                    @update:modelValue="applyFilters"
-                />
-                <ToggleFilter
-                    v-if="filter.type === 'toggle'"
-                    v-model="selectedFilters[filter.field]"
-                    :active-class="filter.activeClass || 'bg-blue-500 text-white'"
-                    :filter="filter"
-                    :disabled="!!idFilter"
-                    class="hidden md:block"
+                    class="w-full"
                     @update:modelValue="applyFilters"
                 />
               </div>
@@ -341,7 +357,6 @@
                       :name="column.title_icon" 
                       size="1.5em" 
                       class="flex-shrink-0 mr-1"
-                      :title="column.displayLabel || column.label || ''"
                   />
                   
                   <!-- Текст заголовка (показываем только если label не пустой) -->
@@ -380,7 +395,6 @@
                         name="lucide:external-link" 
                         size="1.2em" 
                         class="ml-1" 
-                        :title="column.options?.hint_in_link || ''"
                     />
                   </a>
                   
@@ -479,11 +493,11 @@
                     />
 
                     <!-- API селект -->
-                    <div v-else class="border border-gray-200 h-8 rounded" :class="getSelectCellClass(row, column)">
+                    <div v-else class="border border-gray-200 rounded" :class="getSelectCellClass(row, column)">
                       <!-- Статическое отображение -->
                       <div
                           v-if="!isActiveSelect(row.id, column.name)"
-                          class="flex items-center justify-between cursor-pointer hover:bg-gray-200 rounded h-8 p-1"
+                          class="flex items-center justify-between cursor-pointer hover:bg-gray-200 rounded min-h-8 p-1"
                           @click="openInlineSelect(row, column)"
                       >
                         <div class="flex items-center min-w-0">
@@ -491,7 +505,8 @@
                           <img
                               v-if="getSelectImage(row, column)"
                               :src="getSelectImage(row, column)"
-                              class="h-5 w-5 rounded-full mr-2 object-cover flex-shrink-0"
+                              class="mr-2 rounded object-cover flex-shrink-0"
+                              :class="column.options?.img_size || 'w-6 h-6'"
                           />
                           <!-- Иконка -->
                           <Icon
@@ -544,7 +559,7 @@
                           :label-field="column.options.labelField || 'name'"
                           :limit="column.options.limit || null"
                           :list_item="column.options.list_item || null"
-                          :options="column.options.options"
+                          :options="column.options"
                           :enableSearch="column.options?.enableSearch"
                           :emptyable="column.options?.emptyable"
                           :emptyOption="column.emptyOption"
@@ -1554,10 +1569,10 @@ export default {
 
     const getSelectApiParams = (column, row) => {
       const params = {...column.options?.apiParams};
-      if (column.options?.polymorphic) {
-        const {idField, typeField} = column.options.polymorphic;
-        params[typeField] = row[typeField];
-        params[idField] = row[idField];
+      if (column.options?.apiParams) {
+        Object.entries(column.options.apiParams).forEach(([key, fieldName]) => {
+          params[key] = row[fieldName];
+        });
       }
       return params;
     };
@@ -2468,6 +2483,42 @@ export default {
   input:focus {
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+}
+
+/* Обновленные стили для мобильной версии */
+@media (max-width: 768px) {
+  /* Скрываем панель полей по умолчанию */
+  .kirh-field-selector {
+    display: none;
+  }
+
+  /* Показываем панель только если она не свернута */
+  .kirh-field-selector:not(.kirh-field-selector-collapsed) {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    z-index: 100;
+    width: 80%;
+    max-width: 300px;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Стили для кнопки управления панелью */
+  .kirh-field-selector button {
+    margin-bottom: 1rem;
+  }
+
+  /* Стили для toggle-фильтров */
+  .kirh-controls .md\:hidden {
+    margin-bottom: 1rem;
+  }
+
+  .kirh-controls .md\:hidden .ToggleFilter {
+    width: 100%;
+    margin-bottom: 0.5rem;
   }
 }
 </style>

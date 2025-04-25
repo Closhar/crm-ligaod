@@ -82,141 +82,9 @@ const tableOptions = ref({
       }
     },
     {
-      name: 'image',
-      label: '',
-      displayLabel: 'Изображение',
-      title_icon: 'ep:picture-rounded',
-      type: 'image',
-      width: '70px',
-      sortable: false,
-      options: {
-        image_path: 'full_image_path',
-        hint: 'Изображение новости',
-        thumbnailWidth: 46,
-        thumbnailHeight: 46,
-        previewMaxHeight: '500px',
-        modalTitle: 'Изображение новости:',
-        modalTitleAddField: 'article_info',
-        cellClass: 'w-full mx-auto',
-        info: 'Загрузите изображение в формате PNG. Изображение приведется к размеру 800x500px',
-        resize: {
-          enabled: true,
-          width: 800,
-          height: 500,
-          crop: true,
-          quality: 0.8,
-          maxSizeMB: 1,
-          mimeType: 'image/jpeg'
-        }
-      },
-    },
-    {
-      name: 'title',
-      label: 'Заголовок',
-      type: 'text',
-      min_width: '160px',
-      sortable: true,
-      options: {
-        readonly: false,
-        placeholder: 'заголовок',
-        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'data',
-      label: 'Дата',
-      type: 'datetime',
-      width: '130px',
-      sortable: true,
-      options: {
-        readonly: false,
-        placeholder: 'дата',
-        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        input_class: 'text-red-500',
-        format: 'DD.MM.YYYY HH:mm'
-      }
-    },
-    {
-      name: 'slug',
-      label: 'слаг',
-      type: 'text',
-      width: '130px',
-      sortable: false,
-      options: {
-        readonly: false,
-        placeholder: 'slug',
-        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'description',
-      label: '',
-      displayLabel: 'Описание',
-      title_icon: 'healthicons:info-outline',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        editorEnabled: true,
-        hint: 'Краткое описание новости',
-        icon: 'icon-park-outline:text',
-        title: 'Редактирование описания',
-        readonly: false,
-        sel_class: "text-gray-900 hover:text-blue-800",
-        placeholder: 'Введите краткое описание...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-400 hover:bg-red-300',
-      }
-    },
-    {
-      name: 'content',
-      label: '',
-      displayLabel: 'Содержание',
-      title_icon: 'healthicons:info-outline',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        editorEnabled: true,
-        hint: 'Содержание новости',
-        icon: 'icon-park-outline:text',
-        title: 'Редактирование содержания',
-        readonly: false,
-        sel_class: "text-gray-900 hover:text-blue-800",
-        placeholder: 'Введите содержание новости...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-400 hover:bg-red-300',
-      }
-    },
-    {
-      name: 'published',
-      label: 'Опубликовано',
-      type: 'toggle',
-      width: '100px',
-      sortable: false,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        input_class: 'text-red-500',
-        trueValue: 1,
-        falseValue: 0,
-        trueLabel: 'Да',
-        falseLabel: 'Нет'
-      }
-    },
-    {
       name: 'region_id',
       label: '',
+      displayLabel: 'Регион',
       title_icon: 'i-ph:map-pin-area',
       type: 'select',
       width: '70px',
@@ -237,6 +105,143 @@ const tableOptions = ref({
         value: null,
         label: '-',
       },
+    },
+    {
+      name: 'image',
+      label: '',
+      displayLabel: 'Изображение',
+      title_icon: 'ep:picture-rounded',
+      type: 'image',
+      width: '70px',
+      sortable: false,
+      options: {
+        image_path: 'article_image_path',
+        hint: 'Изображение для новости',
+        thumbnailWidth: 80,
+        thumbnailHeight: 46,
+        previewMaxHeight: '500px',
+        modalTitle: 'Изображение новости:',
+        modalTitleAddField: 'title',
+        cellClass: 'w-full mx-auto',
+        info: 'Загрузите изображение в формате JPG|PNG. Изображение приведется к размеру 800x500px',
+        resize: {
+          enabled: true,
+          width: 800,
+          height: 500,
+          crop: true,
+          quality: 0.8,
+          maxSizeMB: 1,
+          mimeType: 'image/jpeg'
+        }
+      },
+    },
+    {
+      name: 'data',
+      label: 'Дата',
+      type: 'datetime',
+      width: '150px',
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold bg-blue-100 rounded h-8 text-gray-800 border px-1 w-full',
+      }
+    },
+    {
+      name: 'title',
+      label: 'Заголовок',
+      type: 'text',
+      min_width: '160px',
+      sortable: true,
+      options: {
+        readonly: false,
+        placeholder: 'заголовок',
+        cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
+        input_class: 'text-red-500'
+      }
+    },
+    {
+      name: 'slug',
+      label: 'слаг',
+      type: 'text',
+      width: '220px',
+      sortable: false,
+      options: {
+        readonly: false,
+        placeholder: 'slug',
+        cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        input_class: 'text-red-500'
+      }
+    },
+    {
+      name: 'description',
+      label: '',
+      displayLabel: 'Описание',
+      title_icon: 'fluent:text-description-16-filled',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        hint: 'Краткое описание новости',
+        icon: 'icon-park-outline:text',
+        title: 'Краткое описание статьи',
+        readonly: false,
+        sel_class: "text-gray-900 hover:text-blue-800",
+        placeholder: 'Введите краткое описание...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
+      name: 'content',
+      label: '',
+      displayLabel: 'Контент статьи',
+      title_icon: 'material-symbols:description-outline',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        hint: 'Содержание новости',
+        icon: 'icon-park-outline:text',
+        title: 'Содержание статьи',
+        readonly: false,
+        sel_class: "text-gray-900 hover:text-blue-800",
+        placeholder: 'Введите содержание статьи...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
+      name: 'published',
+      label: '',
+      displayLabel: 'Опубликовано',
+      title_icon: 'si:fact-check-line',
+      type: 'toggle',
+      width: '60px',
+      sortable: false,
+      options: {
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800',
+        readonly: false,
+        hint: 'Опубликована ли статья',
+        trueValue: 1,
+        falseValue: 0,
+        trueLabel: 'Да',
+        falseLabel: 'Нет'
+      }
     },
   ],
   editable: true,
@@ -301,26 +306,18 @@ const formOptions = ref({
         placeholder: 'заголовок',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
         inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-      },
-      validation: {
-        required: true,
-        minLength: 2
       }
     },
     {
       name: 'data',
+      required: true,
       label: 'Дата',
       type: 'datetime',
-      required: true,
+      width: '180px',
       options: {
         readonly: false,
-        placeholder: 'дата',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
-        inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-        format: 'DD.MM.YYYY HH:mm'
-      },
-      validation: {
-        required: true
+        cellClass: 'text-xs font-bold bg-blue-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
       }
     },
     {
@@ -428,7 +425,7 @@ const additionalFilters = ref([
     enableSearch: true,
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-    list_item: null,
+    
     empty_option: {value: '', label: 'Все регионы'}
   },
   {

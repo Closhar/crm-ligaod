@@ -91,6 +91,7 @@ const tableOptions = ref({
     {
       name: 'region_id',
       label: '',
+      displayLabel: 'Регион',
       title_icon: 'i-ph:map-pin-area',
       type: 'select',
       width: '70px',
@@ -314,11 +315,13 @@ const tableOptions = ref({
     },
     {
       name: 'is_active',
-      label: 'акт.',
+      label: '',
+      title_icon: 'fontisto:checkbox-active',
       type: 'toggle',
       width: '60px',
       sortable: false,
       options: {
+        hint: 'Активно ли событие',
         display: 'switch', // или 'switch' для классического вида
         items: [
           {value: true, label: 'Вкл'},
@@ -423,7 +426,7 @@ const formOptions = ref({
     },
     {
       name: 'arena_id',
-      label: 'Арена',
+      label: 'Спортсооружение',
       type: 'select',
       sortable: false,
       options: {
