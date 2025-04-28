@@ -98,6 +98,17 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'match_info',
+      label: 'Инфо о матче',
+      type: 'text',
+      width: '250px',
+      sortable: true,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+      }
+    },
+    {
       name: 'title_short',
       label: 'Сокращение',
       type: 'text',
@@ -106,18 +117,25 @@ const tableOptions = ref({
       options: {
         readonly: false,
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
+      },
     },
     {
       name: 'description',
-      label: 'Описание',
+      label: '',
+      title_icon: 'healthicons:info-outline',
       type: 'textarea',
-      width: '80px',
+      width: '50px',
       sortable: false,
       options: {
-        enableEdit: true,
+        editorEnabled: false,
+        hint: 'Описание серии',
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование описания серии',
         readonly: false,
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+        sel_class: "text-gray-900 hover:text-blue-800",
+        placeholder: 'Введите описание серии...',
+        empty_class: 'bg-red-400 hover:bg-red-300',
+        check_empty: true,
       }
     },
   ],
@@ -168,6 +186,20 @@ const formOptions = ref({
       }
     },
     {
+      name: 'match_info',
+      label: 'Инфо о матче',
+      required: false,
+      type: 'text',
+      sortable: true,
+      width: '300px',
+      options: {
+        readonly: false,
+        hint: 'Информация об отдельном матче (Название/этап в таблице для конструктора серии)',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+      }
+    },
+    {
       name: 'title_short',
       label: 'Сокращение',
       required: true,
@@ -176,20 +208,30 @@ const formOptions = ref({
       width: '150px',
       options: {
         readonly: false,
-        placeholder: 'Сокращенное название',
-        hint: 'Сокращенное название серии',
+        placeholder: 'Сокращение',
+        hint: 'Сокращенное название серии для вывода в таблице',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+      autoSuggest: {
+          apiUrl: '/api/series',
+          field_name: 'title_short',
+          minLength: 2,
+          debounce: 300,
+          clickable: false,
+          labelField: 'title_short',
+          valueField: 'id',
+        showCount: true,
       }
+      },
     },
     {
       name: 'description',
       label: 'описание серии',
-      type: 'editor',
+      type: 'textarea',
       required: false,
       //width: '250px',
       options: {
-        editorEnabled: true,
+        editorEnabled: false,
         readonly: false,
         placeholder: 'Введите описание серии...',
         uploadUrl: api + '/api/upload-image',

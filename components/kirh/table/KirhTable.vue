@@ -471,6 +471,7 @@
                     :key="`cell-${rowIndex}-${column.name}-${colIndex}`"
                     :style="getColumnStyle(column)"
                     class="kirh-cell border-b border-gray-100 text-center"
+                    :title="getCellTitle(row, column)"
                 >
                   <!-- Select-поле -->
                   <template v-if="column.type === 'select'">
@@ -596,6 +597,7 @@
                         :type="column.type"
                         v-model="row[column.name]"
                         :row-data="row"
+                        :api-url="apiUrl"
                         @blur="handleBlur(row, column.name)"
                         @input="updateValue(row, column.name, $event)"
                         @change="updateValue(row, column.name, $event)"
@@ -603,6 +605,13 @@
                         @click="handleCellClick(row, column)"
                     />
                   </template>
+
+                  <!-- Всплывающая подсказка с полным значением -->
+                  <div v-if="row[column.name] && column.type !== 'image'" 
+                       class="absolute z-20 hidden group-hover:block bg-white text-gray-700 text-xs rounded px-2 py-1 whitespace-normal w-48 shadow-lg border border-gray-200"
+                       style="transform: translate(-50%, 10px); left: 50%;">
+                    {{ row[column.name] }}
+                  </div>
                 </div>
 
                 <div v-if="tableOptions.deleteable || tableOptions.editrow || tableOptions.link"
@@ -715,6 +724,7 @@ import KirhImageField from './fields/KirhImageField.vue';
 import KirhTextareaField from "./fields/KirhTextareaField.vue";
 import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
+import KirhSwapField from './fields/KirhSwapField.vue';
 
 export default {
   name: 'KirhTable',
@@ -727,7 +737,8 @@ export default {
     KirhImageField,
     KirhTextareaField,
     KirhHasManyField,
-    KirhTableForm
+    KirhTableForm,
+    KirhSwapField
   },
   props: {
     apiUrl: {
@@ -833,7 +844,8 @@ export default {
         select: KirhSelectField,
         toggle: KirhToggleField,
         image: KirhImageField,
-        hasmany: KirhHasManyField
+        hasmany: KirhHasManyField,
+        swap: KirhSwapField
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1747,15 +1759,29 @@ export default {
       
       // Проверяем, активен ли уже этот фильтр
       if (selectedFilters.value[paramName] === value) {
-        // Если да, сбрасываем фильтр
-        selectedFilters.value[paramName] = '';
+        // Если да, сбрасываем все фильтры
+        searchQuery.value = '';
+        Object.keys(selectedFilters.value).forEach(key => {
+          selectedFilters.value[key] = '';
+        });
+        sortField.value = props.tableOptions.defaultSortField;
+        sortDirection.value = props.tableOptions.defaultSortDirection;
+        currentPage.value = 1;
+        idFilter.value = null;
       } else {
-        // Иначе устанавливаем новое значение
+        // Если нет, сбрасываем все текущие фильтры
+        searchQuery.value = '';
+        Object.keys(selectedFilters.value).forEach(key => {
+          selectedFilters.value[key] = '';
+        });
+        sortField.value = props.tableOptions.defaultSortField;
+        sortDirection.value = props.tableOptions.defaultSortDirection;
+        currentPage.value = 1;
+        idFilter.value = null;
+
+        // Устанавливаем новое значение фильтра
         selectedFilters.value[paramName] = value;
       }
-      
-      // Сбрасываем на первую страницу
-      currentPage.value = 1;
       
       // Загружаем данные с новым фильтром
       fetchData();
@@ -1897,6 +1923,17 @@ export default {
       return classConfig ? classConfig.class_warn_ev : '';
     };
 
+    // Добавляем метод для получения заголовка ячейки
+    const getCellTitle = (row, column) => {
+      if (!row[column.name]) return '';
+      
+      if (column.type === 'select') {
+        return getSelectLabel(row, column) || column.emptyOption?.label || 'Не выбрано';
+      }
+      
+      return row[column.name];
+    };
+
     return {
       tableData,
       loading,
@@ -1979,6 +2016,7 @@ export default {
       handleCellClick,
       formatDate, // Добавляем метод в возвращаемый объект
       getSelectCellClass,
+      getCellTitle,
     };
   }
 };
@@ -2520,5 +2558,25 @@ export default {
     width: 100%;
     margin-bottom: 0.5rem;
   }
+}
+
+/* Стили для всплывающих подсказок */
+.kirh-cell .absolute {
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.kirh-cell:hover .absolute {
+  opacity: 1;
+  transform: translate(-50%, 10px);
+}
+
+/* Улучшенные стили для подсказок */
+.kirh-cell .absolute {
+  max-width: 300px;
+  word-wrap: break-word;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.4;
 }
 </style>

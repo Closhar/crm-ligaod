@@ -1,0 +1,53 @@
+# KirhTable
+
+## Типы полей
+
+### swap
+Поле для обмена значениями между двумя полями в таблице. При клике на кнопку отправляется запрос на сервер для обмена значений.
+
+#### Опции:
+```javascript
+{
+  name: 'swap_fields', // Имя поля
+  label: 'Поменять местами', // Заголовок колонки
+  type: 'swap', // Тип поля
+  options: {
+    field1: 'field1_name', // Имя первого поля для обмена (обязательно)
+    field2: 'field2_name', // Имя второго поля для обмена (обязательно)
+    icon: 'material-symbols:swap-vert', // Опциональная иконка (по умолчанию 'material-symbols:swap-horiz')
+    button_text: 'Обменять', // Опциональный текст кнопки (по умолчанию пусто)
+    cell_class: 'bg-gray-50' // Опциональный класс для ячейки
+  }
+}
+```
+
+#### Особенности:
+- Использует основной API-адрес таблицы для отправки запроса
+- Отправляет POST запрос на `/swap-fields` с параметрами:
+  - `field1` - имя первого поля
+  - `field2` - имя второго поля
+  - `id` - ID текущей записи
+- После успешного обмена значений таблица автоматически обновляется
+
+#### Пример использования на бэкенде (PHP):
+```php
+public function swapFields(Request $request, $id)
+{
+    $model = YourModel::findOrFail($id);
+    
+    $field1 = $request->input('field1');
+    $field2 = $request->input('field2');
+    
+    // Получаем текущие значения
+    $value1 = $model->$field1;
+    $value2 = $model->$field2;
+    
+    // Меняем местами
+    $model->$field1 = $value2;
+    $model->$field2 = $value1;
+    
+    $model->save();
+    
+    return response()->json(['success' => true]);
+}
+``` 

@@ -110,6 +110,7 @@ const tableOptions = ref({
         sel_class: "text-gray-900 hover:text-blue-800",
         placeholder: 'Введите ссылку...',
         empty_class: 'bg-red-400 hover:bg-red-300',
+        check_empty: true,
       }
     },
   ],

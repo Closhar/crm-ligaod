@@ -400,6 +400,13 @@
                 </td>
               </tr>
               <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">simple_select</td>
+                <td class="p-2">Упрощенный выпадающий список</td>
+                <td class="p-2">
+                  options, readonly, placeholder, empty_option, list_item, options_list, sel_class
+                </td>
+              </tr>
+              <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">toggle</td>
                 <td class="p-2">Переключатель</td>
                 <td class="p-2">defaultChecked, readonly, inputClass, toggleLabel, activeClass, inactiveClass</td>
@@ -850,6 +857,102 @@ transform: 'return text.trim().split("\\n").join(", ");'</code></pre>
         <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
           <p class="text-sm text-yellow-800">
             <span class="font-bold">Примечание:</span> Функция вставки из буфера обмена зависит от разрешений браузера. В некоторых браузерах доступ к буферу обмена может быть ограничен в целях безопасности и требовать разрешения пользователя.
+          </p>
+        </div>
+      </div>
+      
+      <h3 id="simple-select-field" class="text-lg font-semibold mb-4 pt-4 border-t bg-green-50 p-2 rounded">Поле типа simple_select</h3>
+      
+      <div class="bg-green-50 p-4 rounded-md mb-6">
+        <p class="text-gray-700 mb-4">
+          Поле типа <code>simple_select</code> представляет собой упрощенную версию обычного выпадающего списка.
+          Оно предназначено для случаев, когда не требуется сложная логика работы с API и достаточно статического списка опций.
+        </p>
+        
+        <h4 class="font-semibold mb-2">Основные параметры:</h4>
+        
+        <div class="bg-white p-4 rounded-md mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-200">
+                <th class="p-2 text-left">Параметр</th>
+                <th class="p-2 text-left">Тип</th>
+                <th class="p-2 text-left">По умолчанию</th>
+                <th class="p-2 text-left">Описание</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">options</td>
+                <td class="p-2">Array</td>
+                <td class="p-2">[]</td>
+                <td class="p-2">Массив объектов с опциями выпадающего списка</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">readonly</td>
+                <td class="p-2">Boolean</td>
+                <td class="p-2">false</td>
+                <td class="p-2">Поле только для чтения</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">placeholder</td>
+                <td class="p-2">String</td>
+                <td class="p-2">''</td>
+                <td class="p-2">Плейсхолдер для поля</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">empty_option</td>
+                <td class="p-2">String</td>
+                <td class="p-2">'Выберите значение'</td>
+                <td class="p-2">Текст для пустой опции</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">list_item</td>
+                <td class="p-2">String</td>
+                <td class="p-2">null</td>
+                <td class="p-2">CSS класс для элементов списка</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">options_list</td>
+                <td class="p-2">String</td>
+                <td class="p-2">null</td>
+                <td class="p-2">CSS класс для контейнера списка</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">sel_class</td>
+                <td class="p-2">String</td>
+                <td class="p-2">null</td>
+                <td class="p-2">CSS класс для элемента select</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h4 class="font-semibold mb-2">Пример использования:</h4>
+        
+        <div class="bg-white p-4 rounded-md mb-4">
+          <pre class="text-xs text-gray-800 overflow-x-auto">
+<code>{
+  name: 'status',
+  label: 'Статус',
+  type: 'simple_select',
+  required: true,
+  options: {
+    options: [
+      { value: 'active', label: 'Активен' },
+      { value: 'inactive', label: 'Неактивен' },
+      { value: 'pending', label: 'Ожидает' }
+    ],
+    placeholder: 'Выберите статус',
+    empty_option: 'Не выбран',
+    sel_class: 'w-full rounded border-gray-300'
+  }
+}</code></pre>
+        </div>
+        
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+          <p class="text-sm text-yellow-800">
+            <span class="font-bold">Примечание:</span> В отличие от обычного select, simple_select не поддерживает работу с API, поиск по опциям и другие расширенные функции. Используйте его для простых случаев, когда достаточно статического списка опций.
           </p>
         </div>
       </div>

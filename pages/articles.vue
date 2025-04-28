@@ -181,7 +181,7 @@ const tableOptions = ref({
       uploadEnabled: true,
       sortable: false,
       options: {
-        editorEnabled: true,
+        editorEnabled: false,
         hint: 'Краткое описание новости',
         icon: 'icon-park-outline:text',
         title: 'Краткое описание статьи',
@@ -353,10 +353,10 @@ const formOptions = ref({
       required: true,
       options: {
         readonly: false,
+        editorEnabled: false,
         placeholder: 'краткое описание',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'p-1 h-20 border border-gray-300 rounded text-md',
-        editorEnabled: true
       },
       validation: {
         required: true,
@@ -366,13 +366,14 @@ const formOptions = ref({
     {
       name: 'content',
       label: 'Содержание',
-      type: 'textarea',
+      type: 'editor',
       required: true,
       options: {
         readonly: false,
         placeholder: 'содержание новости',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'p-1 h-40 border border-gray-300 rounded text-md',
+        uploadUrl: api + '/api/upload-image',
         editorEnabled: true
       },
       validation: {

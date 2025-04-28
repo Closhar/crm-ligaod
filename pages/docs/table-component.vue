@@ -302,7 +302,7 @@
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">type</td>
                 <td class="p-2">String</td>
-                <td class="p-2">Тип данных: 'text', 'number', 'date', 'boolean', 'image', 'link', 'custom'</td>
+                <td class="p-2">Тип данных: 'text', 'number', 'date', 'boolean', 'image', 'link', 'custom', 'swap'</td>
               </tr>
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">visible</td>
@@ -338,6 +338,16 @@
                 <td class="p-2 font-medium">filter_button</td>
                 <td class="p-2">Object</td>
                 <td class="p-2">Настройки кнопки фильтрации для колонки (для полей типа select)</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">options</td>
+                <td class="p-2">Object</td>
+                <td class="p-2">Дополнительные настройки для полей типа select, image и других</td>
+              </tr>
+              <tr class="border-b border-gray-200">
+                <td class="p-2 font-medium">img_size</td>
+                <td class="p-2">String</td>
+                <td class="p-2">Размер изображения в ячейке (например, 'w-16 h-10'). Используется для полей с изображениями</td>
               </tr>
             </tbody>
           </table>
@@ -420,6 +430,64 @@
     class: 'ml-1 p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors',
     param_name: 'category_id'
   }
+}</pre>
+      </div>
+      
+      <h3 class="text-lg font-semibold mb-2">Пример использования поля типа swap:</h3>
+      
+      <div class="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto mb-6">
+        <pre class="text-sm font-mono">
+// Пример колонки для обмена значений между полями
+{
+  name: 'swap_fields',
+  label: 'Поменять местами',
+  type: 'swap',
+  options: {
+    field1: 'club1_id', // Имя первого поля для обмена
+    field2: 'club2_id', // Имя второго поля для обмена
+    icon: 'material-symbols:swap-vert', // Опциональная иконка
+    button_text: 'Обменять', // Опциональный текст кнопки
+    cell_class: 'bg-gray-50' // Опциональный класс для ячейки
+  }
+}</pre>
+      </div>
+
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <h4 class="text-md font-semibold mb-2 text-blue-800">Особенности поля типа swap:</h4>
+        <ul class="list-disc list-inside text-gray-700">
+          <li>Использует основной API-адрес таблицы для отправки запроса</li>
+          <li>Отправляет POST запрос на <code>/swap-fields</code> с параметрами:
+            <ul class="list-disc list-inside ml-4">
+              <li><code>field1</code> - имя первого поля</li>
+              <li><code>field2</code> - имя второго поля</li>
+              <li><code>id</code> - ID текущей записи</li>
+            </ul>
+          </li>
+          <li>После успешного обмена значений таблица автоматически обновляется</li>
+        </ul>
+      </div>
+
+      <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-6">
+        <h4 class="text-md font-semibold mb-2 text-yellow-800">Пример обработчика на бэкенде (PHP):</h4>
+        <pre class="text-sm font-mono bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto">
+public function swapFields(Request $request, $id)
+{
+    $model = YourModel::findOrFail($id);
+    
+    $field1 = $request->input('field1');
+    $field2 = $request->input('field2');
+    
+    // Получаем текущие значения
+    $value1 = $model->$field1;
+    $value2 = $model->$field2;
+    
+    // Меняем местами
+    $model->$field1 = $value2;
+    $model->$field2 = $value1;
+    
+    $model->save();
+    
+    return response()->json(['success' => true]);
 }</pre>
       </div>
       

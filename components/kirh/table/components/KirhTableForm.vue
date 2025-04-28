@@ -280,6 +280,26 @@
                     :error="!!validationErrors?.[column.name]"
                 />
 
+                <!-- Простой селект -->
+                <select
+                    v-else-if="column.type === 'simple_select'"
+                    v-model="formData[column.name]"
+                    :required="column.required"
+                    :readonly="column.options?.readonly || formOptions.readonly"
+                    :class="['w-full rounded-md shadow-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500', column.options?.inputClass]"
+                >
+                    <option v-if="column.options?.emptyOption" value="">
+                        {{ column.options?.emptyOptionText || 'Выберите значение' }}
+                    </option>
+                    <option 
+                        v-for="(option, index) in column.options?.options" 
+                        :key="index" 
+                        :value="option.value"
+                    >
+                        {{ option.label }}
+                    </option>
+                </select>
+
                 <!-- Переключатель -->
                 <label v-else-if="column.type === 'toggle'" class="inline-flex items-center mt-2">
                   <input
@@ -308,6 +328,306 @@
               <p v-if="validationErrors?.[column.name]" class="mt-1 text-sm text-red-600">
                 {{ validationErrors[column.name].join(', ') }}
               </p>
+            </div>
+          </div>
+
+          <!-- Дополнительные поля под спойлером -->
+          <div v-if="formOptions.additionalFields?.columns?.length" class="px-4">
+            <div 
+              class="border-t border-gray-200 pt-4 cursor-pointer" 
+              @click="isAdditionalFieldsOpen = !isAdditionalFieldsOpen"
+            >
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900">
+                  {{ formOptions.additionalFields.title }}
+                </h3>
+                <button 
+                  type="button" 
+                  class="text-gray-400 hover:text-gray-500"
+                  :class="{'rotate-180': isAdditionalFieldsOpen}"
+                >
+                  <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div v-show="isAdditionalFieldsOpen" class="mt-4">
+              <p v-if="formOptions.additionalFields.description" class="mb-4 text-sm text-gray-500">
+                {{ formOptions.additionalFields.description }}
+              </p>
+              <div class="flex flex-wrap gap-1">
+                <div
+                    v-for="(column, index) in formOptions.additionalFields.columns"
+                    :key="index"
+                    :class="column.options?.cellClass"
+                    :style="{ width: column.width }"
+                >
+                  <label class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ column.label }}
+                    <a v-if="column.options?.link_in_title" :href="column.options?.link_in_title" class="text-blue-600 hover:text-blue-500" target="_blank">
+                      <Icon name="lucide:external-link" size="1em" class="ml-1" :title="column.options?.hint_in_link || ''"/>
+                    </a>
+                    <span v-if="column.required" class="text-red-500">*</span>
+                    <span v-if="column.options?.hint" class="ml-1 text-gray-400 cursor-help" :title="column.options.hint">
+                      <svg class="h-4 w-4 inline" fill="currentColor" viewBox="0 0 20 20">
+                        <path clip-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" fill-rule="evenodd"></path>
+                      </svg>
+                    </span>
+                  </label>
+
+                  <div :class="['block w-full', validationErrors?.[column.name] ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500']">
+                    <!-- Текстовое поле с автоподсказками -->
+                    <div 
+                      v-if="column.type === 'text' && column.options?.autoSuggest" 
+                      class="relative"
+                      :ref="el => { autoSuggestRefs[column.name] = el }"
+                    >
+                      <div class="relative">
+                        <input
+                            v-model="formData[column.name]"
+                            type="text"
+                            :required="column.required"
+                            :readonly="column.options?.readonly || formOptions.readonly"
+                            :class="['w-full rounded-md shadow-sm pr-8', column.options?.inputClass]"
+                            :placeholder="column.options?.placeholder"
+                            @input="handleAutoSuggest(column.name, column.options?.autoSuggest); handleFieldInput(column.name)"
+                            @focus="isActiveSuggestion[column.name] = true"
+                        />
+                        <!-- Кнопка вставки из буфера -->
+                        <button 
+                          v-if="column.options?.pasteFromClipboard" 
+                          type="button" 
+                          @click="pasteFromClipboard(column.name)"
+                          class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                          :title="column.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div 
+                        v-if="(suggestions[column.name]?.length > 0 || suggestionsLoading[column.name]) && isActiveSuggestion[column.name]" 
+                        class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                      >
+                        <!-- Индикатор загрузки -->
+                        <div v-if="suggestionsLoading[column.name]" class="p-2 text-center text-gray-500">
+                          <div class="inline-block animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full mr-2"></div>
+                          Загрузка...
+                        </div>
+                        
+                        <!-- Сообщение, если нет результатов -->
+                        <div v-else-if="suggestions[column.name]?.length === 0" class="p-2 text-center text-gray-500">
+                          Нет результатов
+                        </div>
+                        
+                        <!-- Список подсказок -->
+                        <ul v-else class="py-1">
+                          <li 
+                            v-for="(suggestion, i) in suggestions[column.name]" 
+                            :key="i" 
+                            class="px-3 py-2 text-sm hover:bg-gray-100 cursor-pointer"
+                            :class="{'bg-blue-50 hover:bg-blue-100': column.options?.autoSuggest?.clickable}"
+                            @mousedown="handleSuggestionSelect(column.name, suggestion, column.options?.autoSuggest, $event)"
+                          >
+                            <div class="flex items-center justify-between">
+                              <div>
+                                <span class="font-medium">{{ 
+                                  suggestion[column.options?.autoSuggest?.labelField || 'name'] || suggestion.name || suggestion.title || suggestion.label || JSON.stringify(suggestion) 
+                                }}</span>
+                                
+                                <!-- Дополнительная информация -->
+                                <span v-if="suggestion.message" class="ml-2 text-xs text-gray-500">
+                                  {{ suggestion.message }}
+                                </span>
+                                
+                                <!-- Доп. данные -->
+                                <div v-if="suggestion.email && suggestion.email !== suggestion[column.options?.autoSuggest?.labelField || 'name']" 
+                                  class="text-xs text-gray-500 mt-1">
+                                  {{ suggestion.email }}
+                                </div>
+                              </div>
+                              
+                              <!-- Счетчик -->
+                              <span v-if="column.options?.autoSuggest?.showCount && suggestion.count" 
+                                    class="ml-2 text-xs bg-gray-200 px-2 py-0.5 rounded-full">
+                                {{ suggestion.count }}
+                              </span>
+                              
+                              <!-- Иконка для кликабельных подсказок -->
+                              <span v-if="column.options?.autoSuggest?.clickable" class="text-blue-500 ml-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                              </span>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  
+                    <!-- Обычное текстовое поле -->
+                    <div v-else-if="column.type === 'text'" class="relative">
+                      <input
+                          v-model="formData[column.name]"
+                          type="text"
+                          :required="column.required"
+                          :readonly="column.options?.readonly || formOptions.readonly"
+                          :class="['w-full rounded-md shadow-sm', column.options?.pasteFromClipboard ? 'pr-8' : '', column.options?.inputClass]"
+                          :placeholder="column.options?.placeholder"
+                          @input="handleFieldInput(column.name)"
+                      />
+                      <!-- Кнопка вставки из буфера -->
+                      <button 
+                        v-if="column.options?.pasteFromClipboard" 
+                        type="button" 
+                        @click="pasteFromClipboard(column.name)"
+                        class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                        :title="column.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <!-- Поле datetime-local -->
+                    <input
+                        v-else-if="column.type === 'datetime'"
+                        v-model="formData[column.name]"
+                        type="datetime-local"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                    />
+
+                    <input
+                        v-else-if="column.type === 'date'"
+                        v-model="formData[column.name]"
+                        type="date"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                    />
+
+                    <input
+                        v-else-if="column.type === 'time'"
+                        v-model="formData[column.name]"
+                        type="time"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full rounded-md shadow-sm', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                    />
+
+                    <!-- Textarea поле -->
+                    <textarea
+                        v-else-if="column.type === 'textarea'"
+                        v-model="formData[column.name]"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full p-1 rounded text-sm', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                        :rows="column.options?.rows || 3"
+                    />
+
+                    <!-- Редактор поле -->
+                    <RichTextEditor
+                        v-else-if="column.type === 'editor'"
+                        v-model="formData[column.name]"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full p-1 rounded text-sm', column.options?.inputClass]"
+                        :placeholder="column.options?.placeholder"
+                        :show-source="false"
+                        :upload-options="{
+                          url: column.options.uploadUrl || '/api/upload-image',
+                          maxWidth: column.options.imageMaxWidth || 1200,
+                          quality: column.options.imageQuality || 0.8
+                        }"
+                    />
+
+                    <!-- Select поле (компонент KirhSelectField) -->
+                    <KirhSelectField
+                        v-else-if="column.type === 'select'"
+                        v-model="formData[column.name]"
+                        :key="`select-${column.name}-${forceRerenderSelects}`"
+                        :options="column.options?.options"
+                        :api-url="column.options?.apiUrl"
+                        :api-params="column.options?.apiParams"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :enable-search="column.options?.enableSearch"
+                        :emptyable="column.options?.emptyable"
+                        :icon-field="column.options?.iconField"
+                        :image-field="column.options?.imageField"
+                        :key-field="column.options?.keyField || 'id'"
+                        :label-field="column.options?.labelField || 'name'"
+                        :label="column.label"
+                        :limit="column.options?.limit"
+                        :placeholder="column.options?.placeholder || column.label"
+                        :class="['w-full', column.options?.inputClass]"
+                        :emptyOption="column.emptyOption"
+                        :list-item="column.options?.list_item"
+                        :options-list="column.options?.options_list"
+                        :sel_class="column.options?.sel_class || null"
+                        :error="!!validationErrors?.[column.name]"
+                    />
+
+                    <!-- Простой селект -->
+                    <select
+                        v-else-if="column.type === 'simple_select'"
+                        v-model="formData[column.name]"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :class="['w-full rounded-md shadow-sm border-gray-300 focus:border-blue-500 focus:ring-blue-500', column.options?.inputClass]"
+                    >
+                        <option v-if="column.options?.emptyOption" value="">
+                            {{ column.options?.emptyOptionText || 'Выберите значение' }}
+                        </option>
+                        <option 
+                            v-for="(option, index) in column.options?.options" 
+                            :key="index" 
+                            :value="option.value"
+                        >
+                            {{ option.label }}
+                        </option>
+                    </select>
+
+                    <!-- Переключатель -->
+                    <label v-else-if="column.type === 'toggle'" class="inline-flex items-center mt-2">
+                      <input
+                          type="checkbox"
+                          v-model="formData[column.name]"
+                          :disabled="column.options?.readonly || formOptions.readonly"
+                          class="sr-only peer"
+                          :checked="column.options?.defaultChecked"
+                      >
+                      <div
+                          class="relative cursor-pointer w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
+                          :class="[
+                            column.options?.inputClass,
+                            formData[column.name] || (formData[column.name] === undefined && column.options?.defaultChecked) ?
+                              (column.options?.activeClass || 'bg-blue-500') :
+                              (column.options?.inactiveClass || 'bg-gray-200'),
+                          ]"
+                      ></div>
+                      <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
+                        {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
+                      </span>
+                    </label>
+                  </div>
+
+                  <!-- Вывод ошибки для поля -->
+                  <p v-if="validationErrors?.[column.name]" class="mt-1 text-sm text-red-600">
+                    {{ validationErrors[column.name].join(', ') }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -498,16 +818,29 @@
                   </div>
                   
                   <!-- Обычное текстовое поле -->
-                  <input 
-                    v-else-if="field.type === 'text' || field.type === 'email' || field.type === 'number'" 
-                    :type="field.type" 
-                    :id="`quick-add-field-${fieldIndex}`"
-                    v-model="quickAddFormData[field.name]" 
-                    :required="field.required"
-                    :placeholder="field.placeholder"
-                    :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass]"
-                    @input="handleQuickAddFieldInput(field.name)"
-                  />
+                  <div v-else-if="field.type === 'text' || field.type === 'email' || field.type === 'number' || field.type === 'streams_count'" class="relative">
+                    <input 
+                      :type="field.type === 'streams_count' ? 'number' : field.type" 
+                      :id="`quick-add-field-${fieldIndex}`"
+                      v-model="quickAddFormData[field.name]" 
+                      :required="field.required"
+                      :placeholder="field.placeholder"
+                      :class="['w-full p-2 border border-gray-300 rounded-md shadow-sm', field.options?.inputClass, field.options?.pasteFromClipboard ? 'pr-8' : '']"
+                      @input="handleQuickAddFieldInput(field.name)"
+                    />
+                    <!-- Кнопка вставки из буфера -->
+                    <button 
+                      v-if="field.options?.pasteFromClipboard" 
+                      type="button" 
+                      @click="pasteFromClipboard(field.name)"
+                      class="absolute inset-y-0 right-0 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                      :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </button>
+                  </div>
                   
 
                   <!-- Текстовая область -->
@@ -656,7 +989,12 @@ const props = defineProps({
       cancelButtonText: 'Сбросить',
       toggleButtonText: 'Показать форму',
       forceLocalApi: false,
-      quickAdd: [] // Конфигурация для быстрого добавления сущностей
+      quickAdd: [], // Конфигурация для быстрого добавления сущностей
+      additionalFields: { // Новые параметры для дополнительных полей
+        title: 'Дополнительные поля',
+        description: 'Дополнительные параметры записи',
+        columns: [] // Массив колонок с теми же параметрами, что и в columns
+      }
     })
   },
   showForm: {
@@ -706,6 +1044,9 @@ const quickAddError = ref(null);
 const quickAddValidationErrors = ref({});
 const quickAddSuccess = ref(false);
 const quickAddSuccessMessage = ref('');
+
+// Добавляем состояние для спойлера
+const isAdditionalFieldsOpen = ref(false);
 
 // Вычисляемые свойства
 const formTitle = computed(() => {
@@ -884,8 +1225,9 @@ const initForm = () => {
     // Для разных типов полей разные значения по умолчанию
     switch (column.type) {
       case 'select':
-        // Для селектов устанавливаем null
-        formData.value[column.name] = null;
+      case 'simple_select':
+        // Для селектов устанавливаем null или пустую строку
+        formData.value[column.name] = column.options?.emptyOption ? '' : null;
         break;
       case 'toggle':
         // Для переключателя устанавливаем значение из defaultChecked

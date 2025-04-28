@@ -82,7 +82,7 @@ const tableOptions = ref({
       name: 'id',
       label: 'ID',
       type: 'text',
-      width: '70px',
+      width: '60px',
       options: {
         readonly: true,
         cellClass: 'text-xs font-bold bg-yellow-50 rounded h-8 text-gray-60 border px-1 pt-2 w-full text-center cursor-default'
@@ -143,7 +143,7 @@ const tableOptions = ref({
       label: '',
       title_icon: 'i-ic:round-sports-kabaddi',
       type: 'icon',
-      width: '40px',
+      width: '35px',
       sortable: false,
       options: {
         readonly: true,
@@ -156,7 +156,7 @@ const tableOptions = ref({
       label: '',
       title_icon: 'icons8:gender',
       type: 'icon',
-      width: '40px',
+      width: '35px',
       sortable: false,
       options: {
         readonly: true,
@@ -176,7 +176,7 @@ const tableOptions = ref({
       name: 'competition_id',
       label: 'Соревнование',
       type: 'select',
-      min_width: '140px',
+      min_width: '130px',
       sortable: false,
       options: {
         apiUrl: api + '/api/v1/competitions?type=async',
@@ -198,7 +198,7 @@ const tableOptions = ref({
       name: 'club1_id',
       label: 'Команда (хоз)',
       type: 'select',
-      min_width: '150px',
+      min_width: '130px',
       sortable: false,
       options: {
         apiUrl: api + '/api/clubs?type=1',
@@ -218,10 +218,26 @@ const tableOptions = ref({
       },
     },
     {
+  name: 'swap_fields',
+      label: '',
+      title_icon: 'ic:outline-change-circle',
+      width: '60px',
+      sortable: false,
+  type: 'swap',
+      options: {
+        hint: 'Поменять местами команды',
+        field1: 'club1_id', // Имя первого поля для обмена
+        field2: 'club2_id', // Имя второго поля для обменаicon: 'material-symbols:swap-vert', // Опциональная иконка (по умолчанию 'material-symbols:swap-horiz')
+        icon: 'ri:exchange-box-line', // Опциональная иконка (по умолчанию 'material-symbols:swap-horiz')
+        button_text: '', // Опциональный текст кнопки (по умолчанию 'Поменять местами')
+        cell_class: 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer' // Опциональный класс для ячейки
+      }
+},
+    {
       name: 'club2_id',
       label: 'Команда (гос)',
       type: 'select',
-      min_width: '150px',
+      min_width: '130px',
       sortable: true,
       options: {
         apiUrl: api + '/api/clubs?type=1',
@@ -241,6 +257,24 @@ const tableOptions = ref({
       },
     },
     {
+      name: 'arena_id',
+      label: 'Арена',
+      type: 'select',
+      min_width: '130px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/arenas?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        displayLabelField: 'arena.title'
+      },
+    },
+    {
       name: 'title',
       label: 'Название/этап',
       type: 'text',
@@ -255,7 +289,7 @@ const tableOptions = ref({
       name: 'result',
       label: 'Результат',
       type: 'text',
-      width: '90px',
+      width: '80px',
       sortable: false,
       checkFreshness: true,
       options: {
@@ -271,7 +305,7 @@ const tableOptions = ref({
       name: 'result_dop',
       label: 'Доп. рез-т',
       type: 'text',
-      width: '100px',
+      width: '80px',
       sortable: false,
       checkFreshness: true,
       options: {
@@ -345,7 +379,7 @@ const tableOptions = ref({
   link_prefix: site + '/events',
   pagination: true,
   main_field: 'event_name',
-  pageSize: 30,
+  pageSize: 15,
   searchable: true,
   enableResetFilters: true,
   resetFiltersLabel: 'Очистить',
@@ -562,12 +596,49 @@ const formOptions = ref({
       }
     }
   ],
+  additionalFields: { // Новые параметры для дополнительных полей
+        title: 'Добавление матчей в серию или турнир',
+        description: 'Внесите данные для создания серии матчей или матчей турнира. Для начала создайте серию/турнир. Серию/турнир можно создать прямо на этой странице с помощью кнопки быстрого добавления. Внесите максимальное число матчей (N) для серии/турнира. Для серии создастся N неактивных матчей с участием выбранных в основной форме команд, для турнира - N пустых матчей. Отредактируйте созданные матчи в таблице матчей/событий.',
+        columns: [ 
+    {
+      name: 'max_matches',
+      label: 'Кол-во',
+      type: 'text',
+      width: '100px',
+      options: {
+        readonly: false,
+        placeholder: 'Кол-во',
+        hint: 'максимальное число матчей в серии',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+      }
+    },
+    {
+  name: 'event_type',
+  label: 'Тип события',
+  type: 'simple_select',
+  width: '250px',
+  options: {
+    emptyOption: false, // Показывать ли пустую опцию
+    emptyOptionText: 'Выберите тип события', // Текст для пустой опции
+    hint: 'тип события: серия или турнир',
+    options: [
+      { value: 1, label: 'Серия' },
+      { value: 2, label: 'Турнир' }
+    ],
+    inputClass: 'text-xs font-bold bg-gray-100 h-10 cursor-pointer rounded text-gray-800 border px-1 w-full' // Дополнительные классы для стилизации
+  }
+}
+
+
+        ] // Массив колонок с теми же параметрами, что и в columns
+      },
   quickAdd: [
     {
       label: 'Серия', // Текст кнопки
       icon: 'i-fluent-mdl2:chart-series', // Опциональная иконка (имя иконки из библиотеки)
       title: 'Добавление серии', // Заголовок модального окна
-      instruction: 'Заполните данные для создания серии.', // Инструкция (необязательно)
+      instruction: 'Заполните данные для создания серии. ', // Инструкция (необязательно)
       apiUrl: '/api/series', // URL для отправки данных
       forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
       successMessage: 'Серия успешно добавлена', // Сообщение при успешном добавлении
@@ -578,15 +649,23 @@ const formOptions = ref({
       fields: [ // Массив полей формы
         {
           name: 'title', // Имя поля (ключ при отправке на сервер)
-          label: 'Название серии', // Отображаемая метка поля
+          label: 'Полное название серии (выводится на фронте)', // Отображаемая метка поля
           type: 'text', // Тип поля: text, textarea, select, toggle, datetime, email, number
           required: true, // Обязательное поле
           placeholder: 'Введите название серии', // Подсказка в поле
           defaultValue: '' // Значение по умолчанию
         },
         {
+          name: 'match_info',
+          label: 'Информация об отдельном матче (Название/этап в таблице для конструктора серии)',
+          type: 'text',
+          required: false,
+          placeholder: 'Введите информацию о матче',
+          defaultValue: ''
+        },
+        {
           name: 'title_short',
-          label: 'Краткое название',
+          label: 'Краткое название (для вывода в таблице)',
           type: 'text',
           required: true,
           placeholder: 'Введите краткое название серии',
@@ -979,24 +1058,6 @@ const extraFields = ref([
       }
     },
     {
-      name: 'arena_id',
-      label: 'Арена',
-      type: 'select',
-      min_width: '150px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/v1/arenas?type=async',
-        keyField: 'id',
-        emptyable: false,
-        labelField: 'title',
-        enableSearch: true,
-        sel_class: "",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        displayLabelField: 'arena.title'
-      },
-    },
-    {
       name: 'image',
       label: '',
       displayLabel: 'Изображение',
@@ -1067,10 +1128,10 @@ const extraFields = ref([
   //           defaultValueField: 'date_from',      // Поле в родительской записи
   // defaultValueTargetField: 'date',  // Поле в форме добавления
 
-  defaultValues: [
-    { sourceField: 'date_from', targetField: 'date' },
-    { sourceField: 'event_name', targetField: 'title' },
-  ],
+            defaultValues: [
+              { sourceField: 'date_from', targetField: 'date' },
+              { sourceField: 'event_name', targetField: 'title' },
+            ],
 
             // Стили для отображения
             noDataIconClass: 'text-gray-900',
@@ -1108,7 +1169,8 @@ const extraFields = ref([
                 label: 'Ссылка на стрим',
                 type: 'text',
                 options: {
-                  formColumnClass: 'col-span-8'
+                  formColumnClass: 'col-span-8',
+                  pasteFromClipboard: true,
                 }
               },
               {
@@ -1135,7 +1197,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['event_name'];
+const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'about'];
 
 // Поля, которые не будут отображаться в дополнительной таблице
 const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon', 'club1_id', 'club2_id'];

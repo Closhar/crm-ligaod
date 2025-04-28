@@ -76,7 +76,75 @@
       
       <h2 class="text-xl font-bold mb-4 mt-8 pt-6 border-t">История версий</h2>
 
-            
+      <div class="bg-blue-50 p-4 rounded-md shadow mb-4">
+        <h3 class="text-lg font-semibold mb-2 text-blue-800 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Версия 1.3 (25.04.2024)
+        </h3>
+        <div class="text-gray-700 mb-2">
+          <h4 class="font-semibold text-blue-700">Новые возможности:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Добавлен новый тип поля <code>swap</code> для обмена значениями между двумя полями в таблице</li>
+            <li>Добавлен параметр <code>img_size</code> для настройки размеров изображений в ячейках таблицы</li>
+            <li>Добавлен новый тип поля <code>simple_select</code> - упрощенная версия выпадающего списка для статических данных</li>
+          </ul>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
+            <p class="font-semibold">Пример использования поля типа swap:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>{
+  name: 'swap_fields',
+  label: 'Поменять местами',
+  type: 'swap',
+  options: {
+    field1: 'club1_id',
+    field2: 'club2_id',
+    icon: 'material-symbols:swap-vert',
+    button_text: 'Обменять',
+    cell_class: 'bg-gray-50'
+  }
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
+            <p class="font-semibold">Пример использования параметра img_size:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
+  imageField: 'gallery_image_path',
+  img_size: 'w-16 h-10' // Размер изображения в ячейке
+}</code></pre>
+          </div>
+
+          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
+            <p class="font-semibold">Пример использования поля типа simple_select:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>{
+  name: 'status',
+  label: 'Статус',
+  type: 'simple_select',
+  required: true,
+  options: {
+    options: [
+      { value: 'active', label: 'Активен' },
+      { value: 'inactive', label: 'Неактивен' },
+      { value: 'pending', label: 'Ожидает' }
+    ],
+    placeholder: 'Выберите статус',
+    empty_option: 'Не выбран',
+    sel_class: 'w-full rounded border-gray-300'
+  }
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/table-component#swap-field" class="text-blue-600 hover:underline text-sm">
+            Подробнее о поле типа swap &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/form-component#simple-select-field" class="text-blue-600 hover:underline text-sm ml-3">
+            Подробнее о поле типа simple_select &rarr;
+          </NuxtLink>
+        </div>
+      </div>
+      
       <div class="bg-emerald-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -169,7 +237,8 @@
           <NuxtLink to="/docs/form-component#check-freshness" class="text-blue-600 hover:underline text-sm ml-3">
             Подробнее о проверке свежести данных &rarr;
           </NuxtLink>
-
+        </div>
+      </div>
       
       <div class="bg-amber-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-amber-800 flex items-center">
@@ -212,7 +281,6 @@
         </div>
       </div>
 
-      
       <div class="bg-emerald-50 p-4 rounded-md shadow">
         <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -240,8 +308,6 @@
         </ul>
       </div>
     </div>
-  </div>
-</div>
   </div>
 </template>
 

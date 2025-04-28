@@ -124,8 +124,8 @@ const tableOptions = ref({
         uploadUrl: api + '/api/upload-image',
         imageMaxWidth: 1200,
         imageQuality: 0.8,
+        empty_class: 'bg-red-400 hover:bg-red-300',
         check_empty: true,
-        empty_class: 'bg-red-100',
       }
     },
   ],

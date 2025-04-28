@@ -82,6 +82,34 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'image',
+      label: '',
+      displayLabel: 'Изображение',
+      title_icon: 'stash:image',
+      type: 'image',
+      width: '82px',
+      sortable: false,
+      options: {
+        image_path: 'gallery_image_path', // поле для текущего изображения
+        thumbnailWidth: 80,
+        thumbnailHeight: 50,
+        previewMaxHeight: '500px',
+        hint: 'изображение для события',
+        modalTitle: 'Изображение для события:',
+        modalTitleAddField: 'event_name', // добавление значения поля к заголовку модалки
+        info: 'Загрузите изображение в формате JPG, PNG или GIF. Изображение приведется кразмеру 800x500px',
+        resize: {
+          enabled: true,       // Включить обработку изображений
+          width: 800,          // Ширина (px)
+          height: 500,         // Высота (px)
+          crop: true,          // Обрезать до точных размеров
+          quality: 0.8,         // Качество (0-1)
+          maxSizeMB: 1,         // Максимальный размер (MB)
+          mimeType: 'image/jpeg' // Тип выходного файла
+        }
+      }
+    },
+    {
       name: 'title',
       label: 'Название',
       type: 'text',
@@ -93,33 +121,6 @@ const tableOptions = ref({
         cellClass: 'text-xs font-bold h-8 bg-gray-100 rounded text-blue-800 border px-1 w-full',
         input_class: 'text-red-500'
       }
-    },
-    {
-      name: 'image_id',
-      label: 'Обложка галереи',
-      title_icon: 'i-ph:map-pin-area',
-      type: 'select',
-      width: '270px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/images?type=async',
-        apiParams: { gallery_id: 'id' },
-        keyField: 'id',
-        emptyable: true,
-        labelField: 'title',
-        imageField: 'gallery_image_path',
-        img_size: 'w-16 h-10',
-        enableSearch: true,
-        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
-        sel_class: "text-xs text-blue-800 font-bold",
-        list_item: null,
-        displayLabelField: 'main_image.title',
-        displayImageField: 'main_image.gallery_image_path',
-      },
-      emptyOption: {
-        value: null,
-        label: '-',
-      },
     },
   ],
   editable: true,
