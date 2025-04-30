@@ -120,6 +120,24 @@ const tableOptions = ref({
       },
     },
     {
+      name: 'series_type_id',
+      label: 'Тип серии',
+      type: 'select',
+      width: '170px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/series-types?type=async',
+        keyField: 'id',
+        emptyable: false,
+        labelField: 'title',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        displayLabelField: 'series_type.title',
+      },
+    },
+    {
       name: 'description',
       label: '',
       title_icon: 'healthicons:info-outline',
@@ -223,6 +241,27 @@ const formOptions = ref({
         showCount: true,
       }
       },
+    },
+    {
+      name: 'series_type_id',
+      required: true,
+      label: 'Тип серии',
+      type: 'select',
+      options: {
+        apiUrl: api + '/api/series-types?type=async',
+        keyField: 'id',
+        labelField: 'title',
+        enableSearch: false,
+        emptyable: false,
+        sel_class: "text-xs border min-w-48 w-52 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'series_type.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      }
     },
     {
       name: 'description',

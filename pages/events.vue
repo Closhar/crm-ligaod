@@ -614,21 +614,26 @@ const formOptions = ref({
       }
     },
     {
-  name: 'event_type',
-  label: 'Тип события',
-  type: 'simple_select',
-  width: '250px',
-  options: {
-    emptyOption: false, // Показывать ли пустую опцию
-    emptyOptionText: 'Выберите тип события', // Текст для пустой опции
-    hint: 'тип события: серия или турнир',
-    options: [
-      { value: 1, label: 'Серия' },
-      { value: 2, label: 'Турнир' }
-    ],
-    inputClass: 'text-xs font-bold bg-gray-100 h-10 cursor-pointer rounded text-gray-800 border px-1 w-full' // Дополнительные классы для стилизации
-  }
-}
+      name: 'series_type_id',
+      required: true,
+      label: 'Тип серии',
+      type: 'select',
+      options: {
+        apiUrl: api + '/api/series-types?type=async',
+        keyField: 'id',
+        labelField: 'title',
+        enableSearch: false,
+        emptyable: false,
+        sel_class: "text-xs border min-w-48 w-52 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'series_type.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      }
+    },
 
 
         ] // Массив колонок с теми же параметрами, что и в columns
@@ -642,7 +647,7 @@ const formOptions = ref({
       apiUrl: '/api/series', // URL для отправки данных
       forceLocalApi: false, // Не добавлять префикс API_URL (по умолчанию false)
       successMessage: 'Серия успешно добавлена', // Сообщение при успешном добавлении
-      fillField: 'series_id', // Поле в основной форме, которое нужно заполнить после добавления
+      //fillField: 'series_id', // Поле в основной форме, которое нужно заполнить после добавления
       valueField: 'id', // Поле в ответе API, значение которого нужно взять (по умолчанию 'id')
       labelField: 'title', // Поле в ответе API для отображения (по умолчанию 'name')
       emitRefresh: false, // Вызывать событие refresh при успешном добавлении (по умолчанию false)
@@ -655,6 +660,27 @@ const formOptions = ref({
           placeholder: 'Введите название серии', // Подсказка в поле
           defaultValue: '' // Значение по умолчанию
         },
+    {
+      name: 'series_type_id',
+      required: true,
+      label: 'Тип серии',
+      type: 'select',
+      options: {
+        apiUrl: api + '/api/series-types?type=async',
+        keyField: 'id',
+        labelField: 'title',
+        enableSearch: false,
+        emptyable: false,
+        sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'series_type.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      }
+    },
         {
           name: 'match_info',
           label: 'Информация об отдельном матче (Название/этап в таблице для конструктора серии)',

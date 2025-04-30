@@ -615,11 +615,11 @@
                               (column.options?.activeClass || 'bg-blue-500') :
                               (column.options?.inactiveClass || 'bg-gray-200'),
                           ]"
-                      ></div>
-                      <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
-                        {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
-                      </span>
-                    </label>
+                  ></div>
+                  <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
+                    {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
+                  </span>
+                </label>
                   </div>
 
                   <!-- Вывод ошибки для поля -->
@@ -700,6 +700,45 @@
         
         <!-- Содержимое модального окна -->
         <div class="flex-1 overflow-y-auto p-4">
+          <!-- Блок ошибок валидации -->
+          <div v-if="quickAddValidationErrors && Object.keys(quickAddValidationErrors).length" class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">
+                  Ошибки валидации
+                </h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <ul class="list-disc pl-5 space-y-1">
+                    <li v-for="(errors, fieldName) in quickAddValidationErrors" :key="fieldName">
+                      {{ errors.join(', ') }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Общая ошибка -->
+          <div v-if="quickAddError" class="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-red-700">
+                  {{ quickAddError }}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Сообщение об успешном добавлении -->
           <div v-if="quickAddSuccess" class="bg-green-50 border-l-4 border-green-500 p-4 mb-4">
             <div class="flex">

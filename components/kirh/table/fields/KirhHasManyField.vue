@@ -118,12 +118,12 @@
                         <td v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`" class="px-3 py-2 text-sm break-words">
                           <div v-if="isEditingItem === item.id">
                             <div class="relative w-full">
-                              <input 
-                                v-if="field.type === 'text'" 
-                                type="text" 
-                                v-model="item[field.name]"
+                            <input 
+                              v-if="field.type === 'text'" 
+                              type="text" 
+                              v-model="item[field.name]"
                                 :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
-                              />
+                            />
                               <!-- Кнопка вставки из буфера -->
                               <button 
                                 v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
@@ -139,66 +139,66 @@
                             </div>
                             
                             <template v-if="field.type === 'date'">
-                              <input 
-                                type="date" 
-                                v-model="item[field.name]"
-                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                              />
+                            <input 
+                              type="date" 
+                              v-model="item[field.name]"
+                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                            />
                             </template>
                             
                             <template v-if="field.type === 'datetime'">
-                              <input 
-                                type="datetime-local" 
-                                v-model="item[field.name]"
-                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                              />
+                            <input 
+                              type="datetime-local" 
+                              v-model="item[field.name]"
+                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                            />
                             </template>
                             
                             <template v-if="field.type === 'time'">
-                              <input 
-                                type="time" 
-                                v-model="item[field.name]"
-                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                              />
+                            <input 
+                              type="time" 
+                              v-model="item[field.name]"
+                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                            />
                             </template>
                             
                             <template v-if="field.type === 'textarea'">
-                              <textarea 
-                                v-model="item[field.name]"
-                                :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                rows="2"
-                              ></textarea>
+                            <textarea 
+                              v-model="item[field.name]"
+                              :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                              rows="2"
+                            ></textarea>
                             </template>
                             
                             <template v-if="field.type === 'select'">
-                              <select 
-                                v-model="item[field.name]"
-                                :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                            <select 
+                              v-model="item[field.name]"
+                              :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                            >
+                              <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                              <option 
+                                v-for="option in field.options?.options" 
+                                :key="option[field.options?.keyField || 'id']" 
+                                :value="option[field.options?.keyField || 'id']"
                               >
-                                <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                                <option 
-                                  v-for="option in field.options?.options" 
-                                  :key="option[field.options?.keyField || 'id']" 
-                                  :value="option[field.options?.keyField || 'id']"
-                                >
-                                  {{ option[field.options?.labelField || 'name'] }}
-                                </option>
-                              </select>
+                                {{ option[field.options?.labelField || 'name'] }}
+                              </option>
+                            </select>
                             </template>
                             
                             <template v-if="field.type === 'toggle'">
-                              <div 
-                                :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
-                              >
-                                <input 
-                                  type="checkbox" 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                                />
-                                <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                                  {{ field.options.toggleLabel }}
-                                </span>
-                              </div>
+                            <div 
+                              :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
+                            >
+                              <input 
+                                type="checkbox" 
+                                v-model="item[field.name]"
+                                :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                              />
+                              <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                                {{ field.options.toggleLabel }}
+                              </span>
+                            </div>
                             </template>
                           </div>
                           
@@ -300,12 +300,12 @@
                       </label>
                       
                       <div class="relative w-full">
-                        <input 
-                          v-if="field.type === 'text'" 
-                          type="text" 
-                          v-model="newItem[field.name]"
+                      <input 
+                        v-if="field.type === 'text'" 
+                        type="text" 
+                        v-model="newItem[field.name]"
                           :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
-                        />
+                      />
                         <!-- Кнопка вставки из буфера -->
                         <button 
                           v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
@@ -321,66 +321,66 @@
                       </div>
                       
                       <template v-if="field.type === 'date'">
-                        <input 
-                          type="date" 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                        />
+                      <input 
+                        type="date" 
+                        v-model="newItem[field.name]"
+                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                      />
                       </template>
                       
                       <template v-if="field.type === 'datetime'">
-                        <input 
-                          type="datetime-local" 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                        />
+                      <input 
+                        type="datetime-local" 
+                        v-model="newItem[field.name]"
+                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                      />
                       </template>
                       
                       <template v-if="field.type === 'time'">
-                        <input 
-                          type="time" 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                        />
+                      <input 
+                        type="time" 
+                        v-model="newItem[field.name]"
+                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                      />
                       </template>
                       
                       <template v-if="field.type === 'textarea'">
-                        <textarea 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                          rows="2"
-                        ></textarea>
+                      <textarea 
+                        v-model="newItem[field.name]"
+                        :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                        rows="2"
+                      ></textarea>
                       </template>
                       
                       <template v-if="field.type === 'select'">
-                        <select 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                      <select 
+                        v-model="newItem[field.name]"
+                        :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                      >
+                        <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                        <option 
+                          v-for="option in field.options?.options" 
+                          :key="option[field.options?.keyField || 'id']" 
+                          :value="option[field.options?.keyField || 'id']"
                         >
-                          <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                          <option 
-                            v-for="option in field.options?.options" 
-                            :key="option[field.options?.keyField || 'id']" 
-                            :value="option[field.options?.keyField || 'id']"
-                          >
-                            {{ option[field.options?.labelField || 'name'] }}
-                          </option>
-                        </select>
+                          {{ option[field.options?.labelField || 'name'] }}
+                        </option>
+                      </select>
                       </template>
                       
                       <template v-if="field.type === 'toggle'">
-                        <div 
-                          :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
-                        >
-                          <input 
-                            type="checkbox" 
-                            v-model="newItem[field.name]"
-                            :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                          />
-                          <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                            {{ field.options.toggleLabel }}
-                          </span>
-                        </div>
+                      <div 
+                        :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
+                      >
+                        <input 
+                          type="checkbox" 
+                          v-model="newItem[field.name]"
+                          :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                        />
+                        <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                          {{ field.options.toggleLabel }}
+                        </span>
+                      </div>
                       </template>
                     </div>
                   </div>
