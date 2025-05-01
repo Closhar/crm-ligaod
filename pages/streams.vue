@@ -149,6 +149,22 @@ const tableOptions = ref({
         displayLabelField: 'event.event_name',
       }
     },
+    {
+      name: 'in_player',
+      label: 'В плеере',
+      type: 'toggle',
+      width: '100px',
+      sortable: false,
+      options: {
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    }
   ],
   // Колонка Действия
   editable: true, // редактирование записи
@@ -207,7 +223,17 @@ const formOptions = ref({
         placeholder: 'название',
         hint: 'название трансляции',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        autoSuggest: {
+          apiUrl: '/api/stream-hints',
+      field_name: 'hint',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'hint',
+          valueField: 'id',
+        showCount: false,
+      }
       }
     },
     {
@@ -245,6 +271,23 @@ const formOptions = ref({
         //displayLabelField: 'event_name',
       }
     },
+    {
+      name: 'in_player',
+      label: 'В плеере',
+      type: 'toggle',
+      width: '100px',
+      sortable: false,
+      options: {
+        defaultChecked: true,
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    }
   ]
 });
 

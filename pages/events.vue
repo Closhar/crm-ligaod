@@ -468,7 +468,7 @@ const formOptions = ref({
         keyField: 'id',
         labelField: 'title',
         enableSearch: true,
-        emptyable: false,
+        emptyable: true,
         sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -623,7 +623,7 @@ const formOptions = ref({
         keyField: 'id',
         labelField: 'title',
         enableSearch: false,
-        emptyable: false,
+        emptyable: true,
         sel_class: "text-xs border min-w-48 w-52 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
         options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
         list_item: null,
@@ -1204,9 +1204,36 @@ const extraFields = ref([
                 label: 'Название',
                 type: 'text',
                 options: {
-                  formColumnClass: 'col-span-12'
-                }
+                  formColumnClass: 'col-span-12',
+        autoSuggest: {
+          apiUrl: api + '/api/stream-hints',
+      field_name: 'hint',
+          minLength: 2,
+          debounce: 300,
+          clickable: true,
+          labelField: 'hint',
+          valueField: 'id',
+        showCount: false,
+      }
+                },
               },
+    {
+      name: 'in_player',
+      label: 'плр',
+      type: 'toggle',
+      width: '30px',
+      sortable: false,
+      options: {
+        defaultChecked: true,
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    }
             ],
           }
         },

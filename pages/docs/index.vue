@@ -76,6 +76,57 @@
       
       <h2 class="text-xl font-bold mb-4 mt-8 pt-6 border-t">История версий</h2>
 
+      <div class="bg-indigo-50 p-4 rounded-md shadow mb-4">
+        <h3 class="text-lg font-semibold mb-2 text-indigo-800 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+          Версия 1.4 (30.04.2024)
+        </h3>
+        <div class="text-gray-700 mb-2">
+          <h4 class="font-semibold text-indigo-700">Новые возможности:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Добавлены подсказки к названию стримов для улучшения пользовательского опыта</li>
+            <li>Переработан функционал серий - добавлены 3 типа серий для более гибкой работы с данными</li>
+            <li>Реализован автоматический подсчет счета серии</li>
+          </ul>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки подсказок для стримов:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
+  stream_hints: {
+    enabled: true,
+    max_hints: 5,
+    hint_class: 'text-sm text-gray-500'
+  }
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки типов серий:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>series: {
+  types: [
+    { value: 'regular', label: 'Регулярная серия' },
+    { value: 'playoff', label: 'Плей-офф' },
+    { value: 'final', label: 'Финальная серия' }
+  ],
+  score_calculation: {
+    enabled: true,
+    fields: ['home_score', 'away_score']
+  }
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/table-component#stream-hints" class="text-indigo-600 hover:underline text-sm">
+            Подробнее о подсказках для стримов &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/table-component#series-types" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее о типах серий &rarr;
+          </NuxtLink>
+        </div>
+      </div>
+
       <div class="bg-blue-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-blue-800 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

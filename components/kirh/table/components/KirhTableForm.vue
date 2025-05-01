@@ -313,9 +313,7 @@
                       class="relative cursor-pointer w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
                       :class="[
                         column.options?.inputClass,
-                        formData[column.name] || (formData[column.name] === undefined && column.options?.defaultChecked) ?
-                          (column.options?.activeClass || 'bg-blue-500') :
-                          (column.options?.inactiveClass || 'bg-gray-200'),
+                        formData[column.name] ? 'bg-green-500' : 'bg-red-500'
                       ]"
                   ></div>
                   <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
@@ -611,15 +609,13 @@
                           class="relative cursor-pointer w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
                           :class="[
                             column.options?.inputClass,
-                            formData[column.name] || (formData[column.name] === undefined && column.options?.defaultChecked) ?
-                              (column.options?.activeClass || 'bg-blue-500') :
-                              (column.options?.inactiveClass || 'bg-gray-200'),
+                            formData[column.name] ? 'bg-green-500' : 'bg-red-500'
                           ]"
-                  ></div>
-                  <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
-                    {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
-                  </span>
-                </label>
+                      ></div>
+                      <span class="ml-2 text-sm text-gray-600" v-if="column.options?.toggleLabel">
+                        {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
+                      </span>
+                    </label>
                   </div>
 
                   <!-- Вывод ошибки для поля -->
@@ -922,14 +918,26 @@
                   
                   <!-- Переключатель -->
                   <div v-else-if="field.type === 'toggle'" class="flex items-center">
-                    <input 
-                      :id="`quick-add-field-${fieldIndex}`"
-                      type="checkbox"
-                      v-model="quickAddFormData[field.name]"
-                      class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label :for="`quick-add-field-${fieldIndex}`" class="ml-2 block text-sm text-gray-700">
-                      {{ field.toggleLabel || field.label }}
+                    <label class="inline-flex items-center mt-2">
+                      <input 
+                        :id="`quick-add-field-${fieldIndex}`"
+                        type="checkbox"
+                        v-model="quickAddFormData[field.name]"
+                        :disabled="field.options?.readonly"
+                        class="sr-only peer"
+                      >
+                      <div
+                        class="relative cursor-pointer w-11 h-6 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"
+                        :class="[
+                          field.options?.inputClass,
+                          quickAddFormData[field.name] || (quickAddFormData[field.name] === undefined && field.options?.defaultChecked) ?
+                            (field.options?.activeClass || 'bg-blue-500') :
+                            (field.options?.inactiveClass || 'bg-gray-200'),
+                        ]"
+                      ></div>
+                      <span class="ml-2 text-sm text-gray-600" v-if="field.options?.toggleLabel">
+                        {{ quickAddFormData[field.name] ? field.options.toggleLabel.on : field.options.toggleLabel.off }}
+                      </span>
                     </label>
                   </div>
                   
@@ -1270,7 +1278,7 @@ const initForm = () => {
         break;
       case 'toggle':
         // Для переключателя устанавливаем значение из defaultChecked
-        formData.value[column.name] = column.options?.defaultChecked;
+        formData.value[column.name] = column.options?.defaultChecked || false;
         break;
       case 'number':
         // Для числовых полей устанавливаем null
@@ -1287,29 +1295,24 @@ const initForm = () => {
     }
   });
   
-  // Инициализация формы - установка дефолтных значений
+  // Если есть initialData, используем его
   if (props.formOptions.initialData) {
-    // Если есть initialData, используем его
     Object.entries(props.formOptions.initialData).forEach(([key, value]) => {
-      formData.value[key] = value;
+      if (value !== undefined) {
+        formData.value[key] = value;
+      }
     });
   }
   
   // Если есть редактируемая строка, заполняем форму её данными
   if (props.editingRow) {
-    // При редактировании заполняем данными строки
     Object.keys(props.editingRow).forEach(key => {
-      formData.value[key] = props.editingRow[key];
-    });
-    
-    // Конвертация datetime полей для отображения в форме
-    props.formOptions.columns.forEach(column => {
-      if (column.type === 'datetime' && formData.value[column.name]) {
-        formData.value[column.name] = convertToDatetimeLocal(formData.value[column.name]);
+      if (props.editingRow[key] !== undefined) {
+        formData.value[key] = props.editingRow[key];
       }
     });
   }
-
+  
   // Apply default field value if provided and target field exists
   if (props.defaultFieldValue !== null && props.defaultFieldTarget !== null) {
     formData.value[props.defaultFieldTarget] = props.defaultFieldValue;
@@ -1540,6 +1543,9 @@ const handleClickOutside = (event) => {
 
 // Вызываем функцию при монтировании компонента
 onMounted(() => {
+  // Инициализируем форму после монтирования компонента
+  initForm();
+  
   document.addEventListener('mousedown', handleClickOutside);
   
   // Инициализация глобального хранилища объектов
@@ -2113,6 +2119,12 @@ const handleQuickAddFieldInput = (fieldName) => {
       quickAddFormData.value[targetField] = transliterate(quickAddFormData.value[sourceField] || '');
     }
   });
+};
+
+// Добавим обработчик изменения состояния переключателя
+const handleToggleChange = (fieldName) => {
+  // Обновляем значение в formData после изменения состояния
+  formData.value[fieldName] = !formData.value[fieldName];
 };
 </script>
 

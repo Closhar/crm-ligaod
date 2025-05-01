@@ -194,6 +194,7 @@
                                 type="checkbox" 
                                 v-model="item[field.name]"
                                 :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                                :checked="item[field.name] === undefined ? field.options?.defaultChecked : item[field.name]"
                               />
                               <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
                                 {{ field.options.toggleLabel }}
@@ -206,7 +207,7 @@
                             <div v-if="field.type === 'toggle'" class="flex items-center">
                               <input 
                                 type="checkbox" 
-                                :checked="item[field.name]"
+                                :checked="item[field.name] === undefined ? field.options?.defaultChecked : item[field.name]"
                                 disabled
                                 :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-gray-400 rounded border-gray-300 cursor-not-allowed'"
                               />
@@ -295,93 +296,141 @@
                         'col-span-12 md:col-span-6'
                       ]"
                     >
-                      <label class="block text-xs font-medium text-gray-700 mb-1">
-                        {{ field.label }}
-                      </label>
-                      
-                      <div class="relative w-full">
-                      <input 
-                        v-if="field.type === 'text'" 
-                        type="text" 
-                        v-model="newItem[field.name]"
-                          :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
-                      />
-                        <!-- Кнопка вставки из буфера -->
-                        <button 
-                          v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
-                          type="button" 
-                          @click="pasteFromClipboard(field.name, newItem)"
-                          class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
-                          :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                          </svg>
-                        </button>
+                      <div class="relative">
+                        <template v-if="field.type === 'text'">
+                          <div class="relative w-full">
+                            <input
+                              v-model="newItem[field.name]"
+                              type="text"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '', field.options?.inputClass]"
+                              :placeholder="field.options?.placeholder"
+                              @input="handleAutoSuggest(field.name, field.options?.autoSuggest)"
+                              @focus="isActiveSuggestion[field.name] = true"
+                            />
+                            
+                            <!-- Кнопка вставки из буфера -->
+                            <button 
+                              v-if="field.options?.pasteFromClipboard" 
+                              type="button" 
+                              @click="pasteFromClipboard(field.name, newItem)"
+                              class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                              :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                              </svg>
+                            </button>
+                            
+                            <!-- Выпадающий список подсказок -->
+                            <div
+                              v-if="field.options?.autoSuggest?.apiUrl"
+                              v-show="isActiveSuggestion[field.name] && suggestions[field.name]?.length > 0"
+                              ref="el => autoSuggestRefs[field.name] = el"
+                              class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-auto border border-gray-200"
+                            >
+                              <!-- Индикатор загрузки -->
+                              <div v-if="suggestionsLoading[field.name]" class="p-2 text-sm text-gray-500">
+                                Загрузка...
+                              </div>
+                              
+                              <!-- Сообщение об отсутствии результатов -->
+                              <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-sm text-gray-500">
+                                Ничего не найдено
+                              </div>
+                              
+                              <!-- Список подсказок -->
+                              <ul v-else class="py-1">
+                                <li
+                                  v-for="suggestion in suggestions[field.name]"
+                                  :key="suggestion.id || suggestion[field.options?.autoSuggest?.labelField || 'name']"
+                                  class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                  @mousedown="handleSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
+                                >
+                                  {{ suggestion[field.options?.autoSuggest?.labelField || 'name'] }}
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </template>
+                        
+                        <template v-if="field.type === 'date'">
+                          <input
+                            v-model="newItem[field.name]"
+                            type="date"
+                            :required="field.required"
+                            :readonly="field.options?.readonly"
+                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                            :placeholder="field.options?.placeholder"
+                          />
+                        </template>
+                        
+                        <template v-if="field.type === 'datetime'">
+                          <input
+                            v-model="newItem[field.name]"
+                            type="datetime-local"
+                            :required="field.required"
+                            :readonly="field.options?.readonly"
+                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                            :placeholder="field.options?.placeholder"
+                          />
+                        </template>
+                        
+                        <template v-if="field.type === 'time'">
+                          <input
+                            v-model="newItem[field.name]"
+                            type="time"
+                            :required="field.required"
+                            :readonly="field.options?.readonly"
+                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                            :placeholder="field.options?.placeholder"
+                          />
+                        </template>
+                        
+                        <template v-if="field.type === 'textarea'">
+                          <textarea
+                            v-model="newItem[field.name]"
+                            :required="field.required"
+                            :readonly="field.options?.readonly"
+                            :class="['w-full rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                            :placeholder="field.options?.placeholder"
+                            rows="2"
+                          ></textarea>
+                        </template>
+                        
+                        <template v-if="field.type === 'select'">
+                          <select
+                            v-model="newItem[field.name]"
+                            :required="field.required"
+                            :readonly="field.options?.readonly"
+                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                          >
+                            <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                            <option
+                              v-for="option in field.options?.options"
+                              :key="option[field.options?.keyField || 'id']"
+                              :value="option[field.options?.keyField || 'id']"
+                            >
+                              {{ option[field.options?.labelField || 'name'] }}
+                            </option>
+                          </select>
+                        </template>
+                        
+                        <template v-if="field.type === 'toggle'">
+                          <div :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'">
+                            <input
+                              type="checkbox"
+                              v-model="newItem[field.name]"
+                              :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                              :checked="newItem[field.name] === undefined ? field.options?.defaultChecked : newItem[field.name]"
+                            />
+                            <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                              {{ field.options.toggleLabel }}
+                            </span>
+                          </div>
+                        </template>
                       </div>
-                      
-                      <template v-if="field.type === 'date'">
-                      <input 
-                        type="date" 
-                        v-model="newItem[field.name]"
-                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                      />
-                      </template>
-                      
-                      <template v-if="field.type === 'datetime'">
-                      <input 
-                        type="datetime-local" 
-                        v-model="newItem[field.name]"
-                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                      />
-                      </template>
-                      
-                      <template v-if="field.type === 'time'">
-                      <input 
-                        type="time" 
-                        v-model="newItem[field.name]"
-                        :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                      />
-                      </template>
-                      
-                      <template v-if="field.type === 'textarea'">
-                      <textarea 
-                        v-model="newItem[field.name]"
-                        :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                        rows="2"
-                      ></textarea>
-                      </template>
-                      
-                      <template v-if="field.type === 'select'">
-                      <select 
-                        v-model="newItem[field.name]"
-                        :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                      >
-                        <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                        <option 
-                          v-for="option in field.options?.options" 
-                          :key="option[field.options?.keyField || 'id']" 
-                          :value="option[field.options?.keyField || 'id']"
-                        >
-                          {{ option[field.options?.labelField || 'name'] }}
-                        </option>
-                      </select>
-                      </template>
-                      
-                      <template v-if="field.type === 'toggle'">
-                      <div 
-                        :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
-                      >
-                        <input 
-                          type="checkbox" 
-                          v-model="newItem[field.name]"
-                          :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                        />
-                        <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                          {{ field.options.toggleLabel }}
-                        </span>
-                      </div>
-                      </template>
                     </div>
                   </div>
                   <div class="flex justify-end space-x-2">
@@ -417,7 +466,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, watch, nextTick, onBeforeUnmount } from 'vue';
 import { Icon } from '@iconify/vue';
 import KirhTextField from './KirhTextField.vue';
 import KirhSelectField from './KirhSelectField.vue';
@@ -671,6 +720,13 @@ export default {
     const isEditingItem = ref(null);
     const editingItemOriginal = ref(null);
     
+    // Состояния для автоподсказок
+    const suggestions = ref({});
+    const isActiveSuggestion = ref({});
+    const suggestDebounceTimers = ref({});
+    const suggestionsLoading = ref({});
+    const autoSuggestRefs = ref({});
+    
     // DEBUG MODE - когда включен, используем заглушку для ID
     const debugMode = ref(false);  // Всегда выключено по умолчанию
     const debugFakeId = ref(null); // Нет заглушки по умолчанию
@@ -897,6 +953,8 @@ export default {
         effectiveOptions.value.fields.forEach(field => {
           if (field.default !== undefined) {
             newItem.value[field.name] = field.default;
+          } else if (field.type === 'toggle' && field.options?.defaultChecked !== undefined) {
+            newItem.value[field.name] = field.options.defaultChecked;
           } else {
             newItem.value[field.name] = null;
           }
@@ -1719,6 +1777,137 @@ export default {
       }
     };
     
+    // Обработчик автоподсказок
+    const handleAutoSuggest = (fieldName, suggestOptions) => {
+      if (!suggestOptions?.apiUrl) {
+        return;
+      }
+      
+      // Очищаем предыдущий таймер, если он существует
+      if (suggestDebounceTimers.value[fieldName]) {
+        clearTimeout(suggestDebounceTimers.value[fieldName]);
+      }
+      
+      // Устанавливаем новый таймер для предотвращения частых запросов
+      suggestDebounceTimers.value[fieldName] = setTimeout(async () => {
+        const query = newItem.value[fieldName];
+        
+        // Если запрос пустой или слишком короткий, очищаем подсказки
+        if (!query || query.length < (suggestOptions.minLength || 2)) {
+          suggestions.value[fieldName] = [];
+          return;
+        }
+        
+        try {
+          // Устанавливаем состояние загрузки
+          suggestionsLoading.value[fieldName] = true;
+          
+          const params = new URLSearchParams();
+          params.append('q', query);
+          
+          // Используем field_name из опций, если указан, иначе используем имя поля формы
+          const fieldForApi = suggestOptions.field_name || fieldName;
+          params.append('field', fieldForApi);
+          
+          // Добавляем дополнительные параметры
+          if (suggestOptions.apiParams) {
+            Object.entries(suggestOptions.apiParams).forEach(([key, value]) => {
+              params.append(key, value);
+            });
+          }
+          
+          // Получаем конфигурацию для API
+          const config = useRuntimeConfig();
+          const baseApiUrl = config.public.API_URL || '';
+          
+          // Формируем полный URL
+          let fullApiUrl = suggestOptions.apiUrl;
+          // Проверяем, нужно ли обрабатывать URL как локальный
+          const forceLocalApi = suggestOptions.forceLocalApi === true;
+          if (fullApiUrl.startsWith('/api/') && baseApiUrl && !forceLocalApi) {
+            fullApiUrl = `${baseApiUrl}${suggestOptions.apiUrl}`;
+          }
+          
+          const response = await fetch(`${fullApiUrl}?${params.toString()}`);
+          if (!response.ok) throw new Error('Ошибка при получении подсказок');
+          
+          const data = await response.json();
+          suggestions.value[fieldName] = Array.isArray(data) ? data : data.data || [];
+        } catch (error) {
+          console.error('Ошибка автоподсказок:', error);
+          suggestions.value[fieldName] = [];
+        } finally {
+          // Сбрасываем состояние загрузки
+          suggestionsLoading.value[fieldName] = false;
+        }
+      }, suggestOptions.debounce || 300);
+    };
+    
+    // Обработчик выбора подсказки
+    const handleSuggestionSelect = (fieldName, suggestion, autoSuggestOptions, event) => {
+      // Предотвращаем стандартное поведение и всплытие события
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      
+      selectSuggestion(fieldName, suggestion, autoSuggestOptions);
+    };
+    
+    // Выбор значения из подсказок
+    const selectSuggestion = (fieldName, suggestion, autoSuggestOptions) => {
+      if (!suggestion) {
+        return;
+      }
+      
+      // Проверяем, разрешен ли выбор
+      if (autoSuggestOptions && !autoSuggestOptions.clickable) {
+        return;
+      }
+      
+      // Определяем поле для отображения (labelField)
+      const labelField = autoSuggestOptions?.labelField || 'name';
+      
+      // Устанавливаем значение в поле формы
+      newItem.value[fieldName] = suggestion[labelField];
+      
+      // Если есть дополнительные поля для заполнения из подсказки
+      if (autoSuggestOptions?.fillFields) {
+        for (const [targetField, sourceField] of Object.entries(autoSuggestOptions.fillFields)) {
+          if (suggestion[sourceField] !== undefined) {
+            newItem.value[targetField] = suggestion[sourceField];
+          }
+        }
+      }
+      
+      // Очищаем подсказки и скрываем выпадающий список
+      suggestions.value[fieldName] = [];
+      isActiveSuggestion.value[fieldName] = false;
+    };
+    
+    // Обработчик клика вне области подсказок
+    const handleClickOutside = (event) => {
+      // Для каждого активного поля с подсказками
+      Object.keys(isActiveSuggestion.value).forEach(fieldName => {
+        if (isActiveSuggestion.value[fieldName]) {
+          // Проверяем, был ли клик вне элемента подсказки
+          const suggestElement = autoSuggestRefs.value[fieldName];
+          if (suggestElement && !suggestElement.contains(event.target)) {
+            isActiveSuggestion.value[fieldName] = false;
+          }
+        }
+      });
+    };
+    
+    // Добавляем обработчики событий при монтировании/размонтировании
+    onMounted(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    });
+    
+    onBeforeUnmount(() => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    });
+    
     return {
       showModal,
       loading,
@@ -1765,7 +1954,21 @@ export default {
       formatDate,
       formatDateTime,
       formatTime,
-      pasteFromClipboard
+      pasteFromClipboard,
+      // Обработчик автоподсказок
+      handleAutoSuggest,
+      // Обработчик выбора подсказки
+      handleSuggestionSelect,
+      // Выбор значения из подсказок
+      selectSuggestion,
+      // Обработчик клика вне области подсказок
+      handleClickOutside,
+      // Состояния для автоподсказок
+      suggestions,
+      isActiveSuggestion,
+      suggestDebounceTimers,
+      suggestionsLoading,
+      autoSuggestRefs
     };
   }
 };
@@ -1816,5 +2019,33 @@ table td {
 td input, td textarea, td select {
   width: 100%;
   max-width: 100%;
+}
+
+.suggestions-list {
+  @apply absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-auto;
+}
+
+.suggestions-list li {
+  @apply px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer;
+}
+
+.suggestions-list li:hover {
+  @apply bg-gray-100;
+}
+
+.suggestions-loading {
+  @apply p-2 text-sm text-gray-500;
+}
+
+.suggestions-empty {
+  @apply p-2 text-sm text-gray-500;
+}
+
+.input-with-suggestions {
+  @apply w-full rounded-md shadow-sm pr-8;
+}
+
+.input-with-suggestions:focus {
+  @apply ring-2 ring-blue-500 border-blue-500 outline-none;
 }
 </style> 
