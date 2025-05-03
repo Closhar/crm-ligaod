@@ -11,13 +11,12 @@ export const useAuth = () => {
                 method: 'POST',
                 body: JSON.stringify({email, password}),
             });
-
             // Сохраняем токен
-            localStorage.setItem('auth_token', response.token);
+            localStorage.setItem('auth_token', (response as { token: string }).token);
 
             // Обновляем состояние
             isAuthenticated.value = true;
-            user.value = response.user;
+            user.value = (response as { user: any }).user;
 
             // Возвращаем null, если ошибок нет
             return null;

@@ -17,6 +17,7 @@ export default defineNuxtConfig({
             SITE_URL: process.env.NUXT_SITE_URL,
         }
     },
+    // @ts-ignore
     auth: {
         strategies: {
             sanctum: {
@@ -34,7 +35,7 @@ export default defineNuxtConfig({
     fonts: {
         families: [
             {name: 'Roboto', provider: 'google'},
-            {name: 'Handjet', provider: 'google'},
+            {name: 'Handjet', provider: 'google'}
         ],
     },
     app: {

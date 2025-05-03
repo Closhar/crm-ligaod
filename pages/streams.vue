@@ -153,7 +153,23 @@ const tableOptions = ref({
       name: 'in_player',
       label: 'В плеере',
       type: 'toggle',
-      width: '100px',
+      width: '80px',
+      sortable: false,
+      options: {
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    },
+    {
+      name: 'in_profile',
+      label: 'В профиле',
+      type: 'toggle',
+      width: '80px',
       sortable: false,
       options: {
         display: 'switch', // или 'switch' для классического вида
@@ -279,6 +295,23 @@ const formOptions = ref({
       sortable: false,
       options: {
         defaultChecked: true,
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    },
+    {
+      name: 'in_profile',
+      label: 'В профиле',
+      type: 'toggle',
+      width: '100px',
+      sortable: false,
+      options: {
+        defaultChecked: false,
         display: 'switch', // или 'switch' для классического вида
         items: [
           {value: true, label: 'Вкл'},

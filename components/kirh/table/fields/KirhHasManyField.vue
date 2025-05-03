@@ -105,7 +105,7 @@
                               class="mr-2 text-gray-600" 
                               :size="field.iconSize || '1em'" 
                             />
-                            {{ field.label }}
+                            {{ field.label || field.name }}
                           </div>
                         </th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
@@ -297,6 +297,9 @@
                       ]"
                     >
                       <div class="relative">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                          {{ field.label || field.name }}
+                        </label>
                         <template v-if="field.type === 'text'">
                           <div class="relative w-full">
                             <input

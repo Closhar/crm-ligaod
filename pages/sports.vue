@@ -300,7 +300,7 @@ const formOptions = ref({
       }
     },
     {
-      name: 'description',
+      name: 'annotation',
       label: 'описание вида спорта',
       type: 'editor',
       required: false,

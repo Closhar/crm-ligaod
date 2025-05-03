@@ -106,7 +106,7 @@ export default {
     type: {
       type: String,
       default: 'text',
-      validator: (value) => ['text', 'icon', 'date', 'time', 'datetime'].includes(value)
+      validator: (value) => ['text', 'icon', 'date', 'time', 'datetime', 'email', 'number'].includes(value)
     },
     options: {
       type: Object,

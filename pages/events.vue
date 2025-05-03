@@ -85,7 +85,7 @@ const tableOptions = ref({
       width: '60px',
       options: {
         readonly: true,
-        cellClass: 'text-xs font-bold bg-yellow-50 rounded h-8 text-gray-60 border px-1 pt-2 w-full text-center cursor-default'
+        cellClass: 'text-xs font-bold bg-yellow-50 rounded h-8 text-gray-600 border px-1 pt-2 w-full text-center cursor-default'
       }
     },
     {
@@ -367,6 +367,7 @@ const tableOptions = ref({
     }
   ],
   // Основные параметры
+  modelName: "Event",
   editable: true, // редактирование
   editrow: false, // редактирование строки
   deleteable: true, // удаление
@@ -380,6 +381,19 @@ const tableOptions = ref({
   pagination: true,
   main_field: 'event_name',
   pageSize: 15,
+  pageSizeOptions: [5, 10, 15, 20, 25, 30, 50, 100],
+  enableBulkActions: true,
+        bulkActions: [
+          {
+            name: 'delete',
+            label: 'Удалить выбранные записи',
+            icon: 'mynaui:trash',
+            color: 'bg-red-600 hover:bg-red-700',
+            confirm: true,
+            confirmTitle: 'Подтверждение массового удаления',
+            confirmMessage: 'Вы собираетесь удалить {count} записей. Это действие нельзя отменить. Подтвердите удаление.'
+          }
+        ],
   searchable: true,
   enableResetFilters: true,
   resetFiltersLabel: 'Очистить',
@@ -1084,6 +1098,21 @@ const extraFields = ref([
       }
     },
     {
+  name: 'series_count',
+  label: 'Счет серии',
+  type: 'rel_value',
+  width: '90px',
+  sortable: false,
+  options: {
+    readonly: true,
+    rel_field: 'series.description', // Поле для редактирования
+    cellClass: 'text-xs font-bold bg-blue-50 rounded h-8 text-gray-600 border px-1 pt-2 w-full text-center cursor-pointer',
+    editorEnabled: false, // Включить/выключить редактор
+    check_null: true, // Если true, модальное окно не откроется при null значении
+    modalTitle: 'Информация о серии', // Новый параметр для заголовка модального окна
+  }
+},
+    {
       name: 'image',
       label: '',
       displayLabel: 'Изображение',
@@ -1221,7 +1250,7 @@ const extraFields = ref([
       name: 'in_player',
       label: 'плр',
       type: 'toggle',
-      width: '30px',
+      width: '20px',
       sortable: false,
       options: {
         defaultChecked: true,
@@ -1233,7 +1262,24 @@ const extraFields = ref([
         activeClass: 'bg-green-500 text-white',
         inactiveClass: 'bg-red-100 text-red-800'
       }
-    }
+    },
+    {
+      name: 'in_profile',
+      label: 'прф',
+      type: 'toggle',
+      width: '20px',
+      sortable: false,
+      options: {
+        defaultChecked: false,
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    },
             ],
           }
         },

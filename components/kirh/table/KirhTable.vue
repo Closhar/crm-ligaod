@@ -136,6 +136,24 @@
             >
               <Icon name="emojione-v1:right-arrow" size="1.5em" />
             </button>
+
+            <!-- Селект количества записей на странице -->
+            <div v-if="tableOptions.pagination && tableOptions.pageSizeOptions" class="flex items-center gap-1">
+              <span class="text-gray-500">Записей:</span>
+              <select
+                  v-model.number="currentPageSize"
+                  @change="handlePageSizeChange($event.target.value)"
+                  class="text-xs border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+              >
+                <option
+                    v-for="size in tableOptions.pageSizeOptions"
+                    :key="size"
+                    :value="parseInt(size, 10)"
+                >
+                  {{ size }}
+                </option>
+              </select>
+            </div>
           </div>
 
           <div class="flex flex-row gap-1">
@@ -222,6 +240,17 @@
                 <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
               </svg>
               {{ showFieldSelector ? 'Закрыть панель' : 'Панель редактора отдельных полей' }}
+            </button>
+
+            <!-- Кнопка массовых действий -->
+            <button
+                v-if="tableOptions.enableBulkActions"
+                class="hidden md:flex text-xs bg-gray-800 hover:bg-gray-900 text-white px-3 py-2.5 rounded-md flex items-center gap-1 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                :disabled="!hasSelectedRows"
+                @click="openBulkActionsModal"
+            >
+              <Icon name="material-symbols:playlist-add-check" size="1.2em" />
+              Действия ({{ selectedRows.size }})
             </button>
           </div>
 
@@ -335,6 +364,22 @@
 
             <!-- Заголовки -->
             <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
+              <!-- Колонка с чекбоксами -->
+              <div 
+                  v-if="tableOptions.enableBulkActions"
+                  class="kirh-header-cell flex items-center justify-center group relative bg-gray-100 px-2 py-2 border border-gray-200 rounded hidden md:block"
+                  style="flex: 0 0 40px;"
+              >
+                <div class="flex items-center justify-center w-full">
+                  <input
+                      type="checkbox"
+                      class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      :checked="selectedRows.size === tableData.length"
+                      @change="selectedRows.size === tableData.length ? clearSelectedRows() : tableData.forEach(row => selectedRows.add(row.id))"
+                  />
+                </div>
+              </div>
+
               <!-- ID фильтр заголовок (отображается только если включен showIdFilter) -->
               <div 
                   v-if="tableOptions.showIdFilter"
@@ -446,6 +491,22 @@
                   :class="{'bg-gray-50': rowIndex % 2 === 0}"
                   class="kirh-row flex hover:bg-gray-50 text-xs"
               >
+                <!-- Колонка с чекбоксом -->
+                <div 
+                    v-if="tableOptions.enableBulkActions"
+                    class="kirh-cell border-b border-gray-100 flex items-center justify-center hidden md:block"
+                    style="flex: 0 0 40px;"
+                >
+                  <div class="flex items-center justify-center w-full">
+                    <input
+                        type="checkbox"
+                        class="w-4 h-4 mt-2 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        :checked="isRowSelected(row)"
+                        @change="toggleRowSelection(row)"
+                    />
+                  </div>
+                </div>
+
                 <!-- ID фильтр ячейка (отображается только если включен showIdFilter) -->
                 <div 
                     v-if="tableOptions.showIdFilter"
@@ -588,6 +649,19 @@
                   </template>
 
                   <!-- Другие типы полей -->
+                  <template v-else-if="column.type === 'rel_value'">
+                    <div
+                        :class="[
+                          'rel-value-cell',
+                          column.options?.cellClass || '',
+                          !row[column.name] && column.options?.check_null ? 'opacity-50' : ''
+                        ]"
+                        @click="openRelValueModal(row, column)"
+                    >
+                      {{ row[column.name] }}
+                    </div>
+                  </template>
+
                   <template v-else>
                     <component
                         :is="getFieldComponent(column.type)"
@@ -709,6 +783,121 @@
       </div>
 
     </div>
+
+    <!-- Модальное окно для редактирования rel_value -->
+    <div v-if="showRelValueModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div
+          ref="relValueEditorContainer"
+          class="bg-white shadow-xl flex flex-col transition-all max-w-4xl w-full h-[90vh] border rounded-lg"
+      >
+        <div class="p-4 border-b flex justify-between items-center">
+          <h3 class="text-lg font-semibold">
+            {{ currentRelValueColumn?.options?.modalTitle || 'Редактор' }}
+          </h3>
+          <button
+              class="text-gray-500 hover:text-gray-700"
+              @click="closeRelValueModal"
+          >
+            <Icon name="ph:x" size="20"/>
+          </button>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4">
+          <div v-if="currentRelValueColumn?.options?.editorEnabled" class="h-full">
+            <RichTextEditor
+                :model-value="relValueEditorContent"
+                :editor-enabled="true"
+                :placeholder="currentRelValueColumn?.options?.placeholder"
+                :upload-options="{
+                  url: currentRelValueColumn?.options?.uploadUrl || '/api/upload-image',
+                  maxWidth: currentRelValueColumn?.options?.imageMaxWidth || 1200,
+                  quality: currentRelValueColumn?.options?.imageQuality || 0.8
+                }"
+                @update:model-value="handleRelValueUpdate"
+            />
+          </div>
+          <div v-else class="h-full">
+            <textarea
+                v-model="relValueEditorContent"
+                :placeholder="currentRelValueColumn?.options?.placeholder"
+                class="w-full h-full p-2 border rounded font-mono text-sm outline-none resize-none text-left whitespace-pre-wrap leading-normal"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="p-4 border-t flex justify-end space-x-2">
+          <button
+              class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+              @click="closeRelValueModal"
+          >
+            Отмена
+          </button>
+          <button
+              class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              @click="saveRelValueChanges"
+          >
+            Сохранить
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для массовых действий -->
+    <div v-if="showBulkActionsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Массовые действия</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Выбрано записей: {{ selectedRows.size }}
+        </p>
+        <div class="flex flex-col gap-2">
+          <button
+              v-for="action in tableOptions.bulkActions"
+              :key="action.name"
+              :class="[
+                'px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2',
+                action.name === 'delete' ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'
+              ]"
+              @click="executeBulkAction(action)"
+          >
+            <Icon :name="action.icon" size="1.2em" />
+            {{ action.label }}
+          </button>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+              class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              @click="closeBulkActionsModal"
+          >
+            Отмена
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно для подтверждения удаления -->
+    <div v-if="showDeleteConfirmationModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Подтверждение удаления</h3>
+        <p class="text-sm text-gray-600 mb-4">
+          Вы уверены, что хотите удалить выбранные записи ({{ selectedRows.size }})?
+        </p>
+        <div class="flex justify-end gap-2 mt-4">
+          <button
+              class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              @click="closeDeleteConfirmationModal"
+          >
+            Отмена
+          </button>
+          <button
+              class="px-4 py-2 bg-red-500 text-white rounded-md text-sm font-medium hover:bg-red-600"
+              @click="confirmBulkDelete"
+          >
+            Удалить
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -725,6 +914,7 @@ import KirhTextareaField from "./fields/KirhTextareaField.vue";
 import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
 import KirhSwapField from './fields/KirhSwapField.vue';
+import RichTextEditor from "./editor/RichTextEditor.vue";
 
 export default {
   name: 'KirhTable',
@@ -738,7 +928,8 @@ export default {
     KirhTextareaField,
     KirhHasManyField,
     KirhTableForm,
-    KirhSwapField
+    KirhSwapField,
+    RichTextEditor,
   },
   props: {
     apiUrl: {
@@ -754,6 +945,7 @@ export default {
         sortable: true,
         pagination: true,
         pageSize: 10,
+        pageSizeOptions: [5, 10, 25, 50, 100],
         link: false,
         link_prefix: '',
         enableResetFilters: true,
@@ -761,7 +953,19 @@ export default {
         resetFiltersClass: 'text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-md transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed',
         showIdFilter: true,
         defaultSortField: null,
-        defaultSortDirection: 'asc'
+        defaultSortDirection: 'asc',
+        enableBulkActions: false, // Включает функционал множественного выбора и массовых действий
+        bulkActions: [ // Массив доступных массовых действий
+          {
+            name: 'delete',
+            label: 'Удалить',
+            icon: 'mynaui:trash',
+            color: 'red',
+            confirm: true,
+            confirmTitle: 'Подтверждение удаления',
+            confirmMessage: 'Вы уверены, что хотите удалить выбранные записи?'
+          }
+        ]
       })
     },
     formOptions: {
@@ -810,6 +1014,7 @@ export default {
     const currentPage = ref(1);
     const totalPages = ref(1);
     const totalItems = ref(0);
+    const currentPageSize = ref(parseInt(props.tableOptions.pageSize, 10) || 10); // Инициализируем текущий размер страницы
     const sortField = ref(props.tableOptions.defaultSortField);
     const sortDirection = ref(props.tableOptions.defaultSortDirection);
     const error = ref(null);
@@ -833,6 +1038,22 @@ export default {
     const currentCell = ref(null);
     const isFreshnessChecked = ref(false);
 
+    // Новые реактивные переменные для rel_value
+    const showRelValueModal = ref(false);
+    const currentRelValueRow = ref(null);
+    const currentRelValueColumn = ref(null);
+    const relValueEditorContent = ref('');
+    const relValueEditorContainer = ref(null);
+
+    // Новые реактивные переменные для массовых действий
+    const selectedRows = ref(new Set());
+    const showBulkActionsModal = ref(false);
+    const selectedBulkAction = ref(null);
+
+    // Новые реактивные переменные для подтверждения удаления
+    const showDeleteConfirmationModal = ref(false);
+    const pendingBulkAction = ref(null);
+
     // Методы
     const getFieldComponent = (type) => {
       const componentMap = {
@@ -845,7 +1066,8 @@ export default {
         toggle: KirhToggleField,
         image: KirhImageField,
         hasmany: KirhHasManyField,
-        swap: KirhSwapField
+        swap: KirhSwapField,
+        rel_value: KirhTextField // Используем KirhTextField как базовый компонент
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1364,7 +1586,7 @@ export default {
 
         const queryParams = new URLSearchParams({
           page: currentPage.value,
-          per_page: props.tableOptions.pageSize,
+          per_page: parseInt(currentPageSize.value, 10), // Преобразуем в число
           ...(sortField.value && {sort_field: sortField.value}),
           ...(sortDirection.value && {sort_direction: sortDirection.value}),
           ...props.additionalParams,
@@ -1733,6 +1955,17 @@ export default {
       props.additionalFilters.forEach(filter => {
         selectedFilters.value[filter.field] = filter.defaultValue || '';
       });
+      
+      // Устанавливаем начальное значение для currentPageSize
+      if (props.tableOptions.pageSizeOptions && props.tableOptions.pageSizeOptions.length > 0) {
+        const initialSize = parseInt(props.tableOptions.pageSize, 10);
+        currentPageSize.value = props.tableOptions.pageSizeOptions.includes(initialSize) 
+          ? initialSize 
+          : props.tableOptions.pageSizeOptions[0];
+      } else {
+        currentPageSize.value = parseInt(props.tableOptions.pageSize, 10) || 10;
+      }
+      
       fetchData();
     });
 
@@ -1934,12 +2167,206 @@ export default {
       return row[column.name];
     };
 
+    // Метод для открытия модального окна rel_value
+    const openRelValueModal = async (row, column) => {
+      if (column.options?.check_null && !row[column.name]) {
+        return;
+      }
+
+      try {
+        loading.value = true;
+        const response = await fetch(`${props.apiUrl}/${row.id}/rel-value?field=${column.name}&rel_field=${column.options.rel_field}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Ошибка загрузки данных');
+        }
+
+        currentRelValueRow.value = row;
+        currentRelValueColumn.value = column;
+        relValueEditorContent.value = data.value || '';
+        showRelValueModal.value = true;
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при загрузке данных:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Метод для закрытия модального окна rel_value
+    const closeRelValueModal = () => {
+      showRelValueModal.value = false;
+      currentRelValueRow.value = null;
+      currentRelValueColumn.value = null;
+      relValueEditorContent.value = '';
+    };
+
+    // Метод для сохранения изменений rel_value
+    const saveRelValueChanges = async () => {
+      if (!currentRelValueRow.value || !currentRelValueColumn.value) return;
+
+      try {
+        loading.value = true;
+        const response = await fetch(`${props.apiUrl}/${currentRelValueRow.value.id}/rel-value`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            field: currentRelValueColumn.value.options.rel_field,
+            value: relValueEditorContent.value
+          })
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.message || 'Ошибка сохранения данных');
+        }
+
+        await fetchData();
+        closeRelValueModal();
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при сохранении данных:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    // Обработчик обновления значения в редакторе
+    const handleRelValueUpdate = (newValue) => {
+      relValueEditorContent.value = newValue;
+    };
+
+    const handlePageSizeChange = (size) => {
+      const newSize = parseInt(size, 10);
+      if (!isNaN(newSize)) {
+        currentPageSize.value = newSize;
+        currentPage.value = 1; // Сбрасываем на первую страницу при изменении размера
+        fetchData();
+      }
+    };
+
+    // Методы для работы с массовыми действиями
+    const toggleRowSelection = (row) => {
+      if (selectedRows.value.has(row.id)) {
+        selectedRows.value.delete(row.id);
+      } else {
+        selectedRows.value.add(row.id);
+      }
+    };
+
+    const clearSelectedRows = () => {
+      selectedRows.value.clear();
+    };
+
+    const isRowSelected = (row) => {
+      return selectedRows.value.has(row.id);
+    };
+
+    const hasSelectedRows = computed(() => {
+      return selectedRows.value.size > 0;
+    });
+
+    const openBulkActionsModal = () => {
+      showBulkActionsModal.value = true;
+    };
+
+    const closeBulkActionsModal = () => {
+      showBulkActionsModal.value = false;
+      selectedBulkAction.value = null;
+    };
+
+    const openDeleteConfirmationModal = (action) => {
+      pendingBulkAction.value = action;
+      showDeleteConfirmationModal.value = true;
+    };
+
+    const closeDeleteConfirmationModal = () => {
+      showDeleteConfirmationModal.value = false;
+      pendingBulkAction.value = null;
+    };
+
+    const executeBulkAction = async (action) => {
+      if (!action || !hasSelectedRows.value) return;
+
+      try {
+        loading.value = true;
+        
+        if (action.name === 'delete') {
+          // Если требуется подтверждение
+          if (action.confirm) {
+            openDeleteConfirmationModal(action);
+            return;
+          }
+
+          const response = await fetch(`${props.apiUrl}/bulk-delete`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ids: Array.from(selectedRows.value)
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Ошибка при удалении записей');
+          }
+
+          // Очищаем выбранные записи и обновляем данные
+          clearSelectedRows();
+          await fetchData();
+          closeBulkActionsModal();
+        }
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при выполнении массового действия:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const confirmBulkDelete = async () => {
+      if (!pendingBulkAction.value) return;
+      
+      try {
+        loading.value = true;
+        const response = await fetch(`${props.apiUrl}/bulk-delete`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ids: Array.from(selectedRows.value)
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка при удалении записей');
+        }
+
+        // Очищаем выбранные записи и обновляем данные
+        clearSelectedRows();
+        await fetchData();
+        closeBulkActionsModal();
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при удалении записей:', err);
+      } finally {
+        loading.value = false;
+        closeDeleteConfirmationModal();
+      }
+    };
+
     return {
       tableData,
       loading,
       showForm,
       editingRow,
       currentPage,
+      currentPageSize,
       totalPages,
       totalItems,
       sortField,
@@ -2014,9 +2441,34 @@ export default {
       updatedAt,
       updateCellValue,
       handleCellClick,
-      formatDate, // Добавляем метод в возвращаемый объект
+      formatDate,
       getSelectCellClass,
       getCellTitle,
+      showRelValueModal,
+      currentRelValueRow,
+      currentRelValueColumn,
+      relValueEditorContent,
+      relValueEditorContainer,
+      openRelValueModal,
+      closeRelValueModal,
+      saveRelValueChanges,
+      handleRelValueUpdate,
+      handlePageSizeChange,
+      selectedRows,
+      showBulkActionsModal,
+      selectedBulkAction,
+      toggleRowSelection,
+      clearSelectedRows,
+      isRowSelected,
+      hasSelectedRows,
+      openBulkActionsModal,
+      closeBulkActionsModal,
+      executeBulkAction,
+      showDeleteConfirmationModal,
+      pendingBulkAction,
+      openDeleteConfirmationModal,
+      closeDeleteConfirmationModal,
+      confirmBulkDelete,
     };
   }
 };
@@ -2578,5 +3030,15 @@ export default {
   white-space: normal;
   text-align: left;
   line-height: 1.4;
+}
+
+/* Стили для rel_value ячейки */
+.rel-value-cell {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rel-value-cell:hover {
+  opacity: 0.8;
 }
 </style>

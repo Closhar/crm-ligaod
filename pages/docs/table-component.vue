@@ -302,7 +302,7 @@
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">type</td>
                 <td class="p-2">String</td>
-                <td class="p-2">Тип данных: 'text', 'number', 'date', 'boolean', 'image', 'link', 'custom', 'swap'</td>
+                <td class="p-2">Тип данных: 'text', 'number', 'date', 'boolean', 'image', 'link', 'custom', 'swap', 'rel_value'</td>
               </tr>
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">visible</td>
@@ -342,7 +342,7 @@
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">options</td>
                 <td class="p-2">Object</td>
-                <td class="p-2">Дополнительные настройки для полей типа select, image и других</td>
+                <td class="p-2">Дополнительные настройки для полей типа select, image, rel_value и других</td>
               </tr>
               <tr class="border-b border-gray-200">
                 <td class="p-2 font-medium">img_size</td>
@@ -489,6 +489,47 @@ public function swapFields(Request $request, $id)
     
     return response()->json(['success' => true]);
 }</pre>
+      </div>
+      
+      <h3 class="text-lg font-semibold mb-2">Пример использования поля типа rel_value:</h3>
+      
+      <div class="bg-gray-800 text-gray-100 p-4 rounded-md overflow-x-auto mb-6">
+        <pre class="text-sm font-mono">
+// Пример колонки для редактирования связанного значения
+{
+  name: 'series_count',
+  label: 'Количество серий',
+  type: 'rel_value',
+  options: {
+    rel_field: 'series.description', // Поле для редактирования
+    readonly: true, // Ячейка не редактируемая
+    cellClass: 'cursor-pointer', // Класс для ячейки
+    editorEnabled: true, // Использовать RichTextEditor
+    check_null: true, // Проверять на null
+    modalTitle: 'Редактирование описания серии', // Заголовок модального окна
+    placeholder: 'Введите описание серии...' // Подсказка в редакторе
+  }
+}</pre>
+      </div>
+
+      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6">
+        <h4 class="text-md font-semibold mb-2 text-blue-800">Особенности поля типа rel_value:</h4>
+        <ul class="list-disc list-inside text-gray-700">
+          <li>Отображает значение из основного поля (например, количество серий)</li>
+          <li>При клике открывает модальное окно для редактирования связанного поля (например, описание серии)</li>
+          <li>Поддерживает два типа редактора:
+            <ul class="list-disc list-inside ml-4">
+              <li>Обычный текстовый редактор (textarea)</li>
+              <li>RichTextEditor (если включен параметр editorEnabled)</li>
+            </ul>
+          </li>
+          <li>Использует API-маршруты:
+            <ul class="list-disc list-inside ml-4">
+              <li>GET <code>/rel-value?field=series_count&rel_field=series.description</code> - для получения значения</li>
+              <li>POST <code>/rel-value</code> - для сохранения изменений</li>
+            </ul>
+          </li>
+        </ul>
       </div>
       
       <h2 id="examples" class="text-xl font-bold mb-4 pt-4 border-t">Примеры использования</h2>

@@ -89,6 +89,8 @@
             <li>Добавлены подсказки к названию стримов для улучшения пользовательского опыта</li>
             <li>Переработан функционал серий - добавлены 3 типа серий для более гибкой работы с данными</li>
             <li>Реализован автоматический подсчет счета серии</li>
+            <li>Добавлен новый тип поля <code>rel_value</code> для редактирования связанных значений через модальное окно</li>
+            <li>Добавлен функционал выбора количества записей на страницу через селект с настраиваемыми значениями</li>
           </ul>
           
           <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
@@ -117,12 +119,46 @@
 }</code></pre>
           </div>
           
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример использования поля типа rel_value:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>{
+  name: 'series_count',
+  label: 'Количество серий',
+  type: 'rel_value',
+  options: {
+    rel_field: 'series.description',
+    readonly: true,
+    cellClass: 'cursor-pointer',
+    editorEnabled: true,
+    check_null: true,
+    modalTitle: 'Редактирование описания серии'
+  }
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки выбора количества записей на страницу:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>tableOptions: {
+  pagination: true,
+  pageSize: 25, // Количество записей по умолчанию
+  pageSizeOptions: [10, 25, 50, 100, 200] // Доступные значения в селекте
+}</code></pre>
+          </div>
+          
           <NuxtLink to="/docs/table-component#stream-hints" class="text-indigo-600 hover:underline text-sm">
             Подробнее о подсказках для стримов &rarr;
           </NuxtLink>
           
           <NuxtLink to="/docs/table-component#series-types" class="text-indigo-600 hover:underline text-sm ml-3">
             Подробнее о типах серий &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/table-component#rel-value-field" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее о поле типа rel_value &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/table-component#page-size-select" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее о выборе количества записей &rarr;
           </NuxtLink>
         </div>
       </div>
