@@ -395,7 +395,7 @@ const formOptions = ref({
     },
     {
       name: 'date_from',
-      required: true,
+      required: false,
       label: 'Дата начала',
       type: 'date',
       width: '180px',
@@ -409,7 +409,7 @@ const formOptions = ref({
     },
     {
       name: 'date_to',
-      required: true,
+      required: false,
       label: 'Дата окончания',
       type: 'date',
       width: '180px',
@@ -684,7 +684,7 @@ const extraFields = ref([
     }
   },
   {
-    name: 'competition_info',
+    name: 'title_short',
     label: 'Соревнование',
     type: 'text',
     min_width: '160px',
@@ -696,7 +696,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['competition_info'];
+const defaultVisibleFields = ['title_short'];
 
 // Фильтры
 const additionalFilters = ref([

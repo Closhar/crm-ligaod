@@ -251,6 +251,7 @@
                       maxWidth: column.options.imageMaxWidth || 1200,
                       quality: column.options.imageQuality || 0.8
                     }"
+                    @format="(e) => e.preventDefault()"
                 />
 
                 <!-- Select поле (компонент KirhSelectField) -->
@@ -547,6 +548,7 @@
                           maxWidth: column.options.imageMaxWidth || 1200,
                           quality: column.options.imageQuality || 0.8
                         }"
+                        @format="(e) => e.preventDefault()"
                     />
 
                     <!-- Select поле (компонент KirhSelectField) -->

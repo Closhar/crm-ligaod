@@ -207,9 +207,13 @@ export default {
       if (this.hasError) return;
 
       const value = this.pendingValue;
-      if (value === null || value === undefined) {
+      if (value === null || value === undefined || value === '') {
         this.$emit('input', null);
         this.$emit('update:modelValue', null);
+        this.$emit('change', null);
+        this.localValue = '';
+        this.originalValue = '';
+        this.pendingValue = null;
         this.isEditing = false;
         return;
       }
