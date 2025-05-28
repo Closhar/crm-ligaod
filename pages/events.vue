@@ -1216,7 +1216,7 @@ const extraFields = ref([
                 label: 'Дата',
                 type: 'datetime',
                 options: {
-                  formColumnClass: 'col-span-4'
+                  formColumnClass: 'col-span-12'
                 }
               },
               {
@@ -1224,7 +1224,7 @@ const extraFields = ref([
                 label: 'Ссылка на стрим',
                 type: 'text',
                 options: {
-                  formColumnClass: 'col-span-8',
+                  formColumnClass: 'col-span-12',
                   pasteFromClipboard: true,
                 }
               },

@@ -611,8 +611,6 @@
                               v-model="newItem[field.name]"
                               :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
                             />
-                              :checked="newItem[field.name] === undefined ? field.options?.defaultChecked : newItem[field.name]"
-                            />
                             <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
                               {{ field.options.toggleLabel }}
                             </span>
