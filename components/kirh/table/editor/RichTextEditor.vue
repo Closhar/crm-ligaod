@@ -77,7 +77,7 @@ import EditorToolbar from './EditorToolbar.vue'
 import ImageUploadModal from './ImageUploadModal.vue'
 import IframeModal from './IframeModal.vue'
 import LinkModal from './LinkModal.vue'
-import {nextTick} from 'vue'
+import {nextTick, watch} from 'vue'
 
 const IframeExtension = Node.create({
   name: 'iframe',
@@ -220,6 +220,13 @@ const handleInsertLink = (link) => {
 
   showLinkModal.value = false
 }
+
+// Добавляем watch для modelValue
+watch(() => props.modelValue, (newContent) => {
+  if (editor.value && newContent !== editor.value.getHTML()) {
+    editor.value.commands.setContent(newContent)
+  }
+}, { immediate: true })
 
 onMounted(() => {
   if (props.editorEnabled) {

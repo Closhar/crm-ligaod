@@ -1598,18 +1598,18 @@ export default {
 
         closeInlineSelect();
 
-        tableData.value = data.data.map((item, index) => {
-          if (!item.id) {
-            item.uniqueKey = `row-${index}-${Date.now()}` // Добавляем уникальный ключ
-          }
-          return item
-        })
-
         if (!response.ok) {
           throw new Error(data.message || 'Ошибка загрузки данных');
         }
 
-        tableData.value = data.data || data;
+        const processedData = data.data || data;
+        tableData.value = processedData.map((item, index) => {
+          if (!item.id) {
+            item.uniqueKey = `row-${index}-${Date.now()}` // Добавляем уникальный ключ
+          }
+          return item;
+        });
+
         totalPages.value = data.last_page || data.meta?.last_page || 1;
         totalItems.value = data.total || data.meta?.total || tableData.value.length;
       } catch (err) {

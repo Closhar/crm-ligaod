@@ -1141,6 +1141,29 @@ const extraFields = ref([
       }
     },
     {
+      name: 'tickets',
+      label: '',
+      displayLabel: 'Билеты',
+      title_icon: 'icon-park-outline:ticket',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование описания',
+        readonly: false,
+        hint: 'информация о билетах',
+        placeholder: 'Введите описание...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
       name: 'about',
       label: '',
       displayLabel: 'Информация',
@@ -1221,7 +1244,7 @@ const extraFields = ref([
               },
               {
                 name: 'link',
-                label: 'Ссылка на стрим',
+                label: 'Ссылка',
                 type: 'text',
                 options: {
                   formColumnClass: 'col-span-12',
@@ -1248,7 +1271,7 @@ const extraFields = ref([
               },
     {
       name: 'in_player',
-      label: 'плр',
+      label: 'встроено',
       type: 'toggle',
       width: '20px',
       sortable: false,
@@ -1265,7 +1288,7 @@ const extraFields = ref([
     },
     {
       name: 'in_profile',
-      label: 'прф',
+      label: 'в профиле',
       type: 'toggle',
       width: '20px',
       sortable: false,
@@ -1296,7 +1319,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'about'];
+const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'tickets', 'about'];
 
 // Поля, которые не будут отображаться в дополнительной таблице
 const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon', 'club1_id', 'club2_id'];
