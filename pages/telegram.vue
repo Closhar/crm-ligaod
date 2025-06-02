@@ -96,6 +96,20 @@
                 </span>
                 <span v-else>События отчет</span>
               </button>
+              <button
+                @click="showAIModal = true"
+                :disabled="isGenerating"
+                class="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                <span v-if="isGenerating" class="flex items-center">
+                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Генерация...
+                </span>
+                <span v-else>AI Генерация</span>
+              </button>
             </div>
           </div>
           
@@ -104,6 +118,19 @@
             :placeholder="'Выберите статью для редактирования...'"
             @update:modelValue="handleEditorUpdate"
           />
+          
+          <!-- Поле для хэштегов -->
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Хэштеги
+            </label>
+            <input
+              type="text"
+              v-model="hashtags"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Введите хэштеги через пробел"
+            />
+          </div>
           
           <!-- Загрузка изображения -->
           <div class="mt-4">
@@ -288,6 +315,84 @@
       </div>
     </div>
   </div>
+
+  <!-- Модальное окно AI генерации -->
+  <div v-if="showAIModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-2xl mx-4">
+      <div class="p-4 border-b">
+        <h3 class="text-lg font-semibold">AI Генерация контента</h3>
+      </div>
+      <div class="p-4">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Запрос для генерации
+            <span class="text-sm text-gray-500 ml-2">
+              {{ aiPrompt.length }}/1000 символов
+            </span>
+          </label>
+          <textarea
+            v-model="aiPrompt"
+            rows="4"
+            class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            :class="{'border-red-500': aiPrompt.length > 1000}"
+            placeholder="Опишите, какой контент нужно сгенерировать..."
+          ></textarea>
+          <p v-if="aiPrompt.length > 1000" class="mt-1 text-sm text-red-600">
+            Превышен лимит символов. Текст будет автоматически разбит на части при генерации.
+          </p>
+        </div>
+        <!-- Добавляем кнопку и выбор даты -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Быстрые шаблоны
+          </label>
+          <div class="flex items-center space-x-4">
+            <input
+              type="date"
+              v-model="aiSelectedDate"
+              class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            />
+            <button
+              @click="prepareDayReport"
+              :disabled="isGenerating || !aiSelectedDate"
+              class="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            >
+              <span v-if="isGenerating" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Загрузка...
+              </span>
+              <span v-else>Текст по итогам дня</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="p-4 border-t flex justify-end space-x-3">
+        <button
+          @click="showAIModal = false"
+          class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        >
+          Отмена
+        </button>
+        <button
+          @click="generateContent"
+          :disabled="isGenerating || !aiPrompt.trim()"
+          class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+        >
+          <span v-if="isGenerating" class="flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Генерация...
+          </span>
+          <span v-else>Сгенерировать</span>
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -327,7 +432,7 @@ const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 const region_title = "Санкт-Петербург и Ленинградская область"
-const hashtags = "#спорт #события #СанктПетербург #sportrep"
+const hashtags = ref("#спорт #события #СанктПетербург #sportrep")
 
 // Загружаем данные на сервере при каждой загрузке страницы
 const {data} = await useAsyncData('globals', async () => {
@@ -829,6 +934,7 @@ interface Event {
   series?: {
     description: string;
   };
+  report?: string;
 }
 
 interface EventsResponse {
@@ -890,8 +996,11 @@ const loadTodayEvents = async () => {
 
     // Формируем шаблон для домашних событий
     const today = new Date();
-    let homeTemplate = `*${region_title}\nСПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}*\n\n`;
+    let finalTemplate = '';
+
+    // Добавляем домашние события только если они есть
     if (homeEvents.length > 0) {
+      let homeTemplate = `*${region_title}\nСПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}*\n\n`;
       homeEvents.forEach((event, index) => {
         if (index > 0) {
           homeTemplate += '➖➖➖➖➖➖➖➖➖➖\n\n';
@@ -957,12 +1066,18 @@ const loadTodayEvents = async () => {
         }
         homeTemplate += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
       });
-      homeTemplate += '\n' + hashtags;
+      homeTemplate += '\n' + hashtags.value;
+      finalTemplate += homeTemplate;
     }
 
-    // Формируем шаблон для выездных событий
-    let awayTemplate = `*НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}*\n\n`;
+    // Добавляем выездные события только если они есть
     if (awayEvents.length > 0) {
+      let awayTemplate = '';
+      // Добавляем разделитель только если есть домашние события
+      if (homeEvents.length > 0) {
+        awayTemplate = '\n\n';
+      }
+      awayTemplate += `*НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}*\n\n`;
       awayEvents.forEach((event, index) => {
         if (index > 0) {
           awayTemplate += '\n\n➖➖➖➖➖➖➖➖➖➖\n\n';
@@ -1010,11 +1125,12 @@ const loadTodayEvents = async () => {
         }
         awayTemplate += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
       });
-      awayTemplate += '\n' + hashtags;
+      awayTemplate += '\n' + hashtags.value;
+      finalTemplate += awayTemplate;
     }
 
     // Вставляем шаблоны в редактор
-    editorContent.value = homeTemplate + '\n\n' + awayTemplate;
+    editorContent.value = finalTemplate;
 
   } catch (error) {
     console.error('Ошибка при загрузке событий:', error);
@@ -1037,64 +1153,63 @@ const loadEventsByDate = async () => {
 
     const data: EventsResponse = await response.json();
 
-    // Разделяем события на домашние и выездные
-    const homeEvents = data.data.filter(event => event.arena !== null);
-    const awayEvents = data.data.filter(event => event.arena === null);
+    // Объединяем все события в один массив
+    const allEvents = data.data;
+    
+    if (allEvents.length === 0) {
+      alert('Нет событий за выбранную дату');
+      return;
+    }
 
     // Формируем шаблон для всех событий
     let template = `*${region_title}\nИтоги дня ${formatDateForTemplate(new Date(selectedDate.value))}*\n\n`;
     
-    // Объединяем все события в один массив
-    const allEvents = [...homeEvents, ...awayEvents];
-    
-    if (allEvents.length > 0) {
-      allEvents.forEach((event, index) => {
-        if (index > 0) {
-          template += '➖➖➖➖➖➖➖➖➖➖\n\n';
+    allEvents.forEach((event, index) => {
+      if (index > 0) {
+        template += '➖➖➖➖➖➖➖➖➖➖\n\n';
+      }
+      if (event.club1 && event.club2) {
+        template += `*${event.competition.title_short}*\n`;
+        template += `*${event.event_name}*\n\n`;
+      } else {
+        template += `*${event.event_name}*\n\n`;
+      }
+      if (event.arena) {
+        template += `📍 ${event.arena.title}\n\n`;
+      }
+      if (event.tickets) {
+        const cleanTickets = event.tickets
+          .replace(/<[^>]*>/g, '')
+          .replace(/\n\s*\n/g, '\n')
+          .trim();
+        template += `🎫 ${cleanTickets}\n\n`;
+      }
+      if (event.series_count) {
+        template += `Счет в серии: ${event.series_count}\n`;
+        if (event.series?.description) {
+          template += `${event.series.description}\n\n`;
         }
-        if (event.club1 && event.club2) {
-          template += `*${event.competition.title_short}*\n`;
-          template += `*${event.event_name}*\n\n`;
-        } else {
-          template += `*${event.event_name}*\n\n`;
+      }
+      if (event.report) {
+        const formattedReport = formatForTelegram(event.report)
+          .split('\n')
+          .filter(line => line.trim().length > 0)
+          .join('\n');
+        template += `📝 ${formattedReport}\n\n`;
+      }
+      if (event.streams && event.streams.length > 0) {
+        const filteredStreams = event.streams.filter(stream => stream.in_player === 1);
+        if (filteredStreams.length > 0) {
+          template += '*📺 Видео:*\n';
+          filteredStreams.forEach(stream => {
+            template += `• [${stream.title}](${stream.link})\n`;
+          });
+          template += '\n';
         }
-        if (event.arena) {
-          template += `📍 ${event.arena.title}\n\n`;
-        }
-        if (event.tickets) {
-          const cleanTickets = event.tickets
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n\s*\n/g, '\n')
-            .trim();
-          template += `🎫 ${cleanTickets}\n\n`;
-        }
-        if (event.about) {
-          const cleanAbout = formatForTelegram(event.about)
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
-          template += `${cleanAbout}\n\n`;
-        }
-        if (event.series_count) {
-          template += `Счет в серии: ${event.series_count}\n`;
-          if (event.series?.description) {
-            template += `${event.series.description}\n\n`;
-          }
-        }
-        if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter(stream => stream.in_player === 1);
-          if (filteredStreams.length > 0) {
-            template += '*📺 Видео:*\n';
-            filteredStreams.forEach(stream => {
-              template += `• [${stream.title}](${stream.link})\n`;
-            });
-            template += '\n';
-          }
-        }
-        template += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
-      });
-      template += '\n' + hashtags;
-    }
+      }
+      template += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
+    });
+    template += '\n' + hashtags.value;
 
     // Вставляем шаблон в редактор
     editorContent.value = template;
@@ -1105,6 +1220,158 @@ const loadEventsByDate = async () => {
     alert('Не удалось загрузить события');
   } finally {
     isLoadingEvents.value = false;
+  }
+};
+
+// Добавляем новые состояния
+const showAIModal = ref(false);
+const aiPrompt = ref('');
+const isGenerating = ref(false);
+const aiSelectedDate = ref('');
+const promptFile = ref<File | null>(null);
+
+// Функция для создания текстового файла
+const createPromptFile = (content: string): File => {
+  const blob = new Blob([content], { type: 'text/plain' });
+  return new File([blob], 'prompt.txt', { type: 'text/plain' });
+};
+
+// Модифицируем функцию подготовки отчета
+const prepareDayReport = async () => {
+  if (!aiSelectedDate.value) return;
+  
+  try {
+    isGenerating.value = true;
+    const response = await fetch(`https://p.sportrep.ru/api/events?per_page=100&is_active=1&region_id=1&show_native=1&sort=date_from_asc&date_from=${aiSelectedDate.value}`);
+    if (!response.ok) {
+      throw new Error('Ошибка при загрузке событий');
+    }
+
+    const data: EventsResponse = await response.json();
+    const allEvents = data.data;
+
+    if (allEvents.length === 0) {
+      alert('Нет событий за выбранную дату');
+      return;
+    }
+
+    // Формируем текст для файла
+    let fileContent = '';
+    allEvents.forEach((event) => {
+      if (event.club1 && event.club2) {
+        fileContent += `${event.competition.title_short}\n`;
+        fileContent += `${event.event_name}\n`;
+      } else {
+        fileContent += `${event.event_name}\n`;
+      }
+      if (event.arena) {
+        fileContent += `${event.arena.title}\n`;
+      }
+      if (event.tickets) {
+        const cleanTickets = event.tickets
+          .replace(/<[^>]*>/g, '')
+          .replace(/\n\s*\n/g, '\n')
+          .trim();
+        fileContent += `${cleanTickets}\n`;
+      }
+      if (event.series_count) {
+        fileContent += `Счет в серии: ${event.series_count}\n`;
+        if (event.series?.description) {
+          fileContent += `${event.series.description}\n`;
+        }
+      }
+      if (event.report) {
+        const formattedReport = formatForTelegram(event.report)
+          .split('\n')
+          .filter(line => line.trim().length > 0)
+          .join('\n');
+        fileContent += `${formattedReport}\n`;
+      }
+      fileContent += '\n';
+    });
+
+    // Создаем файл с информацией о событиях
+    promptFile.value = createPromptFile(fileContent);
+    
+    // Устанавливаем фиксированный промт
+    aiPrompt.value = "Напиши статью в ироничном, но профессиональном стиле для интернет-портала о спортивных событиях Санкт-Петербурга, кратко описывающую события отчетного дня на основе информации в приложенном файле";
+
+  } catch (error) {
+    console.error('Ошибка при формировании отчета:', error);
+    alert(`Произошла ошибка при формировании отчета: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+  } finally {
+    isGenerating.value = false;
+  }
+};
+
+// Модифицируем функцию генерации контента
+const generateContent = async () => {
+  if (!promptFile.value) return;
+
+  try {
+    isGenerating.value = true;
+
+    // Сначала загружаем файл
+    const fileFormData = new FormData();
+    fileFormData.append('file', promptFile.value);
+
+    const fileResponse = await fetch(`${api}/api/ai/upload-file`, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: fileFormData
+    });
+
+    const fileResult = await fileResponse.json();
+
+    if (!fileResponse.ok) {
+      throw new Error(fileResult.message || `HTTP error! status: ${fileResponse.status}`);
+    }
+    
+    if (!fileResult.success) {
+      throw new Error(fileResult.message || 'Ошибка при загрузке файла');
+    }
+
+    // Теперь отправляем промт с ссылкой на файл
+    const response = await fetch(`${api}/api/ai/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        prompt: aiPrompt.value,
+        file_id: fileResult.data.file_id
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Ошибка при генерации контента');
+    }
+
+    editorContent.value = result.data;
+    
+    // Закрываем модальное окно и очищаем состояние
+    showAIModal.value = false;
+    aiPrompt.value = '';
+    promptFile.value = null;
+
+  } catch (error) {
+    console.error('Ошибка при генерации контента:', error);
+    alert(`Произошла ошибка при генерации контента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+  } finally {
+    isGenerating.value = false;
   }
 };
 </script><style scoped>

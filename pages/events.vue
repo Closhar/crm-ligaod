@@ -1166,7 +1166,7 @@ const extraFields = ref([
     {
       name: 'about',
       label: '',
-      displayLabel: 'Информация',
+      displayLabel: 'Анонс',
       title_icon: 'healthicons:info-outline',
       type: 'textarea',
       width: '50px',
@@ -1177,8 +1177,31 @@ const extraFields = ref([
         icon: 'icon-park-outline:text',
         title: 'Редактирование описания',
         readonly: false,
-        hint: 'информация о событии',
+        hint: 'анонс события',
         placeholder: 'Введите описание...',
+        uploadUrl: api + '/api/upload-image',
+        imageMaxWidth: 1200,
+        imageQuality: 0.8,
+        check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    {
+      name: 'report',
+      label: '',
+      displayLabel: 'Краткий отчет',
+      title_icon: 'icon-park-outline:table-report',
+      type: 'textarea',
+      width: '50px',
+      uploadEnabled: true,
+      sortable: false,
+      options: {
+        editorEnabled: true,
+        icon: 'icon-park-outline:text',
+        title: 'Редактирование описания',
+        readonly: false,
+        hint: 'краткий отчет о событии',
+        placeholder: 'Введите отчет...',
         uploadUrl: api + '/api/upload-image',
         imageMaxWidth: 1200,
         imageQuality: 0.8,
@@ -1319,7 +1342,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'tickets', 'about'];
+const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'tickets', 'about', 'report'];
 
 // Поля, которые не будут отображаться в дополнительной таблице
 const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon', 'club1_id', 'club2_id'];
