@@ -1164,6 +1164,24 @@ const extraFields = ref([
       }
     },
     {
+      name: 'free_tickets',
+      label: '',
+      title_icon: 'tabler:free-rights',
+      type: 'toggle',
+      width: '60px',
+      sortable: false,
+      options: {
+        hint: 'бесплатные билеты',
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    },
+    {
       name: 'about',
       label: '',
       displayLabel: 'Анонс',
@@ -1342,7 +1360,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'tickets', 'about', 'report'];
+const defaultVisibleFields = ['event_name', 'streams_count',  'image', 'tickets', 'free_tickets', 'about', 'report'];
 
 // Поля, которые не будут отображаться в дополнительной таблице
 const excludedFields = ['date_from', 'is_active', 'gender_icon', 'sport_icon', 'club1_id', 'club2_id'];

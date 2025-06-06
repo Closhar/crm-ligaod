@@ -877,6 +877,7 @@ interface Stream {
   title: string;
   link: string;
   in_player: number;
+  in_profile: number;
 }
 
 interface City {
@@ -928,6 +929,7 @@ interface Event {
   arena: Arena | null;
   streams: Stream[];
   tickets?: string;
+  free_tickets?: boolean;
   club1?: string;
   club2?: string;
   series_count?: number;
@@ -1007,7 +1009,12 @@ const loadTodayEvents = async () => {
         }
         if (event.club1 && event.club2) {
           homeTemplate += `*${event.competition.title_short}*\n`;
-          homeTemplate += `*${event.event_name_top}*\n\n`;
+          homeTemplate += `*${event.event_name_top}*\n`;
+          if (event.title && event.title !== event.competition.title_short) {
+            homeTemplate += `*${event.title}*\n\n`;
+          } else {
+            homeTemplate += '\n';
+          }
         } else {
           homeTemplate += `*${event.event_name}*\n\n`;
         }
@@ -1028,15 +1035,21 @@ const loadTodayEvents = async () => {
               .join(', ');
             homeTemplate += `\n📞 ${phones}`;
           }
+          homeTemplate += '\n\n';
+          
+          // Добавляем информацию о билетах только для домашних матчей
+          if (event.free_tickets) {
+            homeTemplate += `🆓 Вход свободный\n\n`;
+          } else if (event.tickets) {
+            const cleanTickets = event.tickets
+              .replace(/<[^>]*>/g, '')
+              .replace(/\n\s*\n/g, '\n')
+              .trim();
+            homeTemplate += `💳 ${cleanTickets}\n\n`;
+          }
         }
-        homeTemplate += `\n\n📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.tickets) {
-          const cleanTickets = event.tickets
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n\s*\n/g, '\n')
-            .trim();
-          homeTemplate += `🎫 ${cleanTickets}\n\n`;
-        }
+        
+        homeTemplate += `📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
         if (event.about) {
           const cleanAbout = formatForTelegram(event.about)
             .split('\n')
@@ -1051,7 +1064,7 @@ const loadTodayEvents = async () => {
           }
         }
         if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter(stream => stream.in_player === 0);
+          const filteredStreams = event.streams.filter(stream => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
             homeTemplate += '*📺 Трансляции события:*\n';
             filteredStreams.forEach(stream => {
@@ -1085,17 +1098,15 @@ const loadTodayEvents = async () => {
         if (event.club1 && event.club2) {
           awayTemplate += `*${event.competition.title_short}*\n`;
           awayTemplate += `*${event.event_name_top}*\n`;
+          if (event.title && event.title !== event.competition.title_short) {
+            awayTemplate += `*${event.title}*\n\n`;
+          } else {
+            awayTemplate += '\n';
+          }
         } else {
           awayTemplate += `*${event.event_name}*\n`;
         }
         awayTemplate += `\n\n📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.tickets) {
-          const cleanTickets = event.tickets
-            .replace(/<[^>]*>/g, '')
-            .replace(/\n\s*\n/g, '\n')
-            .trim();
-          awayTemplate += `🎫 ${cleanTickets}\n\n`;
-        }
         if (event.about) {
           const cleanAbout = formatForTelegram(event.about)
             .split('\n')
@@ -1110,7 +1121,7 @@ const loadTodayEvents = async () => {
           }
         }
         if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter(stream => stream.in_player === 0);
+          const filteredStreams = event.streams.filter(stream => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
             awayTemplate += '*📺 Трансляции события:*\n';
             filteredStreams.forEach(stream => {
@@ -1238,7 +1249,10 @@ const createPromptFile = (content: string): File => {
 
 // Модифицируем функцию подготовки отчета
 const prepareDayReport = async () => {
-  if (!aiSelectedDate.value) return;
+  if (!aiSelectedDate.value) {
+    alert('Пожалуйста, выберите дату');
+    return;
+  }
   
   try {
     isGenerating.value = true;
@@ -1299,6 +1313,8 @@ const prepareDayReport = async () => {
   } catch (error) {
     console.error('Ошибка при формировании отчета:', error);
     alert(`Произошла ошибка при формировании отчета: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    promptFile.value = null;
+    aiPrompt.value = '';
   } finally {
     isGenerating.value = false;
   }
@@ -1306,36 +1322,55 @@ const prepareDayReport = async () => {
 
 // Модифицируем функцию генерации контента
 const generateContent = async () => {
-  if (!promptFile.value) return;
+  if (!aiPrompt.value.trim()) {
+    alert('Пожалуйста, введите запрос для генерации');
+    return;
+  }
 
   try {
     isGenerating.value = true;
 
-    // Сначала загружаем файл
-    const fileFormData = new FormData();
-    fileFormData.append('file', promptFile.value);
+    let fileId = null;
 
-    const fileResponse = await fetch(`${api}/api/ai/upload-file`, {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: fileFormData
-    });
+    // Если есть файл, загружаем его
+    if (promptFile.value) {
+      const fileFormData = new FormData();
+      fileFormData.append('file', promptFile.value);
 
-    const fileResult = await fileResponse.json();
+      const fileResponse = await fetch(`${api}/api/ai/upload-file`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: fileFormData
+      });
 
-    if (!fileResponse.ok) {
-      throw new Error(fileResult.message || `HTTP error! status: ${fileResponse.status}`);
+      const fileResult = await fileResponse.json();
+
+      if (!fileResponse.ok) {
+        throw new Error(fileResult.message || `HTTP error! status: ${fileResponse.status}`);
+      }
+      
+      if (!fileResult.success) {
+        throw new Error(fileResult.message || 'Ошибка при загрузке файла');
+      }
+
+      fileId = fileResult.data.file_id;
     }
-    
-    if (!fileResult.success) {
-      throw new Error(fileResult.message || 'Ошибка при загрузке файла');
+
+    // Формируем тело запроса
+    const requestBody: any = {
+      prompt: aiPrompt.value
+    };
+
+    // Добавляем file_id только если он есть
+    if (fileId) {
+      requestBody.file_id = fileId;
     }
 
-    // Теперь отправляем промт с ссылкой на файл
+    // Отправляем запрос на генерацию
     const response = await fetch(`${api}/api/ai/generate`, {
       method: 'POST',
       headers: {
@@ -1344,10 +1379,7 @@ const generateContent = async () => {
         'X-Requested-With': 'XMLHttpRequest',
         'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({
-        prompt: aiPrompt.value,
-        file_id: fileResult.data.file_id
-      })
+      body: JSON.stringify(requestBody)
     });
 
     const result = await response.json();
@@ -1366,6 +1398,7 @@ const generateContent = async () => {
     showAIModal.value = false;
     aiPrompt.value = '';
     promptFile.value = null;
+    aiSelectedDate.value = '';
 
   } catch (error) {
     console.error('Ошибка при генерации контента:', error);
