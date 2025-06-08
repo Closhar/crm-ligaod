@@ -701,6 +701,21 @@
             Укажите фразу, которая содержится в заголовке нужной таблицы. Это поможет выбрать правильную таблицу, если на странице их несколько.
           </p>
         </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Номер таблицы на странице
+          </label>
+          <input
+            v-model="parseTableNo"
+            type="number"
+            min="1"
+            placeholder="Например: 1, 2, 3"
+            class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+          />
+          <p class="mt-1 text-sm text-gray-500">
+            Укажите порядковый номер таблицы на странице, если их несколько. Если не указано, будет выбрана первая найденная таблица.
+          </p>
+        </div>
         <div class="mb-4 p-4 bg-gray-50 rounded-md">
           <h4 class="text-sm font-medium text-gray-700 mb-2">Инструкция по парсингу:</h4>
           <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
@@ -823,6 +838,7 @@ const showAddContentModal = ref(false);
 const showParseModal = ref(false);
 const parseUrl = ref('');
 const parseSearchText = ref('');
+const parseTableNo = ref('');
 const isParsing = ref(false);
 const parseError = ref('');
 
@@ -1215,7 +1231,8 @@ const parseTable = async () => {
       },
       body: JSON.stringify({
         url: parseUrl.value,
-        search_text: parseSearchText.value
+        search_text: parseSearchText.value,
+        table_no: parseTableNo.value ? parseInt(parseTableNo.value) : null
       })
     });
 
@@ -1237,6 +1254,7 @@ const parseTable = async () => {
     showParseModal.value = false;
     parseUrl.value = '';
     parseSearchText.value = '';
+    parseTableNo.value = '';
     
     alert('Таблица успешно спарсена и сохранена');
     
