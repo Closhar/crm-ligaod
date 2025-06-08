@@ -2154,8 +2154,6 @@ export default {
       permanentDeleteItem,
       getSelectLabel,
       refreshData,
-      // Добавляем функцию полного удаления записи
-      permanentDeleteItem,
       // Добавляем функции проверки ID
       hasValidId,
       getEffectiveId,
