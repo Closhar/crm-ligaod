@@ -884,6 +884,12 @@ const uploadFile = async (file: File): Promise<string> => {
 
 // Модифицируем функцию парсинга канала
 const parseTelegramChannel = async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Требуется авторизация. Пожалуйста, войдите в систему.');
+    return;
+  }
+
   if (!parseChannelId.value) {
     alert('Пожалуйста, выберите канал для парсинга');
     return;
@@ -902,16 +908,19 @@ const parseTelegramChannel = async () => {
   try {
     isParsing.value = true;
 
+    // Запрос на получение сообщений
     const response = await fetch(`${api}/api/telegram/messages/fetch?channel_id=${parseChannelId.value}&date_from=${parseStartDate.value}&limit=${parseMessageCount.value}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
+        'X-Requested-With': 'XMLHttpRequest',
+        'Authorization': `Bearer ${token}`
       }
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Ошибка при получении сообщений: ${response.status}`);
     }
 
     const result = await response.json() as TelegramApiResponse;
@@ -961,6 +970,12 @@ const parseTelegramChannel = async () => {
         throw new Error('Не удалось создать файл');
       }
       promptFile.value = file;
+      
+      // Проверяем токен перед загрузкой файла
+      const currentToken = localStorage.getItem('token');
+      if (!currentToken) {
+        throw new Error('Токен авторизации не найден');
+      }
       
       // Загружаем файл и получаем его ID
       uploadedFileId.value = await uploadFile(file);
