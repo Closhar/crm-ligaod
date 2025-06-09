@@ -212,6 +212,15 @@
 
     <button
         class="p-2 rounded hover:bg-gray-200"
+        title="AI Генерация"
+        type="button"
+        @click="$emit('show-ai-modal')"
+    >
+      <Icon name="ph:robot" size="20"/>
+    </button>
+
+    <button
+        class="p-2 rounded hover:bg-gray-200"
         title="Исходный код"
         type="button"
         @click="$emit('toggle-source')"
@@ -262,7 +271,8 @@ const emit = defineEmits([
   'add-iframe',
   'toggle-fullscreen',
   'toggle-source',
-  'show-link-modal'
+  'show-link-modal',
+  'show-ai-modal'
 ])
 
 const showColorPicker = ref(false)

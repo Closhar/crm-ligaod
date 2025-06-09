@@ -11,6 +11,7 @@
           @toggle-fullscreen="toggleFullscreen"
           @show-link-modal="openLinkModal"
           @toggle-source="toggleSource"
+          @show-ai-modal="showAIModal = true"
       />
       <div v-else class="p-2 bg-gray-50 flex justify-between items-center">
         <span class="text-sm font-medium">Режим исходного кода</span>
@@ -59,10 +60,145 @@
         @close="showLinkModal = false"
         @insert="handleInsertLink"
     />
+
+    <!-- Модальное окно AI генерации -->
+    <div v-if="showAIModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-lg w-full max-w-2xl mx-4">
+        <div class="p-4 border-b flex justify-between items-center">
+          <h3 class="text-lg font-semibold">AI Генерация контента</h3>
+          <div class="flex items-center space-x-2">
+            <span class="text-sm text-gray-500">Модель:</span>
+            <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-sm font-medium">
+              {{ selectedModel === 'gpt-3.5-turbo' ? 'GPT-3.5 Turbo' : 'GPT-4 Turbo' }}
+            </span>
+          </div>
+        </div>
+        <div class="p-4">
+          <!-- Выбор модели -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Модель AI
+            </label>
+            <select
+              v-model="selectedModel"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo (быстрее, дешевле)</option>
+              <option value="gpt-4-turbo-preview">GPT-4 Turbo (качественнее)</option>
+            </select>
+            <p class="mt-1 text-sm text-gray-500">
+              {{ selectedModel === 'gpt-3.5-turbo' ? 'Оптимально для коротких текстов и анонсов' : 'Оптимально для длинных статей и аналитики' }}
+            </p>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Запрос для генерации
+              <span class="text-sm text-gray-500 ml-2">
+                {{ aiPrompt.length }}/4000 символов
+              </span>
+            </label>
+            <textarea
+              v-model="aiPrompt"
+              rows="4"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              :class="{'border-red-500': aiPrompt.length > 4000}"
+              placeholder="Опишите, какой контент нужно сгенерировать..."
+            ></textarea>
+            <p v-if="aiPrompt.length > 4000" class="mt-1 text-sm text-red-600">
+              Превышен лимит символов (4000)
+            </p>
+            <p class="mt-1 text-sm text-gray-500">
+              Максимальная длина ответа: {{ selectedModel === 'gpt-3.5-turbo' ? '2000' : '4000' }} токенов
+            </p>
+          </div>
+
+          <!-- Настройки кэширования -->
+          <div class="mb-4">
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                v-model="useCache"
+                class="rounded border-gray-300 text-purple-600 shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+              >
+              <span class="ml-2 text-sm text-gray-600">Использовать кэширование (результаты сохраняются на 1 час)</span>
+            </label>
+          </div>
+
+          <!-- Информация о последней генерации -->
+          <div v-if="lastGenerationInfo && lastGenerationInfo.usage" class="mb-4 p-3 bg-gray-50 rounded-md">
+            <div class="text-sm text-gray-600">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium">Результат генерации</span>
+                <span 
+                  class="px-2 py-1 rounded text-xs font-medium"
+                  :class="{
+                    'bg-green-100 text-green-700': lastGenerationInfo.source === 'api',
+                    'bg-blue-100 text-blue-700': lastGenerationInfo.source === 'cache'
+                  }"
+                >
+                  {{ lastGenerationInfo.source === 'api' ? 'Новая генерация' : 'Из кэша' }}
+                </span>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <p class="mb-1">
+                    <span class="font-medium">Использовано токенов:</span>
+                  </p>
+                  <div class="text-xs text-gray-500">
+                    <p>Входные: {{ lastGenerationInfo.usage?.input_tokens || 0 }}</p>
+                    <p>Выходные: {{ lastGenerationInfo.usage?.output_tokens || 0 }}</p>
+                  </div>
+                </div>
+                <div>
+                  <p class="mb-1">
+                    <span class="font-medium">Стоимость:</span>
+                  </p>
+                  <div class="text-xs text-gray-500">
+                    <p>Общая: ${{ lastGenerationInfo.usage?.estimated_cost?.toFixed(4) || '0.0000' }}</p>
+                    <p>Вход: ${{ lastGenerationInfo.usage?.cost_breakdown?.input_cost?.toFixed(6) || '0.000000' }}</p>
+                    <p>Выход: ${{ lastGenerationInfo.usage?.cost_breakdown?.output_cost?.toFixed(6) || '0.000000' }}</p>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-2 pt-2 border-t border-gray-200">
+                <p class="text-xs text-gray-500">
+                  <span class="font-medium">Параметры:</span>
+                  Модель: {{ lastGenerationInfo.limits?.model }}, 
+                  Температура: {{ lastGenerationInfo.limits?.temperature }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t flex justify-end space-x-3">
+          <button
+            @click="showAIModal = false"
+            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          >
+            Отмена
+          </button>
+          <button
+            @click="generateContent"
+            :disabled="isGenerating || !aiPrompt.trim()"
+            class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          >
+            <span v-if="isGenerating" class="flex items-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Генерация...
+            </span>
+            <span v-else>Сгенерировать</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import {Editor, EditorContent} from '@tiptap/vue-3'
 import {Node} from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
@@ -140,6 +276,60 @@ const sourceContent = ref(props.modelValue)
 const isFullscreen = ref(false)
 const sourceTextarea = ref(null)
 
+// Добавляем новые состояния для AI генерации
+const showAIModal = ref(false);
+const aiPrompt = ref('');
+const isGenerating = ref(false);
+const selectedModel = ref('gpt-3.5-turbo');
+const useCache = ref(true);
+
+// Добавляем интерфейс для информации о генерации
+interface GenerationInfo {
+  source: 'api' | 'cache';
+  usage: {
+    input_tokens: number;
+    output_tokens: number;
+    estimated_cost: number;
+    cost_breakdown: {
+      input_cost: number;
+      output_cost: number;
+    };
+  };
+  limits: {
+    max_prompt_length: number;
+    max_tokens: number;
+    model: string;
+    temperature: number;
+  };
+}
+
+// В секции script обновляем тип для lastGenerationInfo
+const lastGenerationInfo = ref<GenerationInfo | null>(null);
+
+interface IframeData {
+  src: string;
+  width?: string;
+  height?: string;
+  frameborder?: string;
+  allowfullscreen?: boolean;
+}
+
+interface ImageData {
+  src: string;
+}
+
+interface LinkData {
+  href: string;
+  text?: string;
+  openInNewTab?: boolean;
+}
+
+interface InitialValues {
+  href?: string;
+  text?: string;
+  openInNewTab?: boolean;
+}
+
 const toggleSource = async () => {
   showSource.value = !showSource.value
   if (showSource.value) {
@@ -163,12 +353,12 @@ const toggleFullscreen = () => {
   emit('toggle-fullscreen', isFullscreen.value)
 }
 
-const openLinkModal = (initialValues) => {
+const openLinkModal = (initialValues: InitialValues) => {
   linkModalInitialValues.value = initialValues
   showLinkModal.value = true
 }
 
-const handleInsertImage = (imageData) => {
+const handleInsertImage = (imageData: ImageData) => {
   if (editor.value) {
     editor.value.chain().focus()
         .setImage({src: imageData.src})
@@ -177,7 +367,7 @@ const handleInsertImage = (imageData) => {
   showImageModal.value = false
 }
 
-const handleInsertIframe = (iframeData) => {
+const handleInsertIframe = (iframeData: IframeData) => {
   if (editor.value) {
     editor.value.chain().focus()
         .setIframe({
@@ -228,6 +418,80 @@ watch(() => props.modelValue, (newContent) => {
   }
 }, { immediate: true })
 
+// Функция генерации контента
+const generateContent = async () => {
+  if (!aiPrompt.value.trim()) {
+    alert('Пожалуйста, введите запрос для генерации');
+    return;
+  }
+
+  if (aiPrompt.value.length > 4000) {
+    alert('Превышен лимит длины промпта (4000 символов)');
+    return;
+  }
+
+  try {
+    isGenerating.value = true;
+
+    const config = useRuntimeConfig();
+    const api = config.public.API_URL;
+
+    // Отправляем запрос на генерацию
+    const response = await fetch(`${api}/api/ai/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        prompt: aiPrompt.value,
+        model: selectedModel.value,
+        use_cache: useCache.value
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      if (result.limits) {
+        throw new Error(`${result.message}\nТекущая длина: ${result.limits.current_prompt_length} символов`);
+      }
+      throw new Error(result.message || `HTTP error! status: ${response.status}`);
+    }
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Ошибка при генерации контента');
+    }
+
+    // Сохраняем информацию о генерации
+    lastGenerationInfo.value = {
+      source: result.source,
+      usage: result.usage,
+      limits: result.limits
+    };
+
+    // Вставляем сгенерированный контент в редактор
+    if (editor.value) {
+      // Сохраняем форматирование текста как есть
+      const content = result.data.replace(/<[^>]*>/g, '');
+      editor.value.commands.setContent(content);
+      emit('update:modelValue', content);
+    }
+    
+    // Закрываем модальное окно и очищаем состояние
+    showAIModal.value = false;
+    aiPrompt.value = '';
+
+  } catch (error) {
+    console.error('Ошибка при генерации контента:', error);
+    alert(`Произошла ошибка при генерации контента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+  } finally {
+    isGenerating.value = false;
+  }
+};
+
 onMounted(() => {
   if (props.editorEnabled) {
     editor.value = new Editor({
@@ -245,7 +509,16 @@ onMounted(() => {
             HTMLAttributes: {
               class: 'border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-4'
             }
-          }
+          },
+          // Отключаем автоматическое форматирование
+          hardBreak: false,
+          horizontalRule: false,
+          codeBlock: false,
+          bulletList: false,
+          orderedList: false,
+          listItem: false,
+          taskList: false,
+          taskItem: false
         }),
         Image.configure({inline: true, allowBase64: true}),
         TextAlign.configure({types: ['heading', 'paragraph'], defaultAlignment: 'left'}),

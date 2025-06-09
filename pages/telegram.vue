@@ -68,48 +68,23 @@
               Шаблоны
             </label>
             <div class="flex flex-wrap gap-2">
-              <button
-                @click="loadTodayEvents"
-                :disabled="isLoadingEvents"
-                class="px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <span v-if="isLoadingEvents" class="flex items-center">
-                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Загрузка...
-                </span>
-                <span v-else>События сегодня</span>
-              </button>
-              <button
-                @click="showDatePicker = true"
-                :disabled="isLoadingEvents"
-                class="px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <span v-if="isLoadingEvents" class="flex items-center">
-                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-green-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Загрузка...
-                </span>
-                <span v-else>События отчет</span>
-              </button>
-              <button
-                @click="showAIModal = true"
-                :disabled="isGenerating"
-                class="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                <span v-if="isGenerating" class="flex items-center">
-                  <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Генерация...
-                </span>
-                <span v-else>AI Генерация</span>
-              </button>
+              <TodayEventsTemplate
+                :region_title="region_title"
+                :site="site"
+                :hashtags="hashtags"
+                @update:content="editorContent = $event"
+              />
+              <DayResultsTemplate
+                :region_title="region_title"
+                :hashtags="hashtags"
+                @update:content="editorContent = $event"
+              />
+              <AIGenerationTemplate
+                @update:content="editorContent = $event"
+              />
+              <TelegramParseTemplate
+                @update:content="editorContent = $event"
+              />
             </div>
           </div>
           
@@ -284,115 +259,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Модальное окно выбора даты -->
-  <div v-if="showDatePicker" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-md mx-4">
-      <div class="p-4 border-b">
-        <h3 class="text-lg font-semibold">Выберите дату</h3>
-      </div>
-      <div class="p-4">
-        <input
-          type="date"
-          v-model="selectedDate"
-          class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
-      </div>
-      <div class="p-4 border-t flex justify-end space-x-3">
-        <button
-          @click="showDatePicker = false"
-          class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-        >
-          Отмена
-        </button>
-        <button
-          @click="loadEventsByDate"
-          :disabled="isLoadingEvents"
-          class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Загрузить
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Модальное окно AI генерации -->
-  <div v-if="showAIModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-2xl mx-4">
-      <div class="p-4 border-b">
-        <h3 class="text-lg font-semibold">AI Генерация контента</h3>
-      </div>
-      <div class="p-4">
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Запрос для генерации
-            <span class="text-sm text-gray-500 ml-2">
-              {{ aiPrompt.length }}/1000 символов
-            </span>
-          </label>
-          <textarea
-            v-model="aiPrompt"
-            rows="4"
-            class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            :class="{'border-red-500': aiPrompt.length > 1000}"
-            placeholder="Опишите, какой контент нужно сгенерировать..."
-          ></textarea>
-          <p v-if="aiPrompt.length > 1000" class="mt-1 text-sm text-red-600">
-            Превышен лимит символов. Текст будет автоматически разбит на части при генерации.
-          </p>
-        </div>
-        <!-- Добавляем кнопку и выбор даты -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Быстрые шаблоны
-          </label>
-          <div class="flex items-center space-x-4">
-            <input
-              type="date"
-              v-model="aiSelectedDate"
-              class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-            />
-            <button
-              @click="prepareDayReport"
-              :disabled="isGenerating || !aiSelectedDate"
-              class="px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              <span v-if="isGenerating" class="flex items-center">
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Загрузка...
-              </span>
-              <span v-else>Текст по итогам дня</span>
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="p-4 border-t flex justify-end space-x-3">
-        <button
-          @click="showAIModal = false"
-          class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-        >
-          Отмена
-        </button>
-        <button
-          @click="generateContent"
-          :disabled="isGenerating || !aiPrompt.trim()"
-          class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-        >
-          <span v-if="isGenerating" class="flex items-center">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Генерация...
-          </span>
-          <span v-else>Сгенерировать</span>
-        </button>
-      </div>
-    </div>
-  </div>
 </template>
 
 <script lang="ts" setup>
@@ -402,6 +268,10 @@ import {useGlobalsStore} from '~/stores/globals';
 import {storeToRefs} from 'pinia';
 import Head from "~/components/parts/Head.vue"
 import RichTextEditor from "~/components/kirh/table/editor/RichTextEditor.vue"
+import TodayEventsTemplate from "~/components/kirh/table/editor/TodayEventsTemplate.vue"
+import DayResultsTemplate from "~/components/kirh/table/editor/DayResultsTemplate.vue"
+import AIGenerationTemplate from "~/components/kirh/table/editor/AIGenerationTemplate.vue"
+import TelegramParseTemplate from "~/components/kirh/table/editor/TelegramParseTemplate.vue"
 
 // Добавляем интерфейс для статьи
 interface Article {
@@ -513,44 +383,6 @@ const fetchArticles = async () => {
   } catch (error) {
     console.error('Ошибка при загрузке статей:', error);
   }
-};
-
-// Функция форматирования HTML в Markdown для телеграм
-const formatForTelegram = (html: string): string => {
-  // Заменяем HTML-теги на Markdown
-  let markdown = html
-    // Заголовки
-    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '*$1*\n\n')
-    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '*$1*\n\n')
-    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '*$1*\n\n')
-    // Жирный текст
-    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '*$1*')
-    // Курсив
-    .replace(/<em[^>]*>(.*?)<\/em>/gi, '_$1_')
-    // Ссылки
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-    // Параграфы
-    .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-    // Переносы строк
-    .replace(/<br\s*\/?>/gi, '\n')
-    // Удаляем оставшиеся HTML-теги
-    .replace(/<[^>]*>/g, '')
-    // Декодируем HTML-сущности
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-
-  // Убираем лишние переносы строк, но сохраняем разделители
-  markdown = markdown
-    .replace(/\n{3,}/g, '\n\n')  // Заменяем 3 и более переноса на 2
-    .replace(/([^\n])\n➖➖➖➖➖➖➖➖➖➖/g, '$1\n\n➖➖➖➖➖➖➖➖➖➖')  // Добавляем перенос перед разделителем
-    .replace(/➖➖➖➖➖➖➖➖➖➖\n([^\n])/g, '➖➖➖➖➖➖➖➖➖➖\n\n$1')  // Добавляем перенос после разделителя
-    .trim();
-
-  return markdown;
 };
 
 // Состояние для изображения
@@ -919,493 +751,79 @@ interface Competition {
 
 interface Event {
   id: number;
-  title: string;
+  event_name: string;
+  event_name_top: string;
   date_from: string;
   time: string;
+  arena: {
+    title: string;
+    address: string;
+    phones: string;
+    map: string;
+  } | null;
+  club1: any;
+  club2: any;
+  competition: {
+    title_short: string;
+  };
+  title: string;
   about: string;
-  event_name: string;
-  event_name_top?: string;
-  competition: Competition;
-  arena: Arena | null;
-  streams: Stream[];
-  tickets?: string;
-  free_tickets?: boolean;
-  club1?: string;
-  club2?: string;
-  series_count?: number;
-  series?: {
+  streams: Array<{
+    title: string;
+    link: string;
+    in_player: number;
+    in_profile: number;
+  }>;
+  series_count: number;
+  series: {
     description: string;
   };
-  report?: string;
+  free_tickets: boolean;
+  tickets: string;
+  report: string;
+  target: any;
 }
 
 interface EventsResponse {
-  current_page: number;
   data: Event[];
 }
 
-// Функция форматирования даты
-const formatDateForTemplate = (date: Date): string => {
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
+// Функция форматирования HTML в Markdown для телеграм
+const formatForTelegram = (html: string): string => {
+  // Заменяем HTML-теги на Markdown
+  let markdown = html
+    // Заголовки
+    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '*$1*\n\n')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '*$1*\n\n')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '*$1*\n\n')
+    // Жирный текст
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '*$1*')
+    // Курсив
+    .replace(/<em[^>]*>(.*?)<\/em>/gi, '_$1_')
+    // Ссылки
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+    // Параграфы
+    .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+    // Переносы строк
+    .replace(/<br\s*\/?>/gi, '\n')
+    // Удаляем оставшиеся HTML-теги
+    .replace(/<[^>]*>/g, '')
+    // Декодируем HTML-сущности
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
 
-// Функция форматирования даты события
-const formatEventDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
+  // Убираем лишние переносы строк, но сохраняем разделители
+  markdown = markdown
+    .replace(/\n{3,}/g, '\n\n')  // Заменяем 3 и более переноса на 2
+    .replace(/([^\n])\n➖➖➖➖➖➖➖➖➖➖/g, '$1\n\n➖➖➖➖➖➖➖➖➖➖')  // Добавляем перенос перед разделителем
+    .replace(/➖➖➖➖➖➖➖➖➖➖\n([^\n])/g, '➖➖➖➖➖➖➖➖➖➖\n\n$1')  // Добавляем перенос после разделителя
+    .trim();
 
-// Функция форматирования телефона
-const formatPhone = (phone: string): string => {
-  // Убираем все кроме цифр
-  const numbers = phone.replace(/\D/g, '');
-  // Проверяем, что это российский номер
-  if (numbers.length === 11 && numbers.startsWith('7')) {
-    return `+7(${numbers.slice(1, 4)})${numbers.slice(4, 7)}-${numbers.slice(7, 9)}-${numbers.slice(9)}`;
-  }
-  return phone;
-};
-
-// Добавляем состояние загрузки
-const isLoadingEvents = ref(false);
-
-// Добавляем новые состояния
-const showDatePicker = ref(false);
-const selectedDate = ref('');
-
-// Функция загрузки событий на сегодня
-const loadTodayEvents = async () => {
-  try {
-    isLoadingEvents.value = true;
-    const response = await fetch('https://p.sportrep.ru/api/events?page=1&per_page=15&sort_field=date_from&sort_direction=asc&show=3');
-    if (!response.ok) {
-      throw new Error('Ошибка при загрузке событий');
-    }
-
-    const data: EventsResponse = await response.json();
-
-    // Разделяем события на домашние и выездные
-    const homeEvents = data.data.filter(event => event.arena !== null);
-    const awayEvents = data.data.filter(event => event.arena === null);
-
-    // Формируем шаблон для домашних событий
-    const today = new Date();
-    let finalTemplate = '';
-
-    // Добавляем домашние события только если они есть
-    if (homeEvents.length > 0) {
-      let homeTemplate = `*${region_title}\nСПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}*\n\n`;
-      homeEvents.forEach((event, index) => {
-        if (index > 0) {
-          homeTemplate += '➖➖➖➖➖➖➖➖➖➖\n\n';
-        }
-        if (event.club1 && event.club2) {
-          homeTemplate += `*${event.competition.title_short}*\n`;
-          homeTemplate += `*${event.event_name_top}*\n`;
-          if (event.title && event.title !== event.competition.title_short) {
-            homeTemplate += `*${event.title}*\n\n`;
-          } else {
-            homeTemplate += '\n';
-          }
-        } else {
-          homeTemplate += `*${event.event_name}*\n\n`;
-        }
-        if (event.arena) {
-          homeTemplate += `📍 ${event.arena.title}\n`;
-          if (event.arena.map) {
-            const mapUrl = event.arena.map.match(/src="([^"]+)"/)?.[1];
-            if (mapUrl) {
-              homeTemplate += `🗺 [Открыть на карте](${mapUrl})\n`;
-            }
-          }
-          let address = event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd();
-          homeTemplate += `🏟 ${address}`;
-          if (event.arena.phones) {
-            const phones = event.arena.phones.split(',')
-              .map((phone: string) => phone.split('|')[0].trim())
-              .map(formatPhone)
-              .join(', ');
-            homeTemplate += `\n📞 ${phones}`;
-          }
-          homeTemplate += '\n\n';
-          
-          // Добавляем информацию о билетах только для домашних матчей
-          if (event.free_tickets) {
-            homeTemplate += `🆓 Вход свободный\n\n`;
-          } else if (event.tickets) {
-            const cleanTickets = event.tickets
-              .replace(/<[^>]*>/g, '')
-              .replace(/\n\s*\n/g, '\n')
-              .trim();
-            homeTemplate += `💳 ${cleanTickets}\n\n`;
-          }
-        }
-        
-        homeTemplate += `📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.about) {
-          const cleanAbout = formatForTelegram(event.about)
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
-          homeTemplate += `${cleanAbout}\n\n`;
-        }
-        if (event.series_count) {
-          homeTemplate += `Счет в серии: ${event.series_count}\n`;
-          if (event.series?.description) {
-            homeTemplate += `${event.series.description}\n\n`;
-          }
-        }
-        if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter(stream => stream.in_player === 0 && stream.in_profile === 0);
-          if (filteredStreams.length > 0) {
-            homeTemplate += '*📺 Трансляции события:*\n';
-            filteredStreams.forEach(stream => {
-              homeTemplate += `• [${stream.title}](${stream.link})\n`;
-            });
-            homeTemplate += '\n';
-          } else {
-            homeTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
-          }
-        } else {
-          homeTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
-        }
-        homeTemplate += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
-      });
-      homeTemplate += '\n' + hashtags.value;
-      finalTemplate += homeTemplate;
-    }
-
-    // Добавляем выездные события только если они есть
-    if (awayEvents.length > 0) {
-      let awayTemplate = '';
-      // Добавляем разделитель только если есть домашние события
-      if (homeEvents.length > 0) {
-        awayTemplate = '\n\n';
-      }
-      awayTemplate += `*НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}*\n\n`;
-      awayEvents.forEach((event, index) => {
-        if (index > 0) {
-          awayTemplate += '\n\n➖➖➖➖➖➖➖➖➖➖\n\n';
-        }
-        if (event.club1 && event.club2) {
-          awayTemplate += `*${event.competition.title_short}*\n`;
-          awayTemplate += `*${event.event_name_top}*\n`;
-          if (event.title && event.title !== event.competition.title_short) {
-            awayTemplate += `*${event.title}*\n\n`;
-          } else {
-            awayTemplate += '\n';
-          }
-        } else {
-          awayTemplate += `*${event.event_name}*\n`;
-        }
-        awayTemplate += `\n\n📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.about) {
-          const cleanAbout = formatForTelegram(event.about)
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
-          awayTemplate += `${cleanAbout}\n\n`;
-        }
-        if (event.series_count) {
-          awayTemplate += `Счет в серии: ${event.series_count}\n`;
-          if (event.series?.description) {
-            awayTemplate += `${event.series.description}\n\n`;
-          }
-        }
-        if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter(stream => stream.in_player === 0 && stream.in_profile === 0);
-          if (filteredStreams.length > 0) {
-            awayTemplate += '*📺 Трансляции события:*\n';
-            filteredStreams.forEach(stream => {
-              awayTemplate += `• [${stream.title}](${stream.link})\n`;
-            });
-            awayTemplate += '\n';
-          } else {
-            awayTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
-          }
-        } else {
-          awayTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
-        }
-        awayTemplate += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
-      });
-      awayTemplate += '\n' + hashtags.value;
-      finalTemplate += awayTemplate;
-    }
-
-    // Вставляем шаблоны в редактор
-    editorContent.value = finalTemplate;
-
-  } catch (error) {
-    console.error('Ошибка при загрузке событий:', error);
-    alert('Не удалось загрузить события');
-  } finally {
-    isLoadingEvents.value = false;
-  }
-};
-
-// Функция загрузки событий по дате
-const loadEventsByDate = async () => {
-  if (!selectedDate.value) return;
-  
-  try {
-    isLoadingEvents.value = true;
-    const response = await fetch(`https://p.sportrep.ru/api/events?per_page=100&is_active=1&region_id=1&show_native=1&sort=date_from_asc&date_from=${selectedDate.value}`);
-    if (!response.ok) {
-      throw new Error('Ошибка при загрузке событий');
-    }
-
-    const data: EventsResponse = await response.json();
-
-    // Объединяем все события в один массив
-    const allEvents = data.data;
-    
-    if (allEvents.length === 0) {
-      alert('Нет событий за выбранную дату');
-      return;
-    }
-
-    // Формируем шаблон для всех событий
-    let template = `*${region_title}\nИтоги дня ${formatDateForTemplate(new Date(selectedDate.value))}*\n\n`;
-    
-    allEvents.forEach((event, index) => {
-      if (index > 0) {
-        template += '➖➖➖➖➖➖➖➖➖➖\n\n';
-      }
-      if (event.club1 && event.club2) {
-        template += `*${event.competition.title_short}*\n`;
-        template += `*${event.event_name}*\n\n`;
-      } else {
-        template += `*${event.event_name}*\n\n`;
-      }
-      if (event.arena) {
-        template += `📍 ${event.arena.title}\n\n`;
-      }
-      if (event.tickets) {
-        const cleanTickets = event.tickets
-          .replace(/<[^>]*>/g, '')
-          .replace(/\n\s*\n/g, '\n')
-          .trim();
-        template += `🎫 ${cleanTickets}\n\n`;
-      }
-      if (event.series_count) {
-        template += `Счет в серии: ${event.series_count}\n`;
-        if (event.series?.description) {
-          template += `${event.series.description}\n\n`;
-        }
-      }
-      if (event.report) {
-        const formattedReport = formatForTelegram(event.report)
-          .split('\n')
-          .filter(line => line.trim().length > 0)
-          .join('\n');
-        template += `📝 ${formattedReport}\n\n`;
-      }
-      if (event.streams && event.streams.length > 0) {
-        const filteredStreams = event.streams.filter(stream => stream.in_player === 1);
-        if (filteredStreams.length > 0) {
-          template += '*📺 Видео:*\n';
-          filteredStreams.forEach(stream => {
-            template += `• [${stream.title}](${stream.link})\n`;
-          });
-          template += '\n';
-        }
-      }
-      template += `🔗 [Подробнее](${`${site}/events/${event.id}`})\n`;
-    });
-    template += '\n' + hashtags.value;
-
-    // Вставляем шаблон в редактор
-    editorContent.value = template;
-    showDatePicker.value = false;
-
-  } catch (error) {
-    console.error('Ошибка при загрузке событий:', error);
-    alert('Не удалось загрузить события');
-  } finally {
-    isLoadingEvents.value = false;
-  }
-};
-
-// Добавляем новые состояния
-const showAIModal = ref(false);
-const aiPrompt = ref('');
-const isGenerating = ref(false);
-const aiSelectedDate = ref('');
-const promptFile = ref<File | null>(null);
-
-// Функция для создания текстового файла
-const createPromptFile = (content: string): File => {
-  const blob = new Blob([content], { type: 'text/plain' });
-  return new File([blob], 'prompt.txt', { type: 'text/plain' });
-};
-
-// Модифицируем функцию подготовки отчета
-const prepareDayReport = async () => {
-  if (!aiSelectedDate.value) {
-    alert('Пожалуйста, выберите дату');
-    return;
-  }
-  
-  try {
-    isGenerating.value = true;
-    const response = await fetch(`https://p.sportrep.ru/api/events?per_page=100&is_active=1&region_id=1&show_native=1&sort=date_from_asc&date_from=${aiSelectedDate.value}`);
-    if (!response.ok) {
-      throw new Error('Ошибка при загрузке событий');
-    }
-
-    const data: EventsResponse = await response.json();
-    const allEvents = data.data;
-
-    if (allEvents.length === 0) {
-      alert('Нет событий за выбранную дату');
-      return;
-    }
-
-    // Формируем текст для файла
-    let fileContent = '';
-    allEvents.forEach((event) => {
-      if (event.club1 && event.club2) {
-        fileContent += `${event.competition.title_short}\n`;
-        fileContent += `${event.event_name}\n`;
-      } else {
-        fileContent += `${event.event_name}\n`;
-      }
-      if (event.arena) {
-        fileContent += `${event.arena.title}\n`;
-      }
-      if (event.tickets) {
-        const cleanTickets = event.tickets
-          .replace(/<[^>]*>/g, '')
-          .replace(/\n\s*\n/g, '\n')
-          .trim();
-        fileContent += `${cleanTickets}\n`;
-      }
-      if (event.series_count) {
-        fileContent += `Счет в серии: ${event.series_count}\n`;
-        if (event.series?.description) {
-          fileContent += `${event.series.description}\n`;
-        }
-      }
-      if (event.report) {
-        const formattedReport = formatForTelegram(event.report)
-          .split('\n')
-          .filter(line => line.trim().length > 0)
-          .join('\n');
-        fileContent += `${formattedReport}\n`;
-      }
-      fileContent += '\n';
-    });
-
-    // Создаем файл с информацией о событиях
-    promptFile.value = createPromptFile(fileContent);
-    
-    // Устанавливаем фиксированный промт
-    aiPrompt.value = "Напиши статью в ироничном, но профессиональном стиле для интернет-портала о спортивных событиях Санкт-Петербурга, кратко описывающую события отчетного дня на основе информации в приложенном файле";
-
-  } catch (error) {
-    console.error('Ошибка при формировании отчета:', error);
-    alert(`Произошла ошибка при формировании отчета: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-    promptFile.value = null;
-    aiPrompt.value = '';
-  } finally {
-    isGenerating.value = false;
-  }
-};
-
-// Модифицируем функцию генерации контента
-const generateContent = async () => {
-  if (!aiPrompt.value.trim()) {
-    alert('Пожалуйста, введите запрос для генерации');
-    return;
-  }
-
-  try {
-    isGenerating.value = true;
-
-    let fileId = null;
-
-    // Если есть файл, загружаем его
-    if (promptFile.value) {
-      const fileFormData = new FormData();
-      fileFormData.append('file', promptFile.value);
-
-      const fileResponse = await fetch(`${api}/api/ai/upload-file`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: fileFormData
-      });
-
-      const fileResult = await fileResponse.json();
-
-      if (!fileResponse.ok) {
-        throw new Error(fileResult.message || `HTTP error! status: ${fileResponse.status}`);
-      }
-      
-      if (!fileResult.success) {
-        throw new Error(fileResult.message || 'Ошибка при загрузке файла');
-      }
-
-      fileId = fileResult.data.file_id;
-    }
-
-    // Формируем тело запроса
-    const requestBody: any = {
-      prompt: aiPrompt.value
-    };
-
-    // Добавляем file_id только если он есть
-    if (fileId) {
-      requestBody.file_id = fileId;
-    }
-
-    // Отправляем запрос на генерацию
-    const response = await fetch(`${api}/api/ai/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(result.message || `HTTP error! status: ${response.status}`);
-    }
-    
-    if (!result.success) {
-      throw new Error(result.message || 'Ошибка при генерации контента');
-    }
-
-    editorContent.value = result.data;
-    
-    // Закрываем модальное окно и очищаем состояние
-    showAIModal.value = false;
-    aiPrompt.value = '';
-    promptFile.value = null;
-    aiSelectedDate.value = '';
-
-  } catch (error) {
-    console.error('Ошибка при генерации контента:', error);
-    alert(`Произошла ошибка при генерации контента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-  } finally {
-    isGenerating.value = false;
-  }
+  return markdown;
 };
 </script><style scoped>
 .bg-gray-50shadow-sm {
