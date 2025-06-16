@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div title="">
     <button
         v-if="!readonly"
         :title="buttonTitle"
@@ -27,12 +27,23 @@
           <h3 class="text-lg font-semibold">
             {{ options.title || 'Редактор текста' }}
           </h3>
-          <button
-              class="text-gray-500 hover:text-gray-700"
-              @click="closeModal"
-          >
-            <Icon name="ph:x" size="20"/>
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+                v-if="options.telegram_parse"
+                title="AI Генерация"
+                class="flex items-center gap-2 px-3 py-1.5 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors"
+                @click="openTelegramParser"
+            >
+              <Icon name="ph:robot" size="18"/>
+              <span class="text-sm font-medium">AI Генерация</span>
+            </button>
+            <button
+                class="text-gray-500 hover:text-gray-700"
+                @click="closeModal"
+            >
+              <Icon name="ph:x" size="20"/>
+            </button>
+          </div>
         </div>
 
         <div v-if="editorEnabled" class="flex-1 overflow-auto">
@@ -101,12 +112,24 @@
         </div>
       </div>
     </div>
+
+    <TelegramParser
+      :show-modal="showTelegramParser"
+      @close="showTelegramParser = false"
+      @apply="handleTelegramResult"
+      :options="{
+        ...options,
+        telegrams: telegramsValue
+      }"
+      :rowData="rowData"
+    />
   </div>
 </template>
 
 <script setup>
 import {ref, computed, watch} from 'vue'
 import RichTextEditor from "./../editor/RichTextEditor.vue";
+import TelegramParser from "./TelegramParser.vue";
 
 const props = defineProps({
   modelValue: {
@@ -114,7 +137,7 @@ const props = defineProps({
     default: '',
     validator: (value) => {
       if (typeof value === 'object' && value !== null) {
-        return value.target !== undefined; // Проверяем, что это InputEvent
+        return value.target !== undefined;
       }
       return typeof value === 'string';
     }
@@ -130,12 +153,20 @@ const props = defineProps({
       imageMaxWidth: 1200,
       imageQuality: 0.8,
       sel_class: "text-blue-500 hover:text-blue-700",
-      visual_type: null, // 'phone', 'email', 'site'
-      instruction: null // Текст инструкции
+      visual_type: null,
+      instruction: null,
+      editorEnabled: true,
+      parse_own_telegram: false,
+      telegrams_field: '',
+      telegram_parse: false
     })
   },
   readonly: Boolean,
-  type: String
+  type: String,
+  rowData: {
+    type: Object,
+    default: () => ({})
+  }
 })
 
 const emit = defineEmits(['update:modelValue', 'blur'])
@@ -146,6 +177,7 @@ const isFullscreen = ref(false)
 const editorContainer = ref(null)
 const isSaving = ref(false)
 const hasChanges = ref(false)
+const showTelegramParser = ref(false)
 
 const editorEnabled = computed(() => props.options.editorEnabled !== false)
 
@@ -202,6 +234,19 @@ const displayValue = computed(() => {
   }
   return props.modelValue || '<p></p>';
 })
+
+const telegramsValue = computed(() => {
+  // Получаем значение из API
+  const apiValue = props.rowData?.about?.match(/telegram_parse:\s*([^\n]+)/)?.[1]?.trim();
+  
+  if (apiValue) {
+    // Сохраняем значение в rowData
+    props.rowData.telegram_parse = apiValue;
+  }
+  
+  // Используем значение из rowData или из API
+  return props.rowData?.telegram_parse || apiValue || '';
+});
 
 const dynamicClass = computed(() => {
   if (props.options.check_empty) {
@@ -308,5 +353,26 @@ const toggleFullscreen = (value) => {
   } else {
     document.body.classList.remove('overflow-hidden')
   }
+}
+
+const openTelegramParser = () => {
+  showTelegramParser.value = true;
+}
+
+const handleTelegramResult = (result) => {
+  // Если результат - объект, берем content
+  if (typeof result === 'object' && result !== null) {
+    if (result.content) {
+      localValue.value = result.content;
+      emit('update:modelValue', result.content);
+    }
+  } else {
+    // Если результат - строка, используем как есть
+    localValue.value = result;
+    emit('update:modelValue', result);
+  }
+  
+  // Закрываем только модальное окно парсера
+  showTelegramParser.value = false;
 }
 </script>

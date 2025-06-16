@@ -114,6 +114,32 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
+              URL страницы с таблицей
+            </label>
+            <input
+              v-model="tableForm.url"
+              type="url"
+              placeholder="https://example.com/table"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Номер таблицы на странице
+            </label>
+            <input
+              v-model="tableForm.table_no"
+              type="number"
+              min="1"
+              placeholder="Например: 1, 2, 3"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p class="mt-1 text-sm text-gray-500">
+              Укажите порядковый номер таблицы на странице, если их несколько. Если не указано, будет выбрана первая найденная таблица.
+            </p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
               Заголовки полей
             </label>
             <div class="grid grid-cols-4 gap-4">
@@ -301,22 +327,48 @@
   <!-- Модальное окно содержимого таблицы -->
   <div v-if="showTableContentsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-lg w-full max-w-4xl mx-auto my-4 sm:my-8">
-      <div class="p-4 border-b bg-white">
-        <h3 class="text-lg font-semibold">Содержимое таблицы: {{ selectedTable?.title }}</h3>
-      </div>
-      <div class="p-4 max-h-[calc(100vh-200px)] overflow-y-auto pb-20">
-        <div class="mb-4">
-          <button
-            @click="showAddContentModal = true"
-            class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-          >
-            Добавить строку
-          </button>
+      <div class="p-4 border-b sticky top-0 bg-white z-10">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-lg font-semibold">Содержимое таблицы: {{ selectedTable?.title }}</h3>
+            <div class="mt-1 text-sm text-gray-500">
+              <div>ID таблицы: {{ selectedTable?.id }}</div>
+              <div v-if="selectedTable?.url">
+                URL: <a :href="selectedTable.url" target="_blank" class="text-blue-600 hover:text-blue-800 hover:underline">{{ selectedTable.url }}</a>
+              </div>
+              <div v-if="selectedTable?.table_no">Номер таблицы на странице: {{ selectedTable.table_no }}</div>
+              <div v-if="selectedTable?.last_parse_data">Последний парсинг: {{ formatDate(selectedTable.last_parse_data) }}</div>
+            </div>
+          </div>
+          <div class="flex space-x-2">
+            <button
+              @click="reparseTable"
+              :disabled="isReparsing"
+              class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="isReparsing" class="flex items-center">
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Репарсинг...
+              </span>
+              <span v-else>Репарсинг</span>
+            </button>
+            <button
+              @click="showAddContentModal = true"
+              class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Добавить строку
+            </button>
+          </div>
         </div>
+      </div>
+      <div class="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
         <div class="overflow-x-auto">
           <div class="inline-block min-w-full align-middle">
             <table class="min-w-full divide-y divide-gray-200">
-              <thead class="bg-gray-50">
+              <thead class="bg-gray-50 sticky top-0 z-10">
                 <tr>
                   <th v-if="selectedTable?.field1" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {{ selectedTable.field1 }}
@@ -471,7 +523,7 @@
           </div>
         </div>
       </div>
-      <div class="p-4 border-t bg-white">
+      <div class="p-4 border-t sticky bottom-0 bg-white z-10">
         <button
           @click="showTableContentsModal = false"
           class="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
@@ -486,7 +538,14 @@
   <div v-if="showAddContentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-lg w-full max-w-2xl mx-auto my-4 sm:my-8">
       <div class="p-4 border-b sticky top-0 bg-white z-10">
-        <h3 class="text-lg font-semibold">{{ editingContent ? 'Редактировать строку' : 'Добавить строку' }}</h3>
+        <div>
+          <h3 class="text-lg font-semibold">{{ editingContent ? 'Редактировать строку' : 'Добавить строку' }}</h3>
+          <div v-if="selectedTable" class="mt-1 text-sm text-gray-500">
+            <div v-if="selectedTable.url">URL: {{ selectedTable.url }}</div>
+            <div v-if="selectedTable.table_no">Номер таблицы: {{ selectedTable.table_no }}</div>
+            <div v-if="selectedTable.last_parse_data">Последний парсинг: {{ formatDate(selectedTable.last_parse_data) }}</div>
+          </div>
+        </div>
       </div>
       <div class="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
         <div class="space-y-4">
@@ -670,12 +729,12 @@
   </div>
 
   <!-- Модальное окно парсинга таблицы -->
-  <div v-if="showParseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-2xl mx-4">
-      <div class="p-4 border-b">
+  <div v-if="showParseModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+    <div class="bg-white rounded-lg w-full max-w-2xl mx-4 my-8">
+      <div class="p-4 border-b sticky top-0 bg-white z-10">
         <h3 class="text-lg font-semibold">Парсинг таблицы</h3>
       </div>
-      <div class="p-4">
+      <div class="p-4 max-h-[calc(100vh-200px)] overflow-y-auto">
         <div class="mb-4">
           <label class="block text-sm font-medium text-gray-700 mb-2">
             URL страницы с таблицей
@@ -739,7 +798,7 @@
           {{ parseError }}
         </div>
       </div>
-      <div class="p-4 border-t flex justify-end space-x-3">
+      <div class="p-4 border-t sticky bottom-0 bg-white z-10 flex justify-end space-x-3">
         <button
           @click="showParseModal = false"
           class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
@@ -796,6 +855,9 @@ interface Table extends TableFields {
   id: number;
   title: string;
   description: string | null;
+  url?: string;
+  table_no?: string;
+  last_parse_data?: string;
 }
 
 interface TableContent extends TableContentFields {
@@ -842,10 +904,16 @@ const parseTableNo = ref('');
 const isParsing = ref(false);
 const parseError = ref('');
 
+// Добавляем новые состояния в секцию скрипта
+const isReparsing = ref(false);
+const reparseError = ref('');
+
 // Формы
 const tableForm = ref<{
   title: string;
   description: string;
+  url: string;
+  table_no: string;
   field1: string;
   field2: string;
   field3: string;
@@ -869,6 +937,8 @@ const tableForm = ref<{
 }>({
   title: '',
   description: '',
+  url: '',
+  table_no: '',
   field1: '',
   field2: '',
   field3: '',
@@ -940,10 +1010,35 @@ const contentForm = ref<{
 // Загрузка таблиц
 const fetchTables = async () => {
   try {
-    const response = await fetch(`${api}/api/parse-tables?sort=id&order=desc`);
+    const response = await fetch(`${api}/api/parse-tables?sort=id&order=desc&with=url,table_no,last_parse_data`);
     if (!response.ok) throw new Error('Ошибка при загрузке таблиц');
     const data = await response.json();
-    tables.value = data.data;
+    tables.value = data.data.map((table: any) => ({
+      ...table,
+      url: table.url || '',
+      table_no: table.table_no || '',
+      last_parse_data: table.last_parse_data || null,
+      field1: table.field1 || '',
+      field2: table.field2 || '',
+      field3: table.field3 || '',
+      field4: table.field4 || '',
+      field5: table.field5 || '',
+      field6: table.field6 || '',
+      field7: table.field7 || '',
+      field8: table.field8 || '',
+      field9: table.field9 || '',
+      field10: table.field10 || '',
+      field11: table.field11 || '',
+      field12: table.field12 || '',
+      field13: table.field13 || '',
+      field14: table.field14 || '',
+      field15: table.field15 || '',
+      field16: table.field16 || '',
+      field17: table.field17 || '',
+      field18: table.field18 || '',
+      field19: table.field19 || '',
+      field20: table.field20 || ''
+    }));
   } catch (error) {
     console.error('Ошибка при загрузке таблиц:', error);
     alert('Не удалось загрузить таблицы');
@@ -986,40 +1081,78 @@ const fetchTableContents = async (tableId: number) => {
 };
 
 // Открытие модального окна содержимого
-const openTableContents = (table: Table) => {
-  selectedTable.value = table;
-  showTableContentsModal.value = true;
-  fetchTableContents(table.id);
+const openTableContents = async (table: Table) => {
+  try {
+    // Загружаем полные данные таблицы
+    const response = await fetch(`${api}/api/parse-tables/${table.id}`);
+    if (!response.ok) throw new Error('Ошибка при загрузке данных таблицы');
+    const data = await response.json();
+    
+    selectedTable.value = {
+      ...table,
+      ...data,
+      url: data.url || '',
+      table_no: data.table_no || '',
+      last_parse_data: data.last_parse_data || null
+    };
+    
+    showTableContentsModal.value = true;
+    await fetchTableContents(table.id);
+  } catch (error) {
+    console.error('Ошибка при загрузке данных таблицы:', error);
+    alert('Не удалось загрузить данные таблицы');
+  }
 };
 
 // Редактирование таблицы
-const editTable = (table: Table) => {
-  editingTable.value = table;
-  tableForm.value = {
-    title: table.title,
-    description: table.description || '',
-    field1: table.field1 || '',
-    field2: table.field2 || '',
-    field3: table.field3 || '',
-    field4: table.field4 || '',
-    field5: table.field5 || '',
-    field6: table.field6 || '',
-    field7: table.field7 || '',
-    field8: table.field8 || '',
-    field9: table.field9 || '',
-    field10: table.field10 || '',
-    field11: table.field11 || '',
-    field12: table.field12 || '',
-    field13: table.field13 || '',
-    field14: table.field14 || '',
-    field15: table.field15 || '',
-    field16: table.field16 || '',
-    field17: table.field17 || '',
-    field18: table.field18 || '',
-    field19: table.field19 || '',
-    field20: table.field20 || ''
-  };
-  showAddTableModal.value = true;
+const editTable = async (table: Table) => {
+  try {
+    // Загружаем полные данные таблицы
+    const response = await fetch(`${api}/api/parse-tables/${table.id}`);
+    if (!response.ok) throw new Error('Ошибка при загрузке данных таблицы');
+    const data = await response.json();
+    
+    const updatedTable = {
+      ...table,
+      ...data,
+      url: data.url || '',
+      table_no: data.table_no || '',
+      last_parse_data: data.last_parse_data || null
+    };
+    
+    editingTable.value = updatedTable;
+    
+    tableForm.value = {
+      title: updatedTable.title,
+      description: updatedTable.description || '',
+      url: updatedTable.url || '',
+      table_no: updatedTable.table_no || '',
+      field1: updatedTable.field1 || '',
+      field2: updatedTable.field2 || '',
+      field3: updatedTable.field3 || '',
+      field4: updatedTable.field4 || '',
+      field5: updatedTable.field5 || '',
+      field6: updatedTable.field6 || '',
+      field7: updatedTable.field7 || '',
+      field8: updatedTable.field8 || '',
+      field9: updatedTable.field9 || '',
+      field10: updatedTable.field10 || '',
+      field11: updatedTable.field11 || '',
+      field12: updatedTable.field12 || '',
+      field13: updatedTable.field13 || '',
+      field14: updatedTable.field14 || '',
+      field15: updatedTable.field15 || '',
+      field16: updatedTable.field16 || '',
+      field17: updatedTable.field17 || '',
+      field18: updatedTable.field18 || '',
+      field19: updatedTable.field19 || '',
+      field20: updatedTable.field20 || ''
+    };
+    showAddTableModal.value = true;
+  } catch (error) {
+    console.error('Ошибка при загрузке данных таблицы:', error);
+    alert('Не удалось загрузить данные таблицы');
+  }
 };
 
 // Удаление таблицы
@@ -1064,7 +1197,10 @@ const saveTable = async () => {
       body: JSON.stringify(tableForm.value)
     });
 
-    if (!response.ok) throw new Error('Ошибка при сохранении таблицы');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ошибка при сохранении таблицы');
+    }
     
     await fetchTables();
     showAddTableModal.value = false;
@@ -1072,6 +1208,8 @@ const saveTable = async () => {
     tableForm.value = {
       title: '',
       description: '',
+      url: '',
+      table_no: '',
       field1: '',
       field2: '',
       field3: '',
@@ -1264,6 +1402,78 @@ const parseTable = async () => {
   } finally {
     isParsing.value = false;
   }
+};
+
+// Добавляем функцию репарсинга
+const reparseTable = async () => {
+  if (!selectedTable.value) {
+    alert('Не выбрана таблица для репарсинга');
+    return;
+  }
+
+  try {
+    isReparsing.value = true;
+    reparseError.value = '';
+
+    const response = await fetch(`${api}/api/parse-tables/reparse`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        parse_table_id: selectedTable.value.id,
+        url: selectedTable.value.url,
+        table_no: selectedTable.value.table_no
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Ошибка при репарсинге таблицы');
+    }
+
+    if (!data.success) {
+      throw new Error(data.message || 'Ошибка при репарсинге таблицы');
+    }
+
+    // Ждем немного, чтобы дать серверу время на обработку
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // После успешного репарсинга обновляем содержимое таблицы
+    await fetchTableContents(selectedTable.value.id);
+
+    // Обновляем данные таблицы
+    const updatedTableResponse = await fetch(`${api}/api/parse-tables/${selectedTable.value.id}`);
+    if (!updatedTableResponse.ok) {
+      throw new Error('Ошибка при обновлении данных таблицы');
+    }
+    const updatedTableData = await updatedTableResponse.json();
+    selectedTable.value = updatedTableData;
+
+    alert('Таблица успешно обновлена');
+  } catch (error) {
+    console.error('Ошибка при репарсинге таблицы:', error);
+    reparseError.value = error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+    alert(reparseError.value);
+  } finally {
+    isReparsing.value = false;
+  }
+};
+
+// Добавляем функцию форматирования даты
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleString('ru-RU', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 };
 
 // Загружаем таблицы при монтировании компонента

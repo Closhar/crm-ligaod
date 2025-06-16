@@ -12,6 +12,7 @@
           @show-link-modal="openLinkModal"
           @toggle-source="toggleSource"
           @show-ai-modal="showAIModal = true"
+          @clear-content="clearContent"
       />
       <div v-else class="p-2 bg-gray-50 flex justify-between items-center">
         <span class="text-sm font-medium">Режим исходного кода</span>
@@ -411,6 +412,16 @@ const handleInsertLink = (link) => {
   showLinkModal.value = false
 }
 
+// Добавляем метод очистки контента
+const clearContent = () => {
+  if (confirm('Вы уверены, что хотите очистить весь контент? Это действие нельзя отменить.')) {
+    if (editor.value) {
+      editor.value.commands.clearContent()
+      emit('update:modelValue', '')
+    }
+  }
+}
+
 // Добавляем watch для modelValue
 watch(() => props.modelValue, (newContent) => {
   if (editor.value && newContent !== editor.value.getHTML()) {
@@ -474,10 +485,8 @@ const generateContent = async () => {
 
     // Вставляем сгенерированный контент в редактор
     if (editor.value) {
-      // Сохраняем форматирование текста как есть
-      const content = result.data.replace(/<[^>]*>/g, '');
-      editor.value.commands.setContent(content);
-      emit('update:modelValue', content);
+      editor.value.commands.setContent(result.data);
+      emit('update:modelValue', result.data);
     }
     
     // Закрываем модальное окно и очищаем состояние
@@ -533,10 +542,6 @@ onMounted(() => {
             class: 'text-blue-500 hover:underline'
           }
         }),
-        Placeholder.configure({
-          placeholder: props.placeholder,
-          emptyEditorClass: 'is-editor-empty'
-        }),
         IframeExtension
       ],
       editorProps: {
@@ -581,10 +586,5 @@ onBeforeUnmount(() => {
 
 .tiptap iframe {
   @apply w-full h-[400px] border rounded my-4;
-}
-
-.tiptap p.is-editor-empty:first-child::before {
-  @apply float-left text-gray-400 pointer-events-none h-0;
-  content: attr(data-placeholder);
 }
 </style>

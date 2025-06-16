@@ -56,7 +56,12 @@
           </div>
 
           <!-- Превью изображения -->
-          <div v-if="imageSource" class="kirh-image-preview-wrapper">
+          <div v-if="isImageLoading" class="kirh-image-preview-loader">
+            <svg class="kirh-spinner" width="40" height="40" viewBox="0 0 40 40">
+              <circle class="path" cx="20" cy="20" r="16" fill="none" stroke-width="4"/>
+            </svg>
+          </div>
+          <div v-else-if="imageSource" class="kirh-image-preview-wrapper">
             <img
                 :alt="options.alt || 'Image preview'"
                 :src="imageSource"
@@ -97,6 +102,13 @@
             </label>
 
             <button
+                class="kirh-image-url-button"
+                @click="showUrlInput = true"
+            >
+              Вставить URL
+            </button>
+
+            <button
                 v-if="imageSource"
                 class="kirh-image-delete-button"
                 @click="deleteImage"
@@ -105,12 +117,51 @@
             </button>
           </div>
 
+          <!-- URL Input Modal -->
+          <div v-if="showUrlInput" class="kirh-image-url-modal">
+            <div class="kirh-image-url-modal-content">
+              <h4>Вставьте URL изображения или видео</h4>
+              <input
+                  v-model="urlInput"
+                  type="text"
+                  placeholder="https://..."
+                  class="kirh-image-url-input"
+                  @keyup.enter="handleUrlSubmit"
+              />
+              <div class="kirh-image-url-buttons">
+                <button
+                    class="kirh-image-url-submit"
+                    @click="handleUrlSubmit"
+                >
+                  Вставить
+                </button>
+                <button
+                    class="kirh-image-url-cancel"
+                    @click="showUrlInput = false"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Информация -->
           <div
               v-if="options.info"
               class="kirh-image-info"
               v-html="options.info"
           ></div>
+
+          <!-- Справка о возможностях загрузки -->
+          <div class="kirh-image-info kirh-image-info-hint text-left" style="margin-top: 12px;">
+            <b>Возможности загрузки:</b><br>
+            • <b>Загрузка с компьютера</b> — выберите файл изображения.<br>
+            • <b>Вставка по URL</b> — поддерживаются:<br>
+            &nbsp;&nbsp;- <b>Изображения</b> (jpg, png, webp и др.)<br>
+            &nbsp;&nbsp;- <b>Видео-превью</b> с <b>YouTube</b>, <b>ВКонтакте</b>, <b>Rutube</b> (вставьте ссылку на видео, превью загрузится автоматически).<br>
+            <br>
+            <i>Если возникли проблемы с загрузкой — проверьте ссылку или обратитесь к администратору.</i>
+          </div>
         </div>
       </div>
     </div>
@@ -119,6 +170,14 @@
 
 <script>
 import {ref, computed, watch, onUnmounted} from 'vue';
+// Для Nuxt: импортируем useRuntimeConfig
+let config;
+try {
+  // Если Nuxt 3, useRuntimeConfig доступен глобально
+  config = useRuntimeConfig();
+} catch (e) {
+  config = null;
+}
 
 export default {
   name: 'KirhImageField',
@@ -152,7 +211,8 @@ export default {
           quality: 0.8,         // Качество (0-1)
           maxSizeMB: 1,         // Максимальный размер (MB)
           mimeType: 'image/jpeg' // Тип выходного файла
-        }
+        },
+        vkToken: 'vk1.a.3qXnXX7-m2hYJK8dOlBgk2l7KL5cHnYAzeegCCzJ6gG6ektrq5agi3Sj37eB3lfOnh3S6Gz0yWnwury17_Pum1lN5qjnZlS-3qFXsfMAgwr69fqvThzKXowNjuYMJuWsuKIOn9RVfwJOzTGFZj0f05Ntk0gietfXtUIoC3lnpOHugrJAGScI9yXBm9xCF-55lmgb3QXP65-ki7mq5w1psQ'
       })
     },
     rowData: {
@@ -165,7 +225,10 @@ export default {
     const modalVisible = ref(false);
     const fileInput = ref(null);
     const currentError = ref('');
+    const showUrlInput = ref(false);
+    const urlInput = ref('');
     let errorTimeout = null;
+    const isImageLoading = ref(false);
 
     // Получаем путь к изображению из данных строки
     const imageSource = computed(() => {
@@ -487,6 +550,232 @@ export default {
       });
     };
 
+    // Обработка URL
+    const handleUrlSubmit = async () => {
+      if (!urlInput.value) {
+        setError('Введите URL');
+        return;
+      }
+
+      try {
+        isImageLoading.value = true;
+        let imageUrl = urlInput.value;
+
+        // Обработка URL видео
+        if (
+          urlInput.value.includes('vk.com') ||
+          urlInput.value.includes('vk.ru') ||
+          urlInput.value.includes('vkvideo.ru')
+        ) {
+          imageUrl = await getVkVideoPreview(urlInput.value);
+        } else if (urlInput.value.includes('rutube.ru')) {
+          imageUrl = await getRutubeVideoPreview(urlInput.value);
+        } else if (urlInput.value.includes('youtube.com') || urlInput.value.includes('youtu.be')) {
+          imageUrl = await getYoutubeVideoPreview(urlInput.value);
+        }
+
+        // Если это обычная картинка, используем прокси для обхода CORS
+        if (
+          !urlInput.value.includes('vk.com') &&
+          !urlInput.value.includes('vk.ru') &&
+          !urlInput.value.includes('vkvideo.ru') &&
+          !urlInput.value.includes('rutube.ru') &&
+          !urlInput.value.includes('youtube.com') &&
+          !urlInput.value.includes('youtu.be')
+        ) {
+          imageUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+        }
+
+        // Скачивание изображения
+        try {
+          const response = await fetch(imageUrl);
+          if (!response.ok) {
+            throw new Error('Ошибка загрузки изображения');
+          }
+          const blob = await response.blob();
+          const file = new File([blob], 'downloaded-image.jpg', {
+            type: blob.type,
+            lastModified: Date.now()
+          });
+
+          // Обработка изображения если включена
+          let processedFile = file;
+          if (props.options.resize?.enabled) {
+            processedFile = await processImage(file);
+          }
+
+          clearError();
+          emit('update:modelValue', processedFile);
+          emit('change', processedFile);
+          showUrlInput.value = false;
+          urlInput.value = '';
+          isImageLoading.value = false;
+
+        } catch (err) {
+          setError(err.message || 'Ошибка загрузки изображения');
+          isImageLoading.value = false;
+        }
+
+      } catch (err) {
+        setError(err.message || 'Ошибка загрузки изображения');
+        isImageLoading.value = false;
+      }
+    };
+
+    const config = useRuntimeConfig(); // Используем useRuntimeConfig()
+    const vkTokenEnv = config.public.VK_TOKEN;
+
+    // Получение превью видео VK
+    const getVkVideoPreview = async (url) => {
+      try {
+        let vkToken = null;
+        if (vkTokenEnv) {
+          vkToken = vkTokenEnv;
+        } else if (props.options && props.options.vkToken) {
+          vkToken = props.options.vkToken;
+        }
+        if (!vkToken) {
+          throw new Error(
+            'Для работы с видео ВКонтакте необходим токен API. ' +
+            'Добавьте VK_TOKEN в .env или vkToken в options компонента. ' +
+            'Инструкция по получению токена: ' +
+            '1. Создайте Standalone-приложение на https://vk.com/dev ' +
+            '2. Получите Standalone-токен с правами на доступ к видео ' +
+            '3. Добавьте токен в .env: VK_TOKEN=ваш_токен'
+          );
+        }
+
+        let ownerId, videoId;
+        const videoMatch = url.match(/video(-?\d+)_(\d+)/);
+        if (videoMatch) {
+          ownerId = videoMatch[1];
+          videoId = videoMatch[2];
+        } else {
+          const urlMatch = url.match(/vk\.com\/video(-?\d+)_(\d+)/);
+          if (urlMatch) {
+            ownerId = urlMatch[1];
+            videoId = urlMatch[2];
+          } else {
+            throw new Error('Неверный формат URL VK видео. Поддерживаемые форматы:\n' +
+                          '1. https://vk.com/video-123456_789\n' +
+                          '2. video-123456_789');
+          }
+        }
+
+        const apiUrl = `https://api.vk.com/method/video.get?videos=${ownerId}_${videoId}&access_token=${vkToken}&v=5.131`;
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка получения данных от VK API: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        if (data.error) {
+          switch (data.error.error_code) {
+            case 5:
+              throw new Error('Недействительный токен VK API. Пожалуйста, проверьте токен и его права доступа');
+            case 15:
+              throw new Error('Доступ к видео запрещен. Проверьте настройки приватности видео');
+            case 203:
+              throw new Error('Доступ к видео запрещен настройками приватности');
+            case 27:
+              throw new Error('Токен не имеет прав на доступ к видео. Добавьте права video в настройках приложения');
+            default:
+              throw new Error(`Ошибка VK API: ${data.error.error_msg || 'Неизвестная ошибка'}`);
+          }
+        }
+
+        if (!data.response?.items?.[0]) {
+          throw new Error('Видео не найдено. Проверьте правильность URL и доступность видео');
+        }
+
+        const video = data.response.items[0];
+        if (!video.image) {
+          throw new Error('Превью видео не найдено. Возможно, видео недоступно или удалено');
+        }
+        const imageUrl = video.image;
+        let previewUrl;
+        if (Array.isArray(imageUrl)) {
+          previewUrl = imageUrl[imageUrl.length - 1].url || imageUrl[imageUrl.length - 1];
+        } else if (typeof imageUrl === 'object' && imageUrl.url) {
+          previewUrl = imageUrl.url;
+        } else {
+          previewUrl = imageUrl;
+        }
+        return previewUrl;
+      } catch (err) {
+        throw new Error(`Ошибка получения превью VK видео: ${err.message}`);
+      }
+    };
+
+    // Получение превью видео Rutube
+    const getRutubeVideoPreview = async (url) => {
+      try {
+        // Извлекаем ID видео из URL
+        const videoIdMatch = url.match(/rutube\.ru\/video\/([a-zA-Z0-9]+)/);
+        if (!videoIdMatch) {
+          throw new Error('Неверный формат URL Rutube видео');
+        }
+
+        const videoId = videoIdMatch[1];
+
+        // Используем прокси-сервер для обхода CORS
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://rutube.ru/api/video/${videoId}/`)}`;
+        
+        const response = await fetch(proxyUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ошибка получения данных от Rutube API: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        // Проверяем наличие превью в объекте root
+        if (data.root && data.root.thumbnail_url) {
+          return data.root.thumbnail_url;
+        }
+
+        // Если не нашли в root, проверяем другие возможные места
+        const thumbnailUrl = data.thumbnail_url || 
+                           data.thumbnail || 
+                           data.preview_url || 
+                           data.preview ||
+                           (data.video && data.video.thumbnail_url) ||
+                           (data.video && data.video.thumbnail);
+
+        if (!thumbnailUrl) {
+          throw new Error('Превью видео не найдено');
+        }
+
+        return thumbnailUrl;
+      } catch (err) {
+        throw new Error(`Ошибка получения превью Rutube видео: ${err.message}`);
+      }
+    };
+
+    // Получение превью видео YouTube
+    const getYoutubeVideoPreview = async (url) => {
+      // Извлекаем ID видео
+      const videoId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i)?.[1];
+      if (!videoId) throw new Error('Неверный формат URL YouTube');
+      
+      // Возвращаем URL превью максимального качества
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    };
+
     const fullModalTitle = computed(() => {
       let title = props.options.modalTitle || 'Изображение';
 
@@ -501,6 +790,25 @@ export default {
       return title;
     });
 
+    // Справочная информация по возможностям загрузки
+    const defaultInfo = `
+      <b>Возможности загрузки:</b><br>
+      • <b>Загрузка с компьютера</b> — выберите файл изображения.<br>
+      • <b>Вставка по URL</b> — поддерживаются:<br>
+      &nbsp;&nbsp;— <b>Изображения</b> (jpg, png, webp и др.)<br>
+      &nbsp;&nbsp;— <b>Видео-превью</b> с <b>YouTube</b>, <b>ВКонтакте</b>, <b>Rutube</b> (вставьте ссылку на видео, превью загрузится автоматически).<br>
+      <br>
+      <b>VK:</b> Для загрузки превью приватных видео требуется рабочий VK API токен.<br>
+      <b>Rutube:</b> Превью берётся из официального API Rutube.<br>
+      <b>YouTube:</b> Используется стандартное превью ролика.<br>
+      <br>
+      <i>Если возникли проблемы с загрузкой — проверьте ссылку или обратитесь к администратору.</i>
+    `;
+    // Если info не задано — используем справку по умолчанию
+    if (!props.options.info) {
+      props.options.info = defaultInfo;
+    }
+
     return {
       modalVisible,
       fileInput,
@@ -512,7 +820,11 @@ export default {
       closeModal,
       handleFileUpload,
       deleteImage,
-      fullModalTitle
+      fullModalTitle,
+      showUrlInput,
+      urlInput,
+      handleUrlSubmit,
+      isImageLoading
     };
   }
 };
@@ -662,6 +974,27 @@ export default {
 }
 
 /* Превью изображения */
+.kirh-image-preview-loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.kirh-spinner {
+  animation: spin 1s linear infinite;
+  stroke: #3b82f6;
+}
+
+.kirh-spinner .path {
+  stroke: #3b82f6;
+  stroke-linecap: round;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
 .kirh-image-preview-wrapper {
   display: flex;
   justify-content: center;
@@ -743,5 +1076,91 @@ export default {
   font-size: 14px;
   color: #475569;
   border-left: 3px solid #94a3b8;
+}
+
+/* URL Input Modal */
+.kirh-image-url-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.kirh-image-url-modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+}
+
+.kirh-image-url-modal-content h4 {
+  margin: 0 0 16px 0;
+  color: #1e293b;
+}
+
+.kirh-image-url-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.kirh-image-url-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.kirh-image-url-submit,
+.kirh-image-url-cancel {
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.kirh-image-url-submit {
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+}
+
+.kirh-image-url-submit:hover {
+  background-color: #2563eb;
+}
+
+.kirh-image-url-cancel {
+  background-color: #e2e8f0;
+  color: #475569;
+  border: none;
+}
+
+.kirh-image-url-cancel:hover {
+  background-color: #cbd5e1;
+}
+
+.kirh-image-url-button {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.kirh-image-url-button:hover {
+  background-color: #059669;
 }
 </style>

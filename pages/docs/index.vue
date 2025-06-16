@@ -81,6 +81,112 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
           </svg>
+          Версия 1.5 (16.06.2025)
+        </h3>
+        <div class="text-gray-700 mb-2">
+          <h4 class="font-semibold text-indigo-700">Новые возможности:</h4>
+          <ul class="list-disc list-inside ml-2 mb-2">
+            <li>Добавлен функционал парсинга телеграм-каналов:
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>Выбор каналов из таблицы для парсинга</li>
+                <li>Поддержка фиксированных каналов</li>
+                <li>Привязка парсинга к событиям и клубам</li>
+                <li>Автоматическая обработка данных с помощью AI</li>
+              </ul>
+            </li>
+            <li>Реализован функционал работы с таблицами:
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>Парсинг таблиц из интернета</li>
+                <li>Репарсинг существующих таблиц</li>
+                <li>Привязка таблиц к соревнованиям</li>
+              </ul>
+            </li>
+            <li>Улучшен интерфейс главной страницы:
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>Добавлена таблица событий на сегодня</li>
+                <li>Добавлена таблица событий на завтра</li>
+                <li>Добавлена таблица событий за вчера</li>
+                <li>Реализована фильтрация по датам через параметр api_params</li>
+              </ul>
+            </li>
+            <li>Добавлен функционал быстрых шаблонов промптов:
+              <ul class="list-disc list-inside ml-4 mt-1">
+                <li>Создание и редактирование шаблонов промптов</li>
+                <li>Быстрый доступ к часто используемым промптам</li>
+                <li>Возможность настройки параметров для каждого шаблона</li>
+                <li>Интеграция с AI-обработкой данных</li>
+              </ul>
+            </li>
+          </ul>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки таблицы с событиями на определенную дату:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>const tableOptions = ref({
+  // ... другие настройки ...
+  api_params: 'date_from=2024-05-01' // Фильтрация по конкретной дате
+});</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки парсинга телеграм-каналов:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>telegram_parse: {
+  enabled: true,
+  channels: ['channel1', 'channel2'],
+  ai_processing: true,
+  event_binding: true,
+  club_binding: true
+}</code></pre>
+          </div>
+          
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки парсинга таблиц:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>table_parse: {
+  enabled: true,
+  competition_binding: true,
+  auto_reparse: true,
+  ai_processing: true
+}</code></pre>
+          </div>
+
+          <div class="bg-white p-3 rounded-md text-sm border border-indigo-200 mb-2">
+            <p class="font-semibold">Пример настройки шаблона промпта:</p>
+            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>prompt_template: {
+  name: 'Анализ матча',
+  template: 'Проанализируй матч {team1} vs {team2} и предоставь статистику',
+  parameters: {
+    team1: { type: 'string', required: true },
+    team2: { type: 'string', required: true }
+  },
+  ai_settings: {
+    model: 'gpt-4',
+    temperature: 0.7
+  }
+}</code></pre>
+          </div>
+          
+          <NuxtLink to="/docs/telegram-parser" class="text-indigo-600 hover:underline text-sm">
+            Подробнее о парсинге телеграм-каналов &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/table-parser" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее о парсинге таблиц &rarr;
+          </NuxtLink>
+          
+          <NuxtLink to="/docs/ai-processing" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее об AI-обработке данных &rarr;
+          </NuxtLink>
+
+          <NuxtLink to="/docs/prompt-templates" class="text-indigo-600 hover:underline text-sm ml-3">
+            Подробнее о шаблонах промптов &rarr;
+          </NuxtLink>
+        </div>
+      </div>
+
+      <div class="bg-blue-50 p-4 rounded-md shadow mb-4">
+        <h3 class="text-lg font-semibold mb-2 text-blue-800 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
           Версия 1.4 (30.04.2024)
         </h3>
         <div class="text-gray-700 mb-2">
@@ -163,75 +269,6 @@
         </div>
       </div>
 
-      <div class="bg-blue-50 p-4 rounded-md shadow mb-4">
-        <h3 class="text-lg font-semibold mb-2 text-blue-800 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-          </svg>
-          Версия 1.3 (25.04.2024)
-        </h3>
-        <div class="text-gray-700 mb-2">
-          <h4 class="font-semibold text-blue-700">Новые возможности:</h4>
-          <ul class="list-disc list-inside ml-2 mb-2">
-            <li>Добавлен новый тип поля <code>swap</code> для обмена значениями между двумя полями в таблице</li>
-            <li>Добавлен параметр <code>img_size</code> для настройки размеров изображений в ячейках таблицы</li>
-            <li>Добавлен новый тип поля <code>simple_select</code> - упрощенная версия выпадающего списка для статических данных</li>
-          </ul>
-          
-          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
-            <p class="font-semibold">Пример использования поля типа swap:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>{
-  name: 'swap_fields',
-  label: 'Поменять местами',
-  type: 'swap',
-  options: {
-    field1: 'club1_id',
-    field2: 'club2_id',
-    icon: 'material-symbols:swap-vert',
-    button_text: 'Обменять',
-    cell_class: 'bg-gray-50'
-  }
-}</code></pre>
-          </div>
-          
-          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
-            <p class="font-semibold">Пример использования параметра img_size:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>options: {
-  imageField: 'gallery_image_path',
-  img_size: 'w-16 h-10' // Размер изображения в ячейке
-}</code></pre>
-          </div>
-
-          <div class="bg-white p-3 rounded-md text-sm border border-blue-200 mb-2">
-            <p class="font-semibold">Пример использования поля типа simple_select:</p>
-            <pre class="text-xs text-gray-800 overflow-x-auto mt-1"><code>{
-  name: 'status',
-  label: 'Статус',
-  type: 'simple_select',
-  required: true,
-  options: {
-    options: [
-      { value: 'active', label: 'Активен' },
-      { value: 'inactive', label: 'Неактивен' },
-      { value: 'pending', label: 'Ожидает' }
-    ],
-    placeholder: 'Выберите статус',
-    empty_option: 'Не выбран',
-    sel_class: 'w-full rounded border-gray-300'
-  }
-}</code></pre>
-          </div>
-          
-          <NuxtLink to="/docs/table-component#swap-field" class="text-blue-600 hover:underline text-sm">
-            Подробнее о поле типа swap &rarr;
-          </NuxtLink>
-          
-          <NuxtLink to="/docs/form-component#simple-select-field" class="text-blue-600 hover:underline text-sm ml-3">
-            Подробнее о поле типа simple_select &rarr;
-          </NuxtLink>
-        </div>
-      </div>
-      
       <div class="bg-emerald-50 p-4 rounded-md shadow mb-4">
         <h3 class="text-lg font-semibold mb-2 text-emerald-800 flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

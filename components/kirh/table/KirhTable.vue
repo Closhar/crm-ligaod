@@ -181,12 +181,6 @@
                 :disabled="isResetDisabled"
                 @click="resetAllFilters"
             >
-              <svg class="h-3.5 w-3.5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    stroke-linecap="round" stroke-linejoin="round"
-                    stroke-width="2"/>
-              </svg>
               {{ tableOptions.resetFiltersLabel || 'Сбросить' }}
             </button>
           </div>
@@ -662,6 +656,27 @@
                     </div>
                   </template>
 
+                  <template v-else-if="column.type === 'parse_table'">
+                    <div class="w-full">
+                      <ParseTableField
+                        :value="row[column.name]"
+                        :error="null"
+                        :options="column.options"
+                        :row="row"
+                        @refresh="fetchData"
+                      />
+                    </div>
+                  </template>
+
+                  <template v-else-if="column.type === 'hidden'">
+                    <!-- Hidden поля не отображаются в таблице, но сохраняются в rowData -->
+                    <input 
+                      type="hidden" 
+                      :value="row[column.name]"
+                      @input="(e) => handleHiddenChange(row, column.name, e.target.value)"
+                    />
+                  </template>
+
                   <template v-else>
                     <component
                         :is="getFieldComponent(column.type)"
@@ -915,6 +930,7 @@ import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
 import KirhSwapField from './fields/KirhSwapField.vue';
 import RichTextEditor from "./editor/RichTextEditor.vue";
+import ParseTableField from './fields/ParseTableField.vue'
 
 export default {
   name: 'KirhTable',
@@ -930,6 +946,7 @@ export default {
     KirhTableForm,
     KirhSwapField,
     RichTextEditor,
+    ParseTableField,
   },
   props: {
     apiUrl: {
@@ -1067,7 +1084,9 @@ export default {
         image: KirhImageField,
         hasmany: KirhHasManyField,
         swap: KirhSwapField,
-        rel_value: KirhTextField // Используем KirhTextField как базовый компонент
+        rel_value: KirhTextField,
+        parse_table: ParseTableField,
+        hidden: KirhTextField, // Добавляем поддержку hidden полей
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1592,6 +1611,14 @@ export default {
           ...props.additionalParams,
           ...filterParams
         });
+
+        // Добавляем api_params из tableOptions, если они есть
+        if (props.tableOptions.api_params) {
+          const apiParams = new URLSearchParams(props.tableOptions.api_params);
+          for (const [key, value] of apiParams.entries()) {
+            queryParams.set(key, value);
+          }
+        }
 
         const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
         const data = await response.json();
@@ -2360,6 +2387,11 @@ export default {
       }
     };
 
+    const handleHiddenChange = (row, fieldName, value) => {
+      row[fieldName] = value;
+      updateValue(row, fieldName, value);
+    };
+
     return {
       tableData,
       loading,
@@ -2469,6 +2501,7 @@ export default {
       openDeleteConfirmationModal,
       closeDeleteConfirmationModal,
       confirmBulkDelete,
+      handleHiddenChange, // Добавляем новый метод в возвращаемый объект
     };
   }
 };

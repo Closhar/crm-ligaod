@@ -236,6 +236,17 @@
     >
       <Icon :name="isFullscreen ? 'ph:arrows-in' : 'ph:arrows-out'" size="20"/>
     </button>
+
+    <button
+        v-if="editor"
+        class="p-2 rounded hover:bg-gray-200 text-red-600"
+        title="Очистить контент"
+        type="button"
+        @click="$emit('clear-content')"
+    >
+      <Icon name="ph:trash" size="20"/>
+    </button>
+
     <button
         v-if="editor"
         :disabled="!editor.can().undo()"
@@ -272,7 +283,8 @@ const emit = defineEmits([
   'toggle-fullscreen',
   'toggle-source',
   'show-link-modal',
-  'show-ai-modal'
+  'show-ai-modal',
+  'clear-content'
 ])
 
 const showColorPicker = ref(false)

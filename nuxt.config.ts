@@ -15,6 +15,7 @@ export default defineNuxtConfig({
             API_URL: process.env.NUXT_PUBLIC_API_URL,
             apiBase: process.env.NUXT_PUBLIC_API_URL,
             SITE_URL: process.env.NUXT_SITE_URL,
+            VK_TOKEN: process.env.NUXT_PUBLIC_VK_TOKEN,
         }
     },
     // @ts-ignore

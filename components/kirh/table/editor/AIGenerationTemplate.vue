@@ -60,6 +60,36 @@
           </p>
         </div>
 
+        <!-- Параметры форматирования -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Формат вывода
+            </label>
+            <select
+              v-model="format"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              <option value="markdown">Markdown</option>
+              <option value="html">HTML</option>
+              <option value="plain">Текст</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Максимальная длина контента
+            </label>
+            <input
+              type="number"
+              v-model="maxContentLength"
+              min="500"
+              max="10000"
+              step="500"
+              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            />
+          </div>
+        </div>
+
         <!-- Основные табы -->
         <div class="mb-4 bg-white rounded-lg border border-gray-300 shadow-sm">
           <div class="bg-gray-100 rounded-t-lg p-1 border-b border-gray-300">
@@ -177,79 +207,20 @@
                           Для работы с Telegram необходимо сбросить результаты работы с событиями
                         </p>
                       </div>
+                      
                       <div v-else>
-                        <div class="relative">
-                          <input
-                            type="text"
-                            v-model="searchQuery"
-                            @input="handleSearchInput"
-                            placeholder="Введите название канала..."
-                            class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                          />
-                          <!-- Индикатор загрузки -->
-                          <div v-if="isSearching" class="absolute right-3 top-2.5">
-                            <svg class="animate-spin h-5 w-5 text-purple-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                          </div>
-                          <!-- Результаты поиска -->
-                          <div v-if="searchResults.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                            <div
-                              v-for="channel in searchResults"
-                              :key="channel.id"
-                              @click="handleChannelSelect(channel)"
-                              class="px-4 py-2 hover:bg-purple-50 cursor-pointer"
-                            >
-                              <div class="font-medium">{{ channel.title }}</div>
-                              <div class="text-sm text-gray-500">{{ channel.username }}</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4 mt-4">
-                          <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                              Дата начала парсинга
-                            </label>
-                            <input
-                              type="date"
-                              v-model="parseStartDate"
-                              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
-                          </div>
-                          <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                              Количество сообщений
-                            </label>
-                            <input
-                              type="number"
-                              v-model="parseMessageCount"
-                              min="1"
-                              max="100"
-                              class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                            />
-                          </div>
-                        </div>
-
-                        <!-- Кнопка парсинга -->
-                        <div class="mt-4">
-                          <button
-                            @click="parseTelegramChannel"
-                            :disabled="isParsing || !parseChannelId || !parseStartDate"
-                            class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                          >
-                            <span v-if="isParsing" class="flex items-center">
-                              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Парсинг...
-                            </span>
-                            <span v-else>Начать парсинг</span>
-                          </button>
-                        </div>
+                        <TelegramParserGlobal
+                          v-if="activeTab === 'telegram'"
+                          @parsed="handleTelegramParsed"
+                          @reset="handleTelegramReset"
+                          @update:content="handleContentUpdate"
+                          @update:modelValue="handleContentUpdate"
+                          @input="handleContentUpdate"
+                          ref="telegramParser"
+                          v-model="parsedTelegramContent"
+                        />
                       </div>
+
                     </div>
 
                     <!-- Кнопки после парсинга -->
@@ -308,6 +279,7 @@
                         <div>
                           <h4 class="text-sm font-medium text-gray-900 mb-2">Работа с Telegram</h4>
                           <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
+                            <li>Перед началом работы убедитесь, что нужный канал добавлен в таблицу "Каналы для парсинга" в административной панели</li>
                             <li>Введите название канала в поле поиска</li>
                             <li>Выберите канал из результатов поиска</li>
                             <li>Укажите дату начала парсинга и количество сообщений</li>
@@ -395,6 +367,19 @@
                       class="text-left p-3 border border-gray-200 rounded-md hover:bg-purple-50 hover:border-purple-200 transition-colors"
                     >
                       <div class="font-medium text-blue-600 mb-1">{{ template.title }}</div>
+                      <div class="text-sm text-gray-600 line-clamp-2">{{ template.prompt }}</div>
+                    </button>
+                  </template>
+
+                  <!-- Шаблоны для внешних статей -->
+                  <template v-if="activePromptTab === 'external'">
+                    <button
+                      v-for="(template, index) in externalTemplates"
+                      :key="index"
+                      @click="insertTemplate(template.prompt, template.type)"
+                      class="text-left p-3 border border-gray-200 rounded-md hover:bg-purple-50 hover:border-purple-200 transition-colors"
+                    >
+                      <div class="font-medium text-purple-700 mb-1">{{ template.title }}</div>
                       <div class="text-sm text-gray-600 line-clamp-2">{{ template.prompt }}</div>
                     </button>
                   </template>
@@ -620,6 +605,7 @@
 
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
+import TelegramParserGlobal from './TelegramParserGlobal.vue';
 
 const emit = defineEmits(['update:content']);
 const config = useRuntimeConfig();
@@ -629,7 +615,7 @@ const api = config.public.API_URL;
 interface PromptTemplate {
   title: string;
   prompt: string;
-  type: 'telegram' | 'events' | 'other';
+  type: 'telegram' | 'events' | 'other' | 'external';
 }
 
 // Шаблоны промптов
@@ -641,7 +627,7 @@ const promptTemplates: PromptTemplate[] = [
   },
   {
     title: 'Анализ матча',
-    prompt: 'Проанализируй информацию о матче [НАЗВАНИЕ МАТЧА] из приложенного файла. Выдели ключевые моменты, статистику и важные события. Составь структурированный отчет с использованием эмодзи для выделения важных моментов. Включи информацию о счете, голевых моментах и тактических особенностях.',
+    prompt: 'Собери всю информацию о матче [НАЗВАНИЕ МАТЧА] из приложенного файла. Выдели ключевые моменты, статистику и важные события, интервью игроков и тренеров. Составь структурированный отчет с использованием эмодзи для выделения важных моментов. Включи информацию о счете, голевых моментах и тактических особенностях. Пиши художественным языком, чтобы вызывать интерес у читателя. Не пиши ничего лишнего, что не касается отчетного матча.',
     type: 'telegram'
   },
   {
@@ -723,6 +709,31 @@ const promptTemplates: PromptTemplate[] = [
     title: 'Статистический отчет',
     prompt: 'На основе информации из приложенного файла составь статистический отчет по всем спортивным событиям. Включи цифры, рекорды и интересные факты. Отформатируй текст для публикации в Telegram с использованием эмодзи, разделителей и структурированных блоков. Используй эмодзи для обозначения статистики, рекордов и интересных фактов.',
     type: 'events'
+  },
+  {
+    title: 'Переработка новости',
+    prompt: 'Перепиши статью из приложенного файла своими словами, сохраняя основной смысл и ключевые факты. Используй более простой и понятный язык, избегай сложных терминов. Добавь подзаголовки для лучшей структуры. Сделай текст более живым и интересным для читателя. Сохрани все важные цифры, даты и имена.',
+    type: 'external'
+  },
+  {
+    title: 'Адаптация для соцсетей',
+    prompt: 'Переработай статью из приложенного файла в формат, подходящий для социальных сетей. Разбей текст на короткие абзацы, добавь эмодзи для выделения важных моментов. Сделай акцент на самом интересном и важном. Используй более разговорный стиль, но сохрани профессионализм. Добавь призыв к действию в конце.',
+    type: 'external'
+  },
+  {
+    title: 'Расширенный анализ',
+    prompt: 'На основе статьи из приложенного файла создай подробный аналитический материал. Добавь свой анализ ситуации, возможные последствия и прогнозы. Используй цитаты из оригинальной статьи, но перефразируй их. Структурируй текст с помощью подзаголовков и маркированных списков. Сохрани все факты, но представь их в более глубоком контексте.',
+    type: 'external'
+  },
+  {
+    title: 'Краткая версия',
+    prompt: 'Создай краткую версию статьи из приложенного файла, сохранив только самое важное. Используй простой и понятный язык. Выдели главную мысль в начале. Опусти второстепенные детали, но сохрани все ключевые факты, цифры и имена. Сделай текст более динамичным и легким для чтения.',
+    type: 'external'
+  },
+  {
+    title: 'Профессиональный обзор',
+    prompt: 'Переработай статью из приложенного файла в профессиональный обзор. Используй специальную терминологию, но объясняй сложные понятия. Добавь технические детали и профессиональный анализ. Сохрани все факты, но представь их с точки зрения эксперта. Структурируй текст по разделам с четкими подзаголовками.',
+    type: 'external'
   }
 ];
 
@@ -736,7 +747,7 @@ const searchQuery = ref('');
 const searchResults = ref<ParseChannel[]>([]);
 const isSearching = ref(false);
 const selectedParseChannel = ref<ParseChannel | null>(null);
-const activeTemplateType = ref<'telegram' | 'events' | 'other' | null>(null);
+const activeTemplateType = ref<'telegram' | 'events' | 'other' | 'external' | null>(null);
 
 // Интерфейс для канала парсинга
 interface ParseChannel {
@@ -764,7 +775,7 @@ interface TelegramApiResponse {
 // Функция вставки шаблона
 const insertTemplate = (template: string, type: string) => {
   aiPrompt.value = template;
-  activeTemplateType.value = type as 'telegram' | 'events' | 'other';
+  activeTemplateType.value = type as 'telegram' | 'events' | 'other' | 'external';
 };
 
 // Функция поиска каналов
@@ -837,11 +848,6 @@ const useParsedContentForAI = async () => {
 const uploadFile = async (file: File): Promise<string> => {
   const config = useRuntimeConfig();
   const api = config.public.API_URL;
-  const token = localStorage.getItem('token');
-
-  if (!token) {
-    throw new Error('Требуется авторизация для загрузки файла');
-  }
 
   if (!file) {
     throw new Error('Файл не найден');
@@ -855,8 +861,7 @@ const uploadFile = async (file: File): Promise<string> => {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Authorization': `Bearer ${token}`
+        'X-Requested-With': 'XMLHttpRequest'
       },
       body: formData
     });
@@ -867,6 +872,7 @@ const uploadFile = async (file: File): Promise<string> => {
     }
 
     const result = await response.json();
+
     if (!result.success) {
       throw new Error(result.message || 'Ошибка при загрузке файла');
     }
@@ -884,12 +890,6 @@ const uploadFile = async (file: File): Promise<string> => {
 
 // Модифицируем функцию парсинга канала
 const parseTelegramChannel = async () => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    alert('Требуется авторизация. Пожалуйста, войдите в систему.');
-    return;
-  }
-
   if (!parseChannelId.value) {
     alert('Пожалуйста, выберите канал для парсинга');
     return;
@@ -908,19 +908,16 @@ const parseTelegramChannel = async () => {
   try {
     isParsing.value = true;
 
-    // Запрос на получение сообщений
     const response = await fetch(`${api}/api/telegram/messages/fetch?channel_id=${parseChannelId.value}&date_from=${parseStartDate.value}&limit=${parseMessageCount.value}`, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Authorization': `Bearer ${token}`
+        'X-Requested-With': 'XMLHttpRequest'
       }
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Ошибка при получении сообщений: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const result = await response.json() as TelegramApiResponse;
@@ -971,12 +968,6 @@ const parseTelegramChannel = async () => {
       }
       promptFile.value = file;
       
-      // Проверяем токен перед загрузкой файла
-      const currentToken = localStorage.getItem('token');
-      if (!currentToken) {
-        throw new Error('Токен авторизации не найден');
-      }
-      
       // Загружаем файл и получаем его ID
       uploadedFileId.value = await uploadFile(file);
       
@@ -1012,6 +1003,8 @@ const promptFile = ref<File | null>(null);
 const lastGenerationInfo = ref<GenerationInfo | null>(null);
 const uploadedFileId = ref<string | null>(null);
 const isFilePrepared = ref(false);
+const format = ref('markdown');
+const maxContentLength = ref(3000);
 
 // Интерфейс для информации о генерации
 interface GenerationInfo {
@@ -1160,18 +1153,11 @@ const generateContent = async () => {
       prompt: aiPrompt.value,
       model: selectedModel.value,
       use_cache: useCache.value,
-      format: 'plain'
+      format: format.value,
+      max_content_length: maxContentLength.value,
+      url: aiUrl.value.trim() || '',
+      file_id: uploadedFileId.value || ''
     };
-
-    // Добавляем URL только если он указан
-    if (aiUrl.value.trim()) {
-      requestBody.url = aiUrl.value.trim();
-    }
-
-    // Добавляем file_id если есть загруженный файл
-    if (uploadedFileId.value) {
-      requestBody.file_id = uploadedFileId.value;
-    }
 
     // Отправляем запрос на генерацию
     const response = await fetch(`${api}/api/ai/generate`, {
@@ -1246,7 +1232,8 @@ const activePromptTab = ref('events');
 // Определяем табы для шаблонов
 const promptTabs = [
   { id: 'events', name: 'Для событий' },
-  { id: 'telegram', name: 'Для Telegram' }
+  { id: 'telegram', name: 'Для Telegram' },
+  { id: 'external', name: 'Для внешней статьи' }
 ];
 
 // Фильтруем шаблоны для событий
@@ -1257,6 +1244,11 @@ const eventTemplates = computed(() => {
 // Фильтруем шаблоны для Telegram
 const telegramTemplates = computed(() => {
   return promptTemplates.filter(template => template.type === 'telegram');
+});
+
+// Фильтруем шаблоны для внешних статей
+const externalTemplates = computed(() => {
+  return promptTemplates.filter(template => template.type === 'external');
 });
 
 // Добавляем состояние для основных табов
@@ -1270,15 +1262,10 @@ const mainTabs = [
 
 // Добавляем функцию сброса парсинга Telegram
 const resetTelegramParsing = () => {
-  parsedTelegramContent.value = '';
-  uploadedFileId.value = null;
-  promptFile.value = null;
-  isFilePrepared.value = false;
-  searchQuery.value = '';
-  parseChannelId.value = '';
-  parseStartDate.value = new Date().toISOString().split('T')[0];
-  parseMessageCount.value = 20;
-  selectedParseChannel.value = null;
+  if (telegramParser.value) {
+    telegramParser.value.reset();
+  }
+  handleTelegramReset();
 };
 
 // Добавляем функцию сброса для событий
@@ -1288,4 +1275,29 @@ const resetEvents = () => {
   promptFile.value = null;
   aiSelectedDate.value = '';
 };
+
+// Обработчик обновления контента
+const handleContentUpdate = (content: string) => {
+  parsedTelegramContent.value = content;
+  emit('update:content', content);
+};
+
+// Обработчик результата парсинга Telegram
+const handleTelegramParsed = (result: { content: string; fileId: string }) => {
+  parsedTelegramContent.value = result.content;
+  uploadedFileId.value = result.fileId;
+  isFilePrepared.value = true;
+  emit('update:content', result.content);
+};
+
+// Обработчик сброса парсинга Telegram
+const handleTelegramReset = () => {
+  parsedTelegramContent.value = '';
+  uploadedFileId.value = null;
+  promptFile.value = null;
+  isFilePrepared.value = false;
+};
+
+// Ссылка на компонент парсера
+const telegramParser = ref<InstanceType<typeof TelegramParserGlobal> | null>(null);
 </script> 

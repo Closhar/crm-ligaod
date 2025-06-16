@@ -1202,6 +1202,9 @@ const extraFields = ref([
         imageQuality: 0.8,
         check_empty: true,
         empty_class: 'bg-red-400 hover:bg-red-300',
+        telegram_parse: true,
+        parse_own_telegram: true,
+        telegrams_field: 'telegram_parse'
       }
     },
     {
@@ -1225,6 +1228,9 @@ const extraFields = ref([
         imageQuality: 0.8,
         check_empty: true,
         empty_class: 'bg-red-400 hover:bg-red-300',
+        telegram_parse: true,
+        parse_own_telegram: true,
+        telegrams_field: 'telegram_parse'
       }
     },
     {
@@ -1289,7 +1295,7 @@ const extraFields = ref([
                 type: 'text',
                 options: {
                   formColumnClass: 'col-span-12',
-                  pasteFromClipboard: true,
+                pasteFromClipboard: true,
                 }
               },
               {

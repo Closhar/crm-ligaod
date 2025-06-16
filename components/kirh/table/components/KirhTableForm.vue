@@ -321,6 +321,15 @@
                     {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
                   </span>
                 </label>
+
+                <!-- Hidden поле -->
+                <template v-else-if="column.type === 'hidden'">
+                  <input 
+                    type="hidden" 
+                    v-model="formData[column.name]"
+                    :name="column.name"
+                  />
+                </template>
               </div>
 
               <!-- Вывод ошибки для поля -->
@@ -618,6 +627,15 @@
                         {{ formData[column.name] ? column.options.toggleLabel.on : column.options.toggleLabel.off }}
                       </span>
                     </label>
+
+                    <!-- Hidden поле -->
+                    <template v-else-if="column.type === 'hidden'">
+                      <input 
+                        type="hidden" 
+                        v-model="formData[column.name]"
+                        :name="column.name"
+                      />
+                    </template>
                   </div>
 
                   <!-- Вывод ошибки для поля -->
