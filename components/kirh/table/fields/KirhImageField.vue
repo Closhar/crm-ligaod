@@ -179,6 +179,7 @@ try {
   config = null;
 }
 
+
 export default {
   name: 'KirhImageField',
   props: {
@@ -662,13 +663,21 @@ export default {
           }
         }
 
-        const apiUrl = `https://api.vk.com/method/video.get?videos=${ownerId}_${videoId}&access_token=${vkToken}&v=5.131`;
-        const response = await fetch(apiUrl, {
-          method: 'GET',
+        // Получаем базовый URL из конфигурации
+        const baseUrl = config.public.API_URL;
+        
+        // Отправляем запрос через бэкенд
+        const response = await fetch(`${baseUrl}/api/vk/video-preview`, {
+          method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            ownerId,
+            videoId,
+            vkToken
+          })
         });
 
         if (!response.ok) {
@@ -725,13 +734,16 @@ export default {
 
         const videoId = videoIdMatch[1];
 
-        // Используем прокси-сервер для обхода CORS
-        const response = await fetch(`https://rutube.ru/api/video/${videoId}/`, {
-          method: 'GET',
+        // Отправляем запрос через бэкенд
+        const response = await fetch(`${config.public.API_URL}/api/rutube/video-preview`, {
+          method: 'POST',
           headers: {
-            'Accept': 'application/json',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            videoId
+          })
         });
 
         if (!response.ok) {
