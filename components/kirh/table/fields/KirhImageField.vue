@@ -584,7 +584,41 @@ export default {
           !urlInput.value.includes('youtube.com') &&
           !urlInput.value.includes('youtu.be')
         ) {
-          imageUrl = urlInput.value;
+          // Отправляем запрос через бэкенд
+          const response = await fetch(`${config.public.API_URL}/api/image-proxy`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+              url: urlInput.value
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Ошибка загрузки изображения');
+          }
+
+          const blob = await response.blob();
+          const file = new File([blob], 'downloaded-image.jpg', {
+            type: blob.type,
+            lastModified: Date.now()
+          });
+
+          // Обработка изображения если включена
+          let processedFile = file;
+          if (props.options.resize?.enabled) {
+            processedFile = await processImage(file);
+          }
+
+          clearError();
+          emit('update:modelValue', processedFile);
+          emit('change', processedFile);
+          showUrlInput.value = false;
+          urlInput.value = '';
+          isImageLoading.value = false;
+          return;
         }
 
         // Скачивание изображения
