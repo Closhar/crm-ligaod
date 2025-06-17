@@ -583,7 +583,7 @@ export default {
           !urlInput.value.includes('youtube.com') &&
           !urlInput.value.includes('youtu.be')
         ) {
-          imageUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
+          imageUrl = urlInput.value;
         }
 
         // Скачивание изображения
@@ -663,8 +663,7 @@ export default {
         }
 
         const apiUrl = `https://api.vk.com/method/video.get?videos=${ownerId}_${videoId}&access_token=${vkToken}&v=5.131`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
-        const response = await fetch(proxyUrl, {
+        const response = await fetch(apiUrl, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -727,9 +726,7 @@ export default {
         const videoId = videoIdMatch[1];
 
         // Используем прокси-сервер для обхода CORS
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://rutube.ru/api/video/${videoId}/`)}`;
-        
-        const response = await fetch(proxyUrl, {
+        const response = await fetch(`https://rutube.ru/api/video/${videoId}/`, {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
