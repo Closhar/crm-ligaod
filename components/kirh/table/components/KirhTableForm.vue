@@ -254,6 +254,18 @@
                     @format="(e) => e.preventDefault()"
                 />
 
+                <!-- AI Генерация поле -->
+                <AIGenField
+                    v-else-if="column.type === 'aigen'"
+                    v-model="formData[column.name]"
+                    :required="column.required"
+                    :readonly="column.options?.readonly || formOptions.readonly"
+                    :options="column.options"
+                    :row-data="formData"
+                    :class="['w-full', column.options?.inputClass]"
+                    @update:modelValue="(val) => handleFieldInput(column.name, val)"
+                />
+
                 <!-- Select поле (компонент KirhSelectField) -->
                 <KirhSelectField
                     v-else-if="column.type === 'select'"
@@ -558,6 +570,18 @@
                           quality: column.options.imageQuality || 0.8
                         }"
                         @format="(e) => e.preventDefault()"
+                    />
+
+                    <!-- AI Генерация поле -->
+                    <AIGenField
+                        v-else-if="column.type === 'aigen'"
+                        v-model="formData[column.name]"
+                        :required="column.required"
+                        :readonly="column.options?.readonly || formOptions.readonly"
+                        :options="column.options"
+                        :row-data="formData"
+                        :class="['w-full', column.options?.inputClass]"
+                        @update:modelValue="(val) => handleFieldInput(column.name, val)"
                     />
 
                     <!-- Select поле (компонент KirhSelectField) -->
@@ -1031,6 +1055,7 @@ import KirhSelectField from './../fields/KirhSelectField.vue';
 import RichTextEditor from "~/components/kirh/table/editor/RichTextEditor.vue";
 import { useRuntimeConfig } from '#app';
 import { transliterate } from '~/utils/transliterate';
+import AIGenField from '../fields/AIGenField.vue';
 
 const props = defineProps({
   apiUrl: {

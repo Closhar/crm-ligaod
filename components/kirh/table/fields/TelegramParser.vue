@@ -539,6 +539,28 @@ const templateForm = ref({
   prompt: ''
 })
 
+// Добавляем кэширование для шаблонов
+const templatesCache = ref<{
+  data: Template[] | null;
+  timestamp: number;
+  loading: boolean;
+}>({
+  data: null,
+  timestamp: 0,
+  loading: false
+})
+
+// Время жизни кэша в миллисекундах (5 минут)
+const CACHE_DURATION = 5 * 60 * 1000
+
+// Глобальное кэширование шаблонов для всех экземпляров компонента
+const globalTemplatesCache = {
+  data: null as Template[] | null,
+  timestamp: 0,
+  loading: false,
+  promise: null as Promise<Template[]> | null
+}
+
 // Методы
 const closeModal = () => {
   emit('close')
@@ -843,16 +865,78 @@ watch(() => props.showModal, (newValue) => {
   }
 })
 
-// Загрузка шаблонов
+// Загрузка шаблонов с кэшированием
 const loadTemplates = async () => {
+  const now = Date.now()
+  
+  // Проверяем глобальный кэш
+  if (globalTemplatesCache.data && 
+      (now - globalTemplatesCache.timestamp) < CACHE_DURATION) {
+    templates.value = globalTemplatesCache.data
+    return
+  }
+  
+  // Если уже идет загрузка, ждем завершения
+  if (globalTemplatesCache.loading && globalTemplatesCache.promise) {
+    try {
+      const data = await globalTemplatesCache.promise
+      templates.value = data
+      return
+    } catch (error) {
+      // Если глобальный запрос завершился с ошибкой, делаем локальный
+      console.warn('Глобальный запрос шаблонов завершился с ошибкой, делаем локальный запрос')
+    }
+  }
+  
+  // Проверяем локальный кэш
+  if (templatesCache.value.data && 
+      (now - templatesCache.value.timestamp) < CACHE_DURATION) {
+    templates.value = templatesCache.value.data
+    return
+  }
+  
+  // Если уже идет локальная загрузка, не делаем повторный запрос
+  if (templatesCache.value.loading) {
+    return
+  }
+  
+  templatesCache.value.loading = true
+  globalTemplatesCache.loading = true
+  
+  // Создаем промис для глобального кэша
+  const fetchPromise = (async () => {
+    try {
+      const response = await fetch(`${api}/api/prompt-templates`)
+      if (!response.ok) throw new Error('Ошибка загрузки шаблонов')
+      const data = await response.json()
+      
+      // Обновляем глобальный кэш
+      globalTemplatesCache.data = data.data
+      globalTemplatesCache.timestamp = now
+      
+      return data.data
+    } catch (error) {
+      throw error
+    } finally {
+      globalTemplatesCache.loading = false
+      globalTemplatesCache.promise = null
+    }
+  })()
+  
+  globalTemplatesCache.promise = fetchPromise
+  
   try {
-    const response = await fetch(`${api}/api/prompt-templates`)
-    if (!response.ok) throw new Error('Ошибка загрузки шаблонов')
-    const data = await response.json()
-    templates.value = data.data
+    const data = await fetchPromise
+    
+    // Обновляем локальный кэш
+    templatesCache.value.data = data
+    templatesCache.value.timestamp = now
+    templates.value = data
   } catch (error) {
     showError('Ошибка при загрузке шаблонов')
     console.error(error)
+  } finally {
+    templatesCache.value.loading = false
   }
 }
 
@@ -893,6 +977,11 @@ const saveTemplate = async () => {
 
     if (!response.ok) throw new Error('Ошибка сохранения шаблона')
     
+    // Инвалидируем кэши и перезагружаем шаблоны
+    templatesCache.value.data = null
+    templatesCache.value.timestamp = 0
+    globalTemplatesCache.data = null
+    globalTemplatesCache.timestamp = 0
     await loadTemplates()
     closeTemplateModal()
     showSuccess('Шаблон успешно сохранен')
@@ -913,6 +1002,11 @@ const deleteTemplate = async (template: Template) => {
 
     if (!response.ok) throw new Error('Ошибка удаления шаблона')
     
+    // Инвалидируем кэши и перезагружаем шаблоны
+    templatesCache.value.data = null
+    templatesCache.value.timestamp = 0
+    globalTemplatesCache.data = null
+    globalTemplatesCache.timestamp = 0
     await loadTemplates()
     showSuccess('Шаблон успешно удален')
   } catch (error) {
@@ -921,8 +1015,25 @@ const deleteTemplate = async (template: Template) => {
   }
 }
 
-// Загружаем шаблоны при монтировании компонента
+// Загружаем шаблоны при монтировании компонента только если модальное окно открыто
 onMounted(() => {
-  loadTemplates()
+  // Не загружаем шаблоны автоматически при монтировании
+  // Они будут загружены только при открытии модального окна или переходе на вкладку шаблонов
+})
+
+// Добавляем наблюдатель за открытием модального окна
+watch(() => props.showModal, (newValue) => {
+  if (newValue) {
+    // Загружаем шаблоны только при открытии модального окна
+    loadTemplates()
+  }
+})
+
+// Добавляем наблюдатель за переключением на вкладку шаблонов
+watch(() => activeMainTab.value, (newValue) => {
+  if (newValue === 'templates') {
+    // Загружаем шаблоны только при переходе на вкладку шаблонов
+    loadTemplates()
+  }
 })
 </script> 

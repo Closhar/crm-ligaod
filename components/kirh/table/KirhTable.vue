@@ -687,10 +687,10 @@
                         v-model="row[column.name]"
                         :row-data="row"
                         :api-url="apiUrl"
-                        @blur="handleBlur(row, column.name)"
-                        @input="updateValue(row, column.name, $event)"
-                        @change="updateValue(row, column.name, $event)"
-                        @keyup.enter="handleBlur(row, column.name)"
+                        @blur="column.type === 'aigen' ? handleAigenBlur(row, column.name, $event) : handleBlur(row, column.name)"
+                        @input="column.type === 'aigen' ? null : updateValue(row, column.name, $event)"
+                        @change="column.type === 'aigen' ? null : updateValue(row, column.name, $event)"
+                        @keyup.enter="column.type === 'aigen' ? null : handleBlur(row, column.name)"
                         @click="handleCellClick(row, column)"
                     />
                   </template>
@@ -931,6 +931,7 @@ import KirhTableForm from './components/KirhTableForm.vue';
 import KirhSwapField from './fields/KirhSwapField.vue';
 import RichTextEditor from "./editor/RichTextEditor.vue";
 import ParseTableField from './fields/ParseTableField.vue'
+import AIGenField from './fields/AIGenField.vue'
 
 export default {
   name: 'KirhTable',
@@ -947,6 +948,7 @@ export default {
     KirhSwapField,
     RichTextEditor,
     ParseTableField,
+    AIGenField,
   },
   props: {
     apiUrl: {
@@ -1087,6 +1089,7 @@ export default {
         rel_value: KirhTextField,
         parse_table: ParseTableField,
         hidden: KirhTextField, // Добавляем поддержку hidden полей
+        aigen: AIGenField, // Добавляем поддержку AI генерации
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1435,6 +1438,70 @@ export default {
       } catch (err) {
         error.value = err.message;
         console.error('Ошибка при сохранении:', err);
+      }
+    };
+
+    // Обработчик события blur для полей типа aigen
+    const handleAigenBlur = async (row, fieldName, event) => {
+      try {
+        // Получаем значение из события blur
+        const value = event || row[fieldName];
+        
+        const column = allFields.value.find(col => col.name === fieldName);
+
+        if (column?.validate) {
+          const validationResult = column.validate(value);
+          if (typeof validationResult === 'string') {
+            throw new Error(validationResult);
+          }
+          if (validationResult === false) {
+            throw new Error('Недопустимое значение');
+          }
+        }
+
+        // Проверяем, нужно ли проверять свежесть значения и не была ли уже проверка
+        if (column?.checkFreshness && !isFreshnessChecked.value) {
+          // Сохраняем текущую ячейку
+          currentCell.value = { row, column };
+          
+          const response = await fetch(`${props.apiUrl}/${row.id}/check-freshness?field=${fieldName}&value=${encodeURIComponent(value || '')}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const data = await response.json();
+
+          if (!data.is_fresh) {
+            // Показываем модальное окно с выбором действия
+            serverValue.value = data.server_value;
+            updatedAt.value = data.updated_at;
+            showFreshnessModal.value = true;
+            return;
+          }
+        }
+
+        const response = await fetch(`${props.apiUrl}/${row.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({[fieldName]: value})
+        });
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        // Обновляем значение в row
+        row[fieldName] = value;
+        
+        await fetchData();
+        isFreshnessChecked.value = false; // Сбрасываем флаг после успешного сохранения
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка при сохранении AI поля:', err);
       }
     };
 
@@ -2450,6 +2517,7 @@ export default {
       updateValue,
       isFieldEditable,
       handleBlur,
+      handleAigenBlur,
       handleSelectChange,
       openInlineSelect,
       handleClickOutside,
