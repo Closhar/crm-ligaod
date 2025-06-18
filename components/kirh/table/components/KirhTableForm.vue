@@ -1396,8 +1396,10 @@ const pasteFromClipboard = async (fieldName) => {
     if (column?.options?.pasteFromClipboard?.transform) {
       // Если задана функция преобразования, применяем её
       try {
+        // Убеждаемся, что text является строкой
+        const textString = typeof text === 'string' ? text : String(text || '');
         const transformFn = new Function('text', column.options.pasteFromClipboard.transform);
-        const transformedText = transformFn(text);
+        const transformedText = transformFn(textString);
         formData.value[fieldName] = transformedText;
       } catch (e) {
         console.error('Ошибка при преобразовании текста из буфера:', e);

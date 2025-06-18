@@ -237,7 +237,10 @@ const displayValue = computed(() => {
 
 const telegramsValue = computed(() => {
   // Получаем значение из API
-  const apiValue = props.rowData?.about?.match(/telegram_parse:\s*([^\n]+)/)?.[1]?.trim();
+  const aboutValue = props.rowData?.about;
+  const apiValue = typeof aboutValue === 'string' 
+    ? aboutValue.match(/telegram_parse:\s*([^\n]+)/)?.[1]?.trim()
+    : null;
   
   if (apiValue) {
     // Сохраняем значение в rowData

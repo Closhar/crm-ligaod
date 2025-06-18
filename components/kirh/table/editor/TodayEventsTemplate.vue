@@ -108,7 +108,7 @@ const loadTodayEvents = async () => {
         }
         if (event.arena) {
           homeTemplate += `📍 ${event.arena.title}\n`;
-          if (event.arena.map) {
+          if (event.arena.map && typeof event.arena.map === 'string') {
             const mapUrl = event.arena.map.match(/src="([^"]+)"/)?.[1];
             if (mapUrl) {
               homeTemplate += `🗺 [Открыть на карте](${mapUrl})\n`;
