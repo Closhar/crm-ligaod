@@ -314,6 +314,29 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'parse_table_id',
+      label: '',
+      displayLabel: 'таблица турнира',
+      title_icon: 'fluent:table-lightning-28-regular',
+      type: 'parse_table',
+      width: '60px',
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold bg-gray-600 rounded h-8 text-gray-50 border px-1 w-full',
+        hint: 'таблица турнира',
+        apiUrl: api + '/api/parse-tables',
+        searchField: 'title',
+        valueField: 'id',
+        displayField: 'title',
+        displayValueField: 'parse_table_id',
+        displayTitleField: 'parse_table.title',
+        saveValueField: 'id',
+        tableName: 'parse_tables',
+        apiEndpoint: '/api/parse-tables',
+        simple_view:true
+      }
+    },
+    {
       name: 'series_id',
       label: 'серия',
       title_icon: 'i-fluent-mdl2:chart-series',

@@ -931,6 +931,7 @@ import KirhTableForm from './components/KirhTableForm.vue';
 import KirhSwapField from './fields/KirhSwapField.vue';
 import RichTextEditor from "./editor/RichTextEditor.vue";
 import ParseTableField from './fields/ParseTableField.vue'
+import ParseTableLockField from './fields/ParseTableLockField.vue'
 import AIGenField from './fields/AIGenField.vue'
 
 export default {
@@ -948,6 +949,7 @@ export default {
     KirhSwapField,
     RichTextEditor,
     ParseTableField,
+    ParseTableLockField,
     AIGenField,
   },
   props: {
@@ -1088,6 +1090,7 @@ export default {
         swap: KirhSwapField,
         rel_value: KirhTextField,
         parse_table: ParseTableField,
+        parse_table_lock: ParseTableLockField,
         hidden: KirhTextField, // Добавляем поддержку hidden полей
         aigen: AIGenField, // Добавляем поддержку AI генерации
       };

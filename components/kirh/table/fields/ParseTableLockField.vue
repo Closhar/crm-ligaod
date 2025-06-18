@@ -2,16 +2,15 @@
   <div class="relative">
     <!-- Отображаемое значение в ячейке -->
     <div
-      @click="(!options.simple_view || displayValue) ? openModal() : null"
+      @click="openModal"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       :class="[
         options.cellClass,
-        'min-h-[2rem] flex items-center transition-colors',
+        'cursor-pointer min-h-[2rem] flex items-center transition-colors',
         displayValue
           ? 'bg-blue-800 text-gray-50 hover:text-gray-200'
-          : 'bg-red-100 text-gray-950 hover:text-gray-800',
-        options.simple_view && !displayValue ? 'cursor-default' : 'cursor-pointer'
+          : 'bg-red-100 text-gray-950 hover:text-gray-800'
       ]"
     >
       {{ displayValue || 'нет' }}
@@ -138,7 +137,7 @@
           </div>
 
           <!-- Поле поиска -->
-          <div v-if="!options.simple_view" class="relative mb-4">
+          <div class="relative mb-4">
             <input
               type="text"
               v-model="searchQuery"
@@ -164,7 +163,7 @@
           </div>
 
           <!-- Кнопки управления -->
-          <div v-if="!options.simple_view" class="flex justify-end gap-2 mb-4">
+          <div class="flex justify-end gap-2 mb-4">
             <button
               class="px-4 py-2 text-gray-600 hover:text-gray-800 flex items-center gap-2 text-lg"
               @click="closeModal"
@@ -372,7 +371,7 @@
           </div>
 
           <!-- Форма создания новой таблицы -->
-          <div v-if="!selectedValue && !options.simple_view" class="mb-4 p-4 bg-gray-50 rounded-lg">
+          <div v-else class="mb-4 p-4 bg-gray-50 rounded-lg">
             <h4 class="text-lg font-medium text-gray-900 mb-4">Или добавьте и спарсите новую таблицу</h4>
             <div class="space-y-4">
               <div class="grid grid-cols-[1fr,auto] gap-4 items-end">
@@ -418,16 +417,6 @@
 
         <!-- Кнопки -->
         <div class="p-4 border-t sticky bottom-0 bg-white z-10 flex justify-end gap-2">
-          <button
-            v-if="options.simple_view"
-            @click="closeModal"
-            class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 flex items-center gap-2 text-lg"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Закрыть
-          </button>
         </div>
       </div>
     </div>
@@ -639,7 +628,6 @@ const props = withDefaults(defineProps<{
     tableName?: string
     apiEndpoint?: string
     title?: string
-    simple_view?: boolean
   }
   row?: Record<string, any>
 }>(), {
@@ -812,9 +800,11 @@ const getNestedValue = (obj: any, path: string) => {
 // Загрузка содержимого таблицы
 const fetchTableContents = async (tableId: number) => {
   try {
+    console.log('Fetching table contents for ID:', tableId)
     const response = await fetch(`${api}/api/parse-table-contents?table_id=${tableId}&per_page=1000`)
     if (!response.ok) throw new Error('Ошибка при загрузке содержимого')
     const data = await response.json()
+    console.log('Received table contents:', data)
     
     if (data && Array.isArray(data.data)) {
       tableContents.value = data.data.map((item: any) => ({
@@ -831,6 +821,7 @@ const fetchTableContents = async (tableId: number) => {
         field9: item.field9 || '',
         field10: item.field10 || ''
       }))
+      console.log('Processed table contents:', tableContents.value)
     } else {
       console.error('Invalid data format received:', data)
       tableContents.value = []
@@ -845,9 +836,20 @@ const fetchTableContents = async (tableId: number) => {
 
 // Инициализация при монтировании
 onMounted(async () => {
+  console.log('Component mounted with value:', props.value)
+  console.log('Row data:', props.row)
+  console.log('Row data details:', {
+    id: props.row?.id,
+    title: props.row?.title,
+    title_short: props.row?.title_short,
+    all_fields: props.row
+  })
+  console.log('DisplayValueField:', props.options.displayValueField)
+  
   // Если есть значение в row, используем его
   if (props.row && props.options.displayValueField) {
     const fieldValue = props.row[props.options.displayValueField]
+    console.log('Using row field value:', fieldValue)
     displayValue.value = fieldValue || ''
   }
   // Если нет значения в row, но есть value, загружаем данные
@@ -855,9 +857,11 @@ onMounted(async () => {
     try {
       const response = await fetch(`${api}${props.options.apiEndpoint}/${props.value}`)
       const data = await response.json()
+      console.log('Initial data load:', data)
       
       if (data && data.id) {
         displayValue.value = data.id
+        console.log('Set initial display value:', displayValue.value)
       }
     } catch (error) {
       console.error('Error loading initial value:', error)
@@ -867,43 +871,23 @@ onMounted(async () => {
 
 // Открытие модального окна
 const openModal = () => {
-  showModal.value = true
+  console.log('Opening modal with value:', props.value)
+  console.log('API endpoint:', props.options.apiEndpoint)
+  console.log('Display field:', props.options.displayField)
   
-  // В режиме simple_view проверяем значение в row
-  if (props.options.simple_view && props.options.displayValueField && props.row) {
-    const fieldValue = props.row[props.options.displayValueField]
-    
-    if (fieldValue) {
-      // Загружаем данные по ID из row
-      const url = `${api}${props.options.apiEndpoint}/${fieldValue}`
-      
-      fetch(url)
-        .then(response => response.json())
-        .then(data => {
-          selectedValue.value = {
-            ...data,
-            url: data.url || '',
-            table_no: data.table_no || '',
-            last_parse_data: data.last_parse_data || null
-          }
-          // Загружаем содержимое таблицы
-          fetchTableContents(data.id)
-        })
-        .catch(error => {
-          console.error('Simple view: Error fetching data:', error)
-        })
-    }
-  }
-  // Обычный режим
-  else if (props.value) {
+  showModal.value = true
+  if (props.value) {
     // Загружаем данные по ID
     const url = `${api}${props.options.apiEndpoint}/${props.value}`
+    console.log('Fetching data from:', url)
     
     fetch(url)
       .then(response => response.json())
       .then(data => {
+        console.log('API response:', data)
         if (data && data.title) {
           const displayValue = data[props.options.displayField || 'title']
+          console.log('Setting search query to:', displayValue)
           searchQuery.value = displayValue
           selectedValue.value = {
             ...data,
@@ -914,6 +898,7 @@ const openModal = () => {
           // Загружаем содержимое таблицы
           fetchTableContents(data.id)
         } else {
+          console.error('Invalid data format:', data)
           searchQuery.value = ''
         }
       })
@@ -922,6 +907,7 @@ const openModal = () => {
         searchQuery.value = ''
       })
   } else {
+    console.log('No value provided, clearing search')
     searchQuery.value = ''
     selectedValue.value = null
     tableContents.value = []
@@ -938,10 +924,13 @@ const handleSearch = debounce(async () => {
 
   try {
     const url = `${api}${props.options.apiEndpoint}?q=${encodeURIComponent(searchQuery.value)}`
+    console.log('Searching with URL:', url)
     
     const response = await fetch(url)
     const data = await response.json()
+    console.log('Search results:', data)
     
+    // Проверяем наличие данных в пагинированном ответе
     if (data && Array.isArray(data.data)) {
       suggestions.value = data.data
       showSuggestions.value = true
@@ -958,25 +947,29 @@ const handleSearch = debounce(async () => {
 
 // Выбор значения из подсказок
 const selectSuggestion = async (suggestion: Suggestion) => {
+  console.log('Selected suggestion:', suggestion)
+  
   try {
     // Загружаем полные данные таблицы по ID
     const response = await fetch(`${api}${props.options.apiEndpoint}/${suggestion.id}`)
     if (!response.ok) throw new Error('Ошибка при загрузке данных таблицы')
     
     const tableData = await response.json()
+    console.log('Loaded table data:', tableData)
     
-    selectedValue.value = {
+  selectedValue.value = {
       ...tableData,
       url: tableData.url || '',
       table_no: tableData.table_no || '',
       last_parse_data: tableData.last_parse_data || null
-    }
+  }
     
     const displayValue = tableData[props.options.displayField || 'title']
-    searchQuery.value = displayValue
-    showSuggestions.value = false
+  console.log('Setting search query to:', displayValue)
+  searchQuery.value = displayValue
+  showSuggestions.value = false
     
-    // Загружаем содержимое таблицы
+  // Загружаем содержимое таблицы
     await fetchTableContents(suggestion.id)
   } catch (error) {
     console.error('Ошибка при загрузке данных таблицы:', error)
@@ -1001,9 +994,15 @@ const saveValue = async () => {
   }
 
   try {
+    console.log('Saving selected value:', selectedValue.value)
+    
+    // Получаем ID для сохранения
     const valueToSave = selectedValue.value[props.options.valueField || 'id']
     const displayValueField = props.options.displayValueField || ''
     
+    console.log('Value to save:', valueToSave)
+    
+    // Обновляем значение в базе данных
     const response = await fetch(`${api}/api/competitions/${props.row.id}`, {
       method: 'PATCH',
       headers: {
@@ -1033,8 +1032,10 @@ const saveValue = async () => {
     // Эмитим событие для обновления всей таблицы
     emit('refresh')
     
+    // Обновляем отображаемое значение - используем ID
     displayValue.value = valueToSave || ''
     
+    console.log('Value saved successfully')
     showStatusMessage('Значение успешно сохранено', 'success')
     closeModal()
   } catch (error) {
@@ -1045,8 +1046,10 @@ const saveValue = async () => {
 
 // Следим за изменением значения
 watch(() => props.value, async (newValue) => {
+  console.log('Value changed:', newValue)
   if (props.options.displayValueField) {
     const fieldValue = props.row[props.options.displayValueField]
+    console.log('Field value on change:', fieldValue)
     displayValue.value = fieldValue || ''
   } else {
     displayValue.value = ''
@@ -1055,8 +1058,10 @@ watch(() => props.value, async (newValue) => {
 
 // Следим за изменением строки
 watch(() => props.row, (newRow) => {
+  console.log('Row changed:', newRow)
   if (props.options.displayValueField) {
     const fieldValue = newRow[props.options.displayValueField]
+    console.log('Field value on row change:', fieldValue)
     displayValue.value = fieldValue || ''
   }
 }, { deep: true })
@@ -1371,6 +1376,7 @@ const removeTableBinding = async () => {
     // Эмитим событие для обновления всей таблицы
     emit('refresh')
     
+    // Обновляем отображаемое значение
     displayValue.value = ''
     
     showStatusMessage('Привязка успешно удалена', 'success')
