@@ -1,9 +1,9 @@
 <script lang="ts" setup>
 interface MenuItem {
-  name: string
+  title: string
   icon: string
-  link: string
-  submenu?: MenuItem[] | false
+  slug?: string
+  submenu?: MenuItem[]
 }
 
 interface Props {
@@ -27,7 +27,7 @@ const {isAuthenticated, user, logout} = useAuth();
 const config = useRuntimeConfig() // Используем useRuntimeConfig()
 const api = config.public.API_URL
 const {data: menuData} = await useFetch(api + `/api/v1/amenu`);
-const menu = menuData.value;
+const menu = (menuData.value || []) as any[];
 
 const isSubMenuOpen = ref<Record<string, boolean>>({})
 const hoveredItem = ref<string | null>(null)
@@ -74,106 +74,6 @@ const handleLeave = () => {
         <ul class="menu-list">
 
           <li
-              class="menu-item"
-              @mouseenter="(e) => handleHover(e, 'Система')"
-              @mouseleave="handleLeave">
-            <button
-                :class="{'justify-center': isMenuCollapsed,}"
-                class="menu-link justify-between"
-                @click="toggleSubMenu('Система')"
-            >
-              <span class="">
-                <Icon class="menu-icon" name="fluent:window-dev-tools-20-filled"/>
-                <span v-if="!isMenuCollapsed" class="menu-text align-top">Система</span>
-              </span>
-              <Icon
-                  v-if="!isMenuCollapsed"
-                  :class="{'rotate-180': isSubMenuOpen['Система']}"
-                  class="chevron-icon mb-1"
-                  name="heroicons:chevron-down"
-              />
-            </button>
-
-            <!-- Подменю -->
-            <div
-                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
-                class="submenu bg-gray-900 p-1"
-            >
-              <NuxtLink
-                  active-class="border border-gray-600 bg-blue-950"
-                  class="submenu-link text-sm"
-                  to="/docs"
-                  @click="emitToggleMenu"
-              >
-                <Icon class="submenu-icon" name="heroicons:book-open"/>
-                <span>Документация</span>
-              </NuxtLink>
-            </div>
-
-            <div
-                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
-                class="submenu bg-gray-900 p-1"
-            >
-              <NuxtLink
-                  active-class="border border-gray-600 bg-blue-950"
-                  class="submenu-link text-sm"
-                  to="/system/params"
-                  @click="emitToggleMenu"
-              >
-                <Icon class="submenu-icon" name="ep:tools"/>
-                <span>Параметры</span>
-              </NuxtLink>
-            </div>
-
-            <div
-                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
-                class="submenu bg-gray-900 p-1"
-            >
-              <NuxtLink
-                  active-class="border border-gray-600 bg-blue-950"
-                  class="submenu-link text-sm"
-                  to="/system/pics"
-                  @click="emitToggleMenu"
-              >
-                <Icon class="submenu-icon" name="stash:image-light"/>
-                <span>Картинки</span>
-              </NuxtLink>
-            </div>
-
-            <div
-                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
-                class="submenu bg-gray-900 p-1"
-            >
-              <NuxtLink
-                  active-class="border border-gray-600 bg-blue-950"
-                  class="submenu-link text-sm"
-                  to="/system/pages"
-                  @click="emitToggleMenu"
-              >
-                <Icon class="submenu-icon" name="iconoir:multiple-pages-empty"/>
-                <span>Страницы</span>
-              </NuxtLink>
-            </div>
-
-            <div
-                v-if="!isMenuCollapsed && isSubMenuOpen['Система']"
-                class="submenu bg-gray-900 p-1"
-            >
-              <NuxtLink
-                  active-class="border border-gray-600 bg-blue-950"
-                  class="submenu-link text-sm"
-                  to="/system/admin-pages"
-                  @click="emitToggleMenu"
-              >
-                <Icon class="submenu-icon" name="iconoir:multiple-pages"/>
-                <span>Страницы АДМ</span>
-              </NuxtLink>
-            </div>
-
-
-          </li>
-
-          <li
               v-for="item in menu"
               :key="item.title"
               class="menu-item"
@@ -212,7 +112,7 @@ const handleLeave = () => {
 
             <!-- Подменю -->
             <div
-                v-if="!isMenuCollapsed && item.submenu && isSubMenuOpen[item.name]"
+                v-if="!isMenuCollapsed && item.submenu && isSubMenuOpen[item.title]"
                 class="submenu bg-gray-900 p-1"
             >
               <NuxtLink
@@ -235,12 +135,12 @@ const handleLeave = () => {
     <!-- Блок кредитов с пользовательской информацией -->
     <div class="credits-block">
       <NuxtLink class="user-avatar" to="/account">
-        <img :src="user.avatar_path || images.default_user" alt="User avatar" class="avatar-img mr-2">
+        <img :src="(user as any)?.avatar_path || (images as any)?.default_user" alt="User avatar" class="avatar-img mr-2">
       </NuxtLink>
       <div v-if="!isMenuCollapsed" class="user-info">
 
         <div v-if="isAuthenticated" class="user-details">
-          <NuxtLink class="user-name" to="/account">{{ user.name }}</NuxtLink>
+          <NuxtLink class="user-name" to="/account">{{ (user as any)?.name }}</NuxtLink>
           <button class="logout-btn" @click="logout">
             <span>Выход</span>
             <svg class="logout-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

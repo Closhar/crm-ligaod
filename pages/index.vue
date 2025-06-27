@@ -97,8 +97,8 @@ const route = useRoute();
 const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
 
 useSeoMeta({
-  title: params.value.adminka_name + ' - ' + pageData.value.title,
-  description: pageData.value.description,
+  title: params.value.adminka_name + ' - ' + (pageData.value?.title || 'Главная'),
+  description: pageData.value?.description || 'Главная страница',
 });
 
 const p_title = pageData.value?.title;

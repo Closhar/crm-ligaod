@@ -29,6 +29,8 @@ use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ApiRelationsController;
+use App\Http\Controllers\Api\ApiAdminPageController;
+use App\Http\Controllers\Api\ApiMenuSectionController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
@@ -80,6 +82,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/galleries', [ApiGalleryController::class, 'index'])->name('api.galleries.index');
     Route::get('/galleries/{id}', [ApiGalleryController::class, 'show'])->name('api.galleries.show');
     Route::get('/params', [ApiParamsController::class, 'index'])->name('params.show');
+    Route::get('/test', [ApiParamsController::class, 'test'])->name('params.test');
     Route::get('/filters', [ApiParamsController::class, 'getTitle'])->name('params.filters');
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
@@ -168,7 +171,11 @@ Route::middleware('auth:sanctum')->group(function () {
 //    Route::apiResource('admin-pages', AdminPageController::class);
     //});
 });
-Route::apiResource('admin-pages', AdminPageController::class);
+Route::apiResource('admin-pages', ApiAdminPageController::class);
+
+// Маршруты для управления разделами меню
+Route::apiResource('menu-sections', ApiMenuSectionController::class);
+Route::get('/menu-sections/select', [ApiMenuSectionController::class, 'getForSelect']);
 
 // Маршруты для работы с телеграм
 Route::prefix('telegram')->group(function () {

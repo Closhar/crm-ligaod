@@ -115,7 +115,6 @@ const tableOptions = ref({
       width: '220px',
       sortable: false,
       options: {
-        //hint: '123',
         readonly: false,
         only_icon: false,
         link_in_title: 'https://icon-sets.iconify.design/',
@@ -132,6 +131,44 @@ const tableOptions = ref({
       options: {
         readonly: false,
         cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+      }
+    },
+    {
+      name: 'menu_section_id',
+      label: 'Раздел меню',
+      type: 'select',
+      width: '200px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/menu-sections?type=async',
+        keyField: 'id',
+        emptyable: true,
+        hint: 'Раздел меню',
+        labelField: 'title',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+        displayLabelField: 'menu_section.name'
+      },
+      emptyOption: {
+        value: null,
+        label: 'Без раздела',
+      },
+    },
+    {
+      name: 'sort_order',
+      label: 'Сортировка',
+      type: 'number',
+      width: '100px',
+      sortable: true,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+        placeholder: 'Введите число',
+        hint: 'Число для сортировки (меньше = выше)',
+        clickable: true,
       }
     },
     {
@@ -152,9 +189,9 @@ const tableOptions = ref({
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
-  defaultSortField: 'id', // Поле для сортировки по умолчанию
-  defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
-  separateFields: false, // редактирование отдельных полей
+  defaultSortField: 'sort_order', // Поле для сортировки по умолчанию
+  defaultSortDirection: 'asc', // Направление сортировки по умолчанию (asc или desc)
+  separateFields: true, // редактирование отдельных полей
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
@@ -236,6 +273,46 @@ const formOptions = ref({
       }
     },
     {
+      name: 'menu_section_id',
+      label: 'Раздел меню',
+      type: 'select',
+      required: false,
+      width: '250px',
+      options: {
+        apiUrl: api + '/api/menu-sections?type=async',
+        keyField: 'id',
+        emptyable: true,
+        hint: 'Раздел меню',
+        labelField: 'title',
+        enableSearch: true,
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md'
+      },
+      emptyOption: {
+        value: null,
+        label: 'Без раздела',
+      },
+    },
+    {
+      name: 'sort_order',
+      label: 'Порядок сортировки',
+      required: false,
+      type: 'text',
+      sortable: true,
+      width: '160px',
+      options: {
+        readonly: false,
+        placeholder: '0',
+        hint: 'Число для сортировки (меньше = выше)',
+        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
+        inputClass: 'w-full p-1 h-10 border border-gray-300 rounded text-md',
+        defaultValue: '0'
+      }
+    },
+    {
       name: 'menu',
       label: 'Отображать в меню',
       required: false,
@@ -259,7 +336,7 @@ const defaultVisibleFields: string[] = [];
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([
   {
-    name: 'menu',
+    field: 'menu',
     label: 'В меню',
     type: 'toggle',
     options: [
@@ -267,6 +344,26 @@ const additionalFilters = ref([
       { label: 'Да', value: true },
       { label: 'Нет', value: false }
     ]
+  },
+  {
+    field: 'menu_section_id',
+    label: 'Раздел меню',
+    type: 'select',
+    options: {
+      apiUrl: api + '/api/menu-sections?type=async',
+      keyField: 'id',
+      emptyable: true,
+      hint: 'Раздел меню',
+      labelField: 'title',
+      enableSearch: true,
+      options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+      sel_class: "text-xs text-blue-800 font-bold",
+      list_item: null,
+    },
+    emptyOption: {
+      value: null,
+      label: 'Все разделы',
+    },
   }
 ]);
 

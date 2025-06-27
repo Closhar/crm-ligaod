@@ -24,18 +24,40 @@ export const useGlobalsStore = defineStore('globals', () => {
             if (!response.ok) throw new Error('Ошибка при загрузке данных');
             const data = await response.json();
 
-            data.params.forEach((item) => {
-                params.value[item.name] = item.value;
-            });
+            // Очищаем предыдущие данные
+            params.value = {};
+            images.value = {};
 
-            data.images.forEach((item) => {
-                images.value[item.name] = item.path;
-            });
+            // Заполняем параметры
+            if (data.params && Array.isArray(data.params)) {
+                data.params.forEach((item) => {
+                    params.value[item.name] = item.value;
+                });
+            }
+
+            // Заполняем изображения
+            if (data.images && Array.isArray(data.images)) {
+                data.images.forEach((item) => {
+                    images.value[item.name] = item.path;
+                });
+            }
 
             lastFetchTime.value = Date.now();
         } catch (err) {
             error.value = err instanceof Error ? err.message : 'Неизвестная ошибка';
             console.error('Ошибка при загрузке данных:', error.value);
+            
+            // Устанавливаем значения по умолчанию при ошибке
+            params.value = {
+                adminka_name: 'Админка',
+                site_name: 'Спортивный портал',
+                site_description: 'Информационный портал о спортивных событиях'
+            };
+            
+            images.value = {
+                default_user: '/images/default-avatar.png',
+                logo: '/images/logo.png'
+            };
         } finally {
             isLoading.value = false;
         }
