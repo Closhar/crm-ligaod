@@ -26,9 +26,9 @@
     <!-- Modal dialog -->
     <Teleport to="body">
       <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] flex flex-col overflow-hidden">
           <!-- Modal header -->
-          <div class="px-6 py-4 border-b flex justify-between items-center">
+          <div class="px-6 py-4 border-b flex justify-between items-center flex-shrink-0">
             <h3 class="text-lg font-medium text-gray-900 flex items-center">
               <Icon 
                 :name="effectiveOptions.iconName || effectiveOptions.icon || 'material-symbols:list'"
@@ -52,205 +52,397 @@
             </div>
           </div>
 
-          <!-- Инструкция по чекбоксам -->
-          <div class="px-6 py-3 bg-blue-50 border-b">
-            <div class="text-sm text-gray-700">
-              <b>Значения чекбоксов ВСТРОЕНО (1) и В ПРОФИЛЕ (2)</b><br />
-              Если отмечен (1) - ссылка на встроенное видео, будет отображаться на главной странице и видео будет встроено (первое в списке), также ссылка отобразится в профиле события и будет встроена; <br />
-              Если отмечен (2) - ссылка отобразится только в профиле события в разделе Ссылки - сюда можно добавлять ссылки на любые ресурсы (не только видео) - они откроются в новом окне; <br />
-              Если не отмечен ни один чекбокс - ссылка отобразится только на главной странице в модальном окне Ссылки, а также будет добавлена в анонс в Телеграм (когда он будет формироваться).<br /><br />
-              Можно в ссылку добавлять код для встраивания iframe (vkvideo, youtube, rutube) - в этом случае добавится 3 ссылки: <br />
-              - для встраивания (ссылка будет вырезана из кода как есть, будет отмечен чекбокс 1);<br />
-              - для профиля (ссылка будет вырезана из кода и преобразована соответствующим образом, будет отмечен чекбокс 2);<br />
-              - для телеграма и ссылки на главной (ссылка будет вырезана из кода и преобразована соответствующим образом, не будет отмечен ни один чекбокс).
-            </div>
+          <!-- Инструкция по чекбоксам под спойлером -->
+          <div class="px-6 py-2 border-b flex-shrink-0">
+            <details class="text-sm">
+              <summary class="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
+                <Icon name="solar:info-circle-bold-duotone" class="inline mr-1" size="1em" />
+                Инструкция по чекбоксам
+              </summary>
+              <div class="mt-2 text-gray-700 bg-blue-50 p-3 rounded-md">
+                <b>Значения чекбоксов ВСТРОЕНО (1) и В ПРОФИЛЕ (2)</b><br />
+                Если отмечен (1) - ссылка на встроенное видео, будет отображаться на главной странице и видео будет встроено (первое в списке), также ссылка отобразится в профиле события и будет встроена; <br />
+                Если отмечен (2) - ссылка отобразится только в профиле события в разделе Ссылки - сюда можно добавлять ссылки на любые ресурсы (не только видео) - они откроются в новом окне; <br />
+                Если не отмечен ни один чекбокс - ссылка отобразится только на главной странице в модальном окне Ссылки, а также будет добавлена в анонс в Телеграм (когда он будет формироваться).<br /><br />
+                Можно в ссылку добавлять код для встраивания iframe (vkvideo, youtube, rutube) - в этом случае добавится 3 ссылки: <br />
+                - для встраивания (ссылка будет вырезана из кода как есть, будет отмечен чекбокс 1);<br />
+                - для профиля (ссылка будет вырезана из кода и преобразована соответствующим образом, будет отмечен чекбокс 2);<br />
+                - для телеграма и ссылки на главной (ссылка будет вырезана из кода и преобразована соответствующим образом, не будет отмечен ни один чекбокс).
+              </div>
+            </details>
           </div>
           
           <!-- Modal body with list of related items -->
-          <div class="p-6 overflow-y-auto overflow-x-hidden flex-grow">
-            <!-- Loading indicator -->
-            <div v-if="loading" class="flex justify-center items-center h-32">
-              <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-            </div>
-            
-            <!-- Error message -->
-            <div v-else-if="error" class="bg-red-50 text-red-600 p-4 rounded-md mb-4">
-              <div class="font-medium">Ошибка:</div>
-              <div>{{ error }}</div>
+          <div class="flex-1 overflow-y-auto overflow-x-hidden">
+            <div class="p-6">
+              <!-- Loading indicator -->
+              <div v-if="loading" class="flex justify-center items-center h-32">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+              </div>
               
-              <div class="flex flex-wrap gap-2 mt-2">
-                <button 
-                  @click="fetchRelatedItems" 
-                  class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  Повторить загрузку
-                </button>
+              <!-- Error message -->
+              <div v-else-if="error" class="bg-red-50 text-red-600 p-4 rounded-md mb-4">
+                <div class="font-medium">Ошибка:</div>
+                <div>{{ error }}</div>
                 
-                <!-- Кнопка режима отладки -->
-                <button 
-                  v-if="error.includes('ID')"
-                  @click="toggleDebugMode" 
-                  class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  {{ debugMode ? 'Выключить режим отладки' : 'Включить режим отладки' }}
-                </button>
-              </div>
-            </div>
-            
-            <!-- Content when data is loaded -->
-            <div v-else>
-              <!-- Check if fields are configured -->
-              <div v-if="effectiveOptions?.fields?.length === 0" class="bg-yellow-50 text-yellow-700 p-4 rounded-md mb-4">
-                Не настроены поля для отображения. Добавьте параметр fields в options.
+                <div class="flex flex-wrap gap-2 mt-2">
+                  <button 
+                    @click="fetchRelatedItems" 
+                    class="px-3 py-1 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  >
+                    Повторить загрузку
+                  </button>
+                  
+                  <!-- Кнопка режима отладки -->
+                  <button 
+                    v-if="error.includes('ID')"
+                    @click="toggleDebugMode" 
+                    class="px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    {{ debugMode ? 'Выключить режим отладки' : 'Включить режим отладки' }}
+                  </button>
+                </div>
               </div>
               
+              <!-- Content when data is loaded -->
               <div v-else>
-                <!-- Related items table -->
-                <div class="mb-4 overflow-x-auto">
-                  <!-- Desktop view (table) -->
-                  <table class="min-w-full divide-y divide-gray-200 table-fixed hidden md:table">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th v-for="field in effectiveOptions?.fields || []" :key="field.name"
-                            class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <div class="flex items-center">
-                            <Icon 
-                              v-if="field.icon" 
-                              :name="field.icon" 
-                              class="mr-2 text-gray-600" 
-                              :size="field.iconSize || '1em'" 
-                            />
-                            {{ field.label || field.name }}
-                          </div>
-                        </th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                          Действия
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                      <tr v-for="(item, index) in relatedItems" :key="item.id" class="hover:bg-gray-50">
-                        <td v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`" class="px-3 py-2 text-sm break-words">
-                          <div v-if="isEditingItem === item.id">
-                            <div class="relative w-full">
-                            <input 
-                              v-if="field.type === 'text'" 
-                              type="text" 
-                              v-model="item[field.name]"
-                                :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
-                            />
-                              <!-- Кнопка вставки из буфера -->
-                              <button 
-                                v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
-                                type="button" 
-                                @click="pasteFromClipboard(field.name, item)"
-                                class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
-                                :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                <!-- Check if fields are configured -->
+                <div v-if="effectiveOptions?.fields?.length === 0" class="bg-yellow-50 text-yellow-700 p-4 rounded-md mb-4">
+                  Не настроены поля для отображения. Добавьте параметр fields в options.
+                </div>
+                
+                <div v-else>
+                  <!-- Related items table -->
+                  <div class="mb-4 overflow-x-auto">
+                    <!-- Desktop view (table) -->
+                    <table class="min-w-full divide-y divide-gray-200 table-fixed hidden md:table">
+                      <thead class="bg-gray-50 sticky top-0 z-10">
+                        <tr>
+                          <th v-for="field in effectiveOptions?.fields || []" :key="field.name"
+                              class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <div class="flex items-center">
+                              <Icon 
+                                v-if="field.icon" 
+                                :name="field.icon" 
+                                class="mr-2 text-gray-600" 
+                                :size="field.iconSize || '1em'" 
+                              />
+                              {{ field.label || field.name }}
+                            </div>
+                          </th>
+                          <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                            Действия
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <tr v-for="(item, index) in relatedItems" :key="item.id" class="hover:bg-gray-50">
+                          <td v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`" class="px-3 py-2 text-sm break-words">
+                            <div v-if="isEditingItem === item.id">
+                              <div class="relative w-full">
+                              <input 
+                                v-if="field.type === 'text'" 
+                                type="text" 
+                                v-model="item[field.name]"
+                                  :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
+                              />
+                                <!-- Кнопка вставки из буфера -->
+                                <button 
+                                  v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
+                                  type="button" 
+                                  @click="pasteFromClipboard(field.name, item)"
+                                  class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                                  :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                  </svg>
+                                </button>
+                              </div>
+                              
+                              <template v-if="field.type === 'date'">
+                              <input 
+                                type="date" 
+                                v-model="item[field.name]"
+                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                              />
+                              </template>
+                              
+                              <template v-if="field.type === 'datetime'">
+                              <input 
+                                type="datetime-local" 
+                                v-model="item[field.name]"
+                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                              />
+                              </template>
+                              
+                              <template v-if="field.type === 'time'">
+                              <input 
+                                type="time" 
+                                v-model="item[field.name]"
+                                :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                              />
+                              </template>
+                              
+                              <template v-if="field.type === 'textarea'">
+                              <textarea 
+                                v-model="item[field.name]"
+                                :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                rows="2"
+                              ></textarea>
+                              </template>
+                              
+                              <template v-if="field.type === 'select'">
+                              <select 
+                                v-model="item[field.name]"
+                                :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                </svg>
+                                <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                                <option 
+                                  v-for="option in field.options?.options" 
+                                  :key="option[field.options?.keyField || 'id']" 
+                                  :value="option[field.options?.keyField || 'id']"
+                                >
+                                  {{ option[field.options?.labelField || 'name'] }}
+                                </option>
+                              </select>
+                              </template>
+                              
+                              <template v-if="field.type === 'toggle'">
+                              <div 
+                                :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
+                                  @change="item[field.name] = $event.target.checked"
+                                  :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                                />
+                                <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                                  {{ field.options.toggleLabel }}
+                                </span>
+                              </div>
+                              </template>
+                            </div>
+                            
+                            <div v-else>
+                              <div v-if="field.type === 'toggle'" class="flex items-center">
+                                <input 
+                                  type="checkbox" 
+                                  :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
+                                  disabled
+                                  :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-gray-400 rounded border-gray-300 cursor-not-allowed'"
+                                />
+                              </div>
+                              
+                              <div v-else-if="field.type === 'select'" class="text-sm text-gray-700">
+                                {{ getSelectLabel(item, field) || 'Не выбрано' }}
+                              </div>
+                              
+                              <div v-else-if="field.type === 'date'" class="text-sm text-gray-700">
+                                {{ formatDate(item[field.name]) || '—' }}
+                              </div>
+                              
+                              <div v-else-if="field.type === 'datetime'" class="text-sm text-gray-700">
+                                {{ formatDateTime(item[field.name]) || '—' }}
+                              </div>
+                              
+                              <div v-else-if="field.type === 'time'" class="text-sm text-gray-700">
+                                {{ formatTime(item[field.name]) || '—' }}
+                              </div>
+                              
+                              <div v-else class="text-sm text-gray-700">
+                                {{ item[field.name] || '—' }}
+                              </div>
+                            </div>
+                          </td>
+                          <td class="px-3 py-2 text-sm text-right w-24">
+                            <div class="flex space-x-2 justify-end">
+                              <button v-if="isEditingItem === item.id"
+                                      @click="saveItem(item)"
+                                      class="text-green-600 hover:text-green-900"
+                                      :disabled="item._updating">
+                                <Icon v-if="item._updating" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
+                                <Icon v-else :name="effectiveOptions?.icons?.save || 'ph:check-circle-duotone'" size="1.2em" />
+                              </button>
+                              <button v-if="isEditingItem === item.id"
+                                      @click="cancelEdit()" 
+                                      class="text-gray-600 hover:text-gray-900"
+                                      :disabled="item._updating">
+                                <Icon :name="effectiveOptions?.icons?.cancel || 'ph:x-circle-duotone'" size="1.2em" />
+                              </button>
+                              <button v-if="isEditingItem !== item.id"
+                                      @click="editItem(item)" 
+                                      class="text-blue-600 hover:text-blue-900"
+                                      :disabled="item._deleting">
+                                <Icon :name="effectiveOptions?.icons?.edit || 'ph:pencil-simple-duotone'" size="1.2em" />
+                              </button>
+                              <button @click="deleteItem(item)"
+                                      class="text-red-600 hover:text-red-900"
+                                      :disabled="item._deleting || isEditingItem === item.id"
+                                      title="Отвязать запись">
+                                <Icon v-if="item._deleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
+                                <Icon v-else :name="effectiveOptions?.icons?.delete || 'ph:link-break-duotone'" size="1.2em" />
+                              </button>
+                              <button @click="permanentDeleteItem(item)"
+                                      class="text-red-600 hover:text-red-900"
+                                      :disabled="item._permanentDeleting || isEditingItem === item.id"
+                                      title="Удалить запись полностью">
+                                <Icon v-if="item._permanentDeleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
+                                <Icon v-else :name="effectiveOptions?.icons?.permanentDelete || 'ph:trash-duotone'" size="1.2em" />
                               </button>
                             </div>
-                            
-                            <template v-if="field.type === 'date'">
-                            <input 
-                              type="date" 
-                              v-model="item[field.name]"
-                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                            />
-                            </template>
-                            
-                            <template v-if="field.type === 'datetime'">
-                            <input 
-                              type="datetime-local" 
-                              v-model="item[field.name]"
-                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                            />
-                            </template>
-                            
-                            <template v-if="field.type === 'time'">
-                            <input 
-                              type="time" 
-                              v-model="item[field.name]"
-                              :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                            />
-                            </template>
-                            
-                            <template v-if="field.type === 'textarea'">
-                            <textarea 
-                              v-model="item[field.name]"
-                              :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                              rows="2"
-                            ></textarea>
-                            </template>
-                            
-                            <template v-if="field.type === 'select'">
-                            <select 
-                              v-model="item[field.name]"
-                              :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                            >
-                              <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                              <option 
-                                v-for="option in field.options?.options" 
-                                :key="option[field.options?.keyField || 'id']" 
-                                :value="option[field.options?.keyField || 'id']"
-                              >
-                                {{ option[field.options?.labelField || 'name'] }}
-                              </option>
-                            </select>
-                            </template>
-                            
-                            <template v-if="field.type === 'toggle'">
-                            <div 
-                              :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
-                            >
-                              <input 
-                                type="checkbox" 
-                                :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                @change="item[field.name] = $event.target.checked"
-                                :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                              />
-                              <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                                {{ field.options.toggleLabel }}
-                              </span>
+                          </td>
+                        </tr>
+                        <!-- Empty row message -->
+                        <tr v-if="relatedItems.length === 0">
+                          <td :colspan="(effectiveOptions?.fields?.length || 0) + 1" class="px-3 py-4 text-center text-sm text-gray-500">
+                            Нет связанных записей
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <!-- Mobile view (cards) -->
+                    <div class="md:hidden space-y-4">
+                      <div v-for="(item, index) in relatedItems" :key="item.id" class="bg-white rounded-lg shadow p-4">
+                        <div class="space-y-3">
+                          <template v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`">
+                            <div class="flex flex-col">
+                              <label class="text-xs font-medium text-gray-500 mb-1">
+                                <div class="flex items-center">
+                                  <Icon 
+                                    v-if="field.icon" 
+                                    :name="field.icon" 
+                                    class="mr-1 text-gray-600" 
+                                    :size="field.iconSize || '1em'" 
+                                  />
+                                  {{ field.label || field.name }}
+                                </div>
+                              </label>
+                              
+                              <div v-if="isEditingItem === item.id" class="w-full">
+                                <div class="relative w-full">
+                                  <input 
+                                    v-if="field.type === 'text'" 
+                                    type="text" 
+                                    v-model="item[field.name]"
+                                    :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
+                                  />
+                                  <!-- Кнопка вставки из буфера -->
+                                  <button 
+                                    v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
+                                    type="button" 
+                                    @click="pasteFromClipboard(field.name, item)"
+                                    class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                                    :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                
+                                <template v-if="field.type === 'date'">
+                                  <input 
+                                    type="date" 
+                                    v-model="item[field.name]"
+                                    :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                  />
+                                </template>
+                                
+                                <template v-if="field.type === 'datetime'">
+                                  <input 
+                                    type="datetime-local" 
+                                    v-model="item[field.name]"
+                                    :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                  />
+                                </template>
+                                
+                                <template v-if="field.type === 'time'">
+                                  <input 
+                                    type="time" 
+                                    v-model="item[field.name]"
+                                    :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                  />
+                                </template>
+                                
+                                <template v-if="field.type === 'textarea'">
+                                  <textarea 
+                                    v-model="item[field.name]"
+                                    :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                    rows="2"
+                                  ></textarea>
+                                </template>
+                                
+                                <template v-if="field.type === 'select'">
+                                  <select 
+                                    v-model="item[field.name]"
+                                    :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
+                                  >
+                                    <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                                    <option 
+                                      v-for="option in field.options?.options" 
+                                      :key="option[field.options?.keyField || 'id']" 
+                                      :value="option[field.options?.keyField || 'id']"
+                                    >
+                                      {{ option[field.options?.labelField || 'name'] }}
+                                    </option>
+                                  </select>
+                                </template>
+                                
+                                <template v-if="field.type === 'toggle'">
+                                  <div 
+                                    :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
+                                  >
+                                    <input 
+                                      type="checkbox" 
+                                      :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
+                                      @change="item[field.name] = $event.target.checked"
+                                      :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                                    />
+                                    <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                                      {{ field.options.toggleLabel }}
+                                    </span>
+                                  </div>
+                                </template>
+                              </div>
+                              
+                              <div v-else class="text-sm text-gray-700">
+                                <div v-if="field.type === 'toggle'" class="flex items-center">
+                                  <input 
+                                    type="checkbox" 
+                                    :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
+                                    disabled
+                                    :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-gray-400 rounded border-gray-300 cursor-not-allowed'"
+                                  />
+                                </div>
+                                
+                                <div v-else-if="field.type === 'select'" class="text-sm text-gray-700">
+                                  {{ getSelectLabel(item, field) || 'Не выбрано' }}
+                                </div>
+                                
+                                <div v-else-if="field.type === 'date'" class="text-sm text-gray-700">
+                                  {{ formatDate(item[field.name]) || '—' }}
+                                </div>
+                                
+                                <div v-else-if="field.type === 'datetime'" class="text-sm text-gray-700">
+                                  {{ formatDateTime(item[field.name]) || '—' }}
+                                </div>
+                                
+                                <div v-else-if="field.type === 'time'" class="text-sm text-gray-700">
+                                  {{ formatTime(item[field.name]) || '—' }}
+                                </div>
+                                
+                                <div v-else class="text-sm text-gray-700">
+                                  {{ item[field.name] || '—' }}
+                                </div>
+                              </div>
                             </div>
-                            </template>
-                          </div>
+                          </template>
                           
-                          <div v-else>
-                            <div v-if="field.type === 'toggle'" class="flex items-center">
-                              <input 
-                                type="checkbox" 
-                                :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                disabled
-                                :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-gray-400 rounded border-gray-300 cursor-not-allowed'"
-                              />
-                            </div>
-                            
-                            <div v-else-if="field.type === 'select'" class="text-sm text-gray-700">
-                              {{ getSelectLabel(item, field) || 'Не выбрано' }}
-                            </div>
-                            
-                            <div v-else-if="field.type === 'date'" class="text-sm text-gray-700">
-                              {{ formatDate(item[field.name]) || '—' }}
-                            </div>
-                            
-                            <div v-else-if="field.type === 'datetime'" class="text-sm text-gray-700">
-                              {{ formatDateTime(item[field.name]) || '—' }}
-                            </div>
-                            
-                            <div v-else-if="field.type === 'time'" class="text-sm text-gray-700">
-                              {{ formatTime(item[field.name]) || '—' }}
-                            </div>
-                            
-                            <div v-else class="text-sm text-gray-700">
-                              {{ item[field.name] || '—' }}
-                            </div>
-                          </div>
-                        </td>
-                        <td class="px-3 py-2 text-sm text-right w-24">
-                          <div class="flex space-x-2 justify-end">
+                          <!-- Actions -->
+                          <div class="flex justify-end space-x-2 pt-2 border-t mt-3">
                             <button v-if="isEditingItem === item.id"
                                     @click="saveItem(item)"
                                     class="text-green-600 hover:text-green-900"
@@ -285,377 +477,193 @@
                               <Icon v-else :name="effectiveOptions?.icons?.permanentDelete || 'ph:trash-duotone'" size="1.2em" />
                             </button>
                           </div>
-                        </td>
-                      </tr>
-                      <!-- Empty row message -->
-                      <tr v-if="relatedItems.length === 0">
-                        <td :colspan="(effectiveOptions?.fields?.length || 0) + 1" class="px-3 py-4 text-center text-sm text-gray-500">
-                          Нет связанных записей
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <!-- Mobile view (cards) -->
-                  <div class="md:hidden space-y-4">
-                    <div v-for="(item, index) in relatedItems" :key="item.id" class="bg-white rounded-lg shadow p-4">
-                      <div class="space-y-3">
-                        <template v-for="field in effectiveOptions?.fields || []" :key="`${item.id}-${field.name}`">
-                          <div class="flex flex-col">
-                            <label class="text-xs font-medium text-gray-500 mb-1">
-                              <div class="flex items-center">
-                                <Icon 
-                                  v-if="field.icon" 
-                                  :name="field.icon" 
-                                  class="mr-1 text-gray-600" 
-                                  :size="field.iconSize || '1em'" 
-                                />
-                                {{ field.label || field.name }}
-                              </div>
-                            </label>
-                            
-                            <div v-if="isEditingItem === item.id" class="w-full">
-                              <div class="relative w-full">
-                                <input 
-                                  v-if="field.type === 'text'" 
-                                  type="text" 
-                                  v-model="item[field.name]"
-                                  :class="[field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '']"
-                                />
-                                <!-- Кнопка вставки из буфера -->
-                                <button 
-                                  v-if="field.type === 'text' && field.options?.pasteFromClipboard" 
-                                  type="button" 
-                                  @click="pasteFromClipboard(field.name, item)"
-                                  class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
-                                  :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                  </svg>
-                                </button>
-                              </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Empty state for mobile -->
+                      <div v-if="relatedItems.length === 0" class="bg-white rounded-lg shadow p-4 text-center text-sm text-gray-500">
+                        Нет связанных записей
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Add new item form -->
+                  <div v-if="showAddForm" class="border rounded-md p-4 bg-gray-50 overflow-x-auto">
+                    <h4 class="text-sm font-medium mb-3">Добавить запись</h4>
+                    <!-- Заменяем сетку, добавляем 12-колоночную систему -->
+                    <div class="grid grid-cols-12 gap-4 mb-4">
+                      <div 
+                        v-for="field in effectiveOptions?.fields || []" 
+                        :key="`new-${field.name}`"
+                        :class="[
+                          field.options?.formColumnClass || 
+                          effectiveOptions?.defaultFieldColumnClass || 
+                          'col-span-12 md:col-span-6'
+                        ]"
+                      >
+                        <div class="relative">
+                          <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ field.label || field.name }}
+                          </label>
+                          <template v-if="field.type === 'text'">
+                            <div class="relative w-full">
+                              <input
+                                v-model="newItem[field.name]"
+                                type="text"
+                                :required="field.required"
+                                :readonly="field.options?.readonly"
+                                :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '', field.options?.inputClass]"
+                                :placeholder="field.options?.placeholder"
+                                @input="handleAutoSuggest(field.name, field.options?.autoSuggest)"
+                                @focus="isActiveSuggestion[field.name] = true"
+                              />
                               
-                              <template v-if="field.type === 'date'">
-                                <input 
-                                  type="date" 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                />
-                              </template>
+                              <!-- Кнопка вставки из буфера -->
+                              <button 
+                                v-if="field.options?.pasteFromClipboard" 
+                                type="button" 
+                                @click="pasteFromClipboard(field.name, newItem)"
+                                class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
+                                :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                              </button>
                               
-                              <template v-if="field.type === 'datetime'">
-                                <input 
-                                  type="datetime-local" 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                />
-                              </template>
-                              
-                              <template v-if="field.type === 'time'">
-                                <input 
-                                  type="time" 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.inputClass || effectiveOptions?.defaultInputClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                />
-                              </template>
-                              
-                              <template v-if="field.type === 'textarea'">
-                                <textarea 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.inputClass || effectiveOptions?.defaultTextareaClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                  rows="2"
-                                ></textarea>
-                              </template>
-                              
-                              <template v-if="field.type === 'select'">
-                                <select 
-                                  v-model="item[field.name]"
-                                  :class="field.options?.inputClass || effectiveOptions?.defaultSelectClass || 'w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500'"
-                                >
-                                  <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                                  <option 
-                                    v-for="option in field.options?.options" 
-                                    :key="option[field.options?.keyField || 'id']" 
-                                    :value="option[field.options?.keyField || 'id']"
-                                  >
-                                    {{ option[field.options?.labelField || 'name'] }}
-                                  </option>
-                                </select>
-                              </template>
-                              
-                              <template v-if="field.type === 'toggle'">
-                                <div 
-                                  :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'"
-                                >
-                                  <input 
-                                    type="checkbox" 
-                                    :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                    @change="item[field.name] = $event.target.checked"
-                                    :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                                  />
-                                  <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                                    {{ field.options.toggleLabel }}
-                                  </span>
+                              <!-- Выпадающий список подсказок -->
+                              <div
+                                v-if="field.options?.autoSuggest?.apiUrl"
+                                v-show="isActiveSuggestion[field.name] && suggestions[field.name]?.length > 0"
+                                ref="el => autoSuggestRefs[field.name] = el"
+                                class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-auto border border-gray-200"
+                              >
+                                <!-- Индикатор загрузки -->
+                                <div v-if="suggestionsLoading[field.name]" class="p-2 text-sm text-gray-500">
+                                  Загрузка...
                                 </div>
-                              </template>
-                            </div>
-                            
-                            <div v-else class="text-sm text-gray-700">
-                              <div v-if="field.type === 'toggle'" class="flex items-center">
-                                <input 
-                                  type="checkbox" 
-                                  :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                  disabled
-                                  :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-gray-400 rounded border-gray-300 cursor-not-allowed'"
-                                />
-                              </div>
-                              
-                              <div v-else-if="field.type === 'select'" class="text-sm text-gray-700">
-                                {{ getSelectLabel(item, field) || 'Не выбрано' }}
-                              </div>
-                              
-                              <div v-else-if="field.type === 'date'" class="text-sm text-gray-700">
-                                {{ formatDate(item[field.name]) || '—' }}
-                              </div>
-                              
-                              <div v-else-if="field.type === 'datetime'" class="text-sm text-gray-700">
-                                {{ formatDateTime(item[field.name]) || '—' }}
-                              </div>
-                              
-                              <div v-else-if="field.type === 'time'" class="text-sm text-gray-700">
-                                {{ formatTime(item[field.name]) || '—' }}
-                              </div>
-                              
-                              <div v-else class="text-sm text-gray-700">
-                                {{ item[field.name] || '—' }}
+                                
+                                <!-- Сообщение об отсутствии результатов -->
+                                <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-sm text-gray-500">
+                                  Ничего не найдено
+                                </div>
+                                
+                                <!-- Список подсказок -->
+                                <ul v-else class="py-1">
+                                  <li
+                                    v-for="suggestion in suggestions[field.name]"
+                                    :key="suggestion.id || suggestion[field.options?.autoSuggest?.labelField || 'name']"
+                                    class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                                    @mousedown="handleSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
+                                  >
+                                    {{ suggestion[field.options?.autoSuggest?.labelField || 'name'] }}
+                                  </li>
+                                </ul>
                               </div>
                             </div>
-                          </div>
-                        </template>
-                        
-                        <!-- Actions -->
-                        <div class="flex justify-end space-x-2 pt-2 border-t mt-3">
-                          <button v-if="isEditingItem === item.id"
-                                  @click="saveItem(item)"
-                                  class="text-green-600 hover:text-green-900"
-                                  :disabled="item._updating">
-                            <Icon v-if="item._updating" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
-                            <Icon v-else :name="effectiveOptions?.icons?.save || 'ph:check-circle-duotone'" size="1.2em" />
-                          </button>
-                          <button v-if="isEditingItem === item.id"
-                                  @click="cancelEdit()" 
-                                  class="text-gray-600 hover:text-gray-900"
-                                  :disabled="item._updating">
-                            <Icon :name="effectiveOptions?.icons?.cancel || 'ph:x-circle-duotone'" size="1.2em" />
-                          </button>
-                          <button v-if="isEditingItem !== item.id"
-                                  @click="editItem(item)" 
-                                  class="text-blue-600 hover:text-blue-900"
-                                  :disabled="item._deleting">
-                            <Icon :name="effectiveOptions?.icons?.edit || 'ph:pencil-simple-duotone'" size="1.2em" />
-                          </button>
-                          <button @click="deleteItem(item)"
-                                  class="text-red-600 hover:text-red-900"
-                                  :disabled="item._deleting || isEditingItem === item.id"
-                                  title="Отвязать запись">
-                            <Icon v-if="item._deleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
-                            <Icon v-else :name="effectiveOptions?.icons?.delete || 'ph:link-break-duotone'" size="1.2em" />
-                          </button>
-                          <button @click="permanentDeleteItem(item)"
-                                  class="text-red-600 hover:text-red-900"
-                                  :disabled="item._permanentDeleting || isEditingItem === item.id"
-                                  title="Удалить запись полностью">
-                            <Icon v-if="item._permanentDeleting" name="svg-spinners:270-ring" class="animate-spin" size="1.2em" />
-                            <Icon v-else :name="effectiveOptions?.icons?.permanentDelete || 'ph:trash-duotone'" size="1.2em" />
-                          </button>
+                          </template>
+                          
+                          <template v-if="field.type === 'date'">
+                            <input
+                              v-model="newItem[field.name]"
+                              type="date"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                              :placeholder="field.options?.placeholder"
+                            />
+                          </template>
+                          
+                          <template v-if="field.type === 'datetime'">
+                            <input
+                              v-model="newItem[field.name]"
+                              type="datetime-local"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                              :placeholder="field.options?.placeholder"
+                            />
+                          </template>
+                          
+                          <template v-if="field.type === 'time'">
+                            <input
+                              v-model="newItem[field.name]"
+                              type="time"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                              :placeholder="field.options?.placeholder"
+                            />
+                          </template>
+                          
+                          <template v-if="field.type === 'textarea'">
+                            <textarea
+                              v-model="newItem[field.name]"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                              :placeholder="field.options?.placeholder"
+                              rows="2"
+                            ></textarea>
+                          </template>
+                          
+                          <template v-if="field.type === 'select'">
+                            <select
+                              v-model="newItem[field.name]"
+                              :required="field.required"
+                              :readonly="field.options?.readonly"
+                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
+                            >
+                              <option v-if="field.options?.emptyable" value="">Не выбрано</option>
+                              <option
+                                v-for="option in field.options?.options"
+                                :key="option[field.options?.keyField || 'id']"
+                                :value="option[field.options?.keyField || 'id']"
+                              >
+                                {{ option[field.options?.labelField || 'name'] }}
+                              </option>
+                            </select>
+                          </template>
+                          
+                          <template v-if="field.type === 'toggle'">
+                            <div :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'">
+                              <input
+                                type="checkbox"
+                                v-model="newItem[field.name]"
+                                :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                              />
+                              <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
+                                {{ field.options.toggleLabel }}
+                              </span>
+                            </div>
+                          </template>
                         </div>
                       </div>
                     </div>
-                    
-                    <!-- Empty state for mobile -->
-                    <div v-if="relatedItems.length === 0" class="bg-white rounded-lg shadow p-4 text-center text-sm text-gray-500">
-                      Нет связанных записей
+                    <div class="flex justify-end space-x-2">
+                      <button @click="cancelAddItem" class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Отмена
+                      </button>
+                      <button 
+                        @click="saveNewItem" 
+                        class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                        :disabled="loading">
+                        <Icon v-if="loading" name="svg-spinners:270-ring" class="animate-spin mr-1" size="1em" />
+                        <Icon v-else :name="effectiveOptions?.icons?.saveNew || 'ph:floppy-disk-duotone'" class="mr-1" />
+                        <span>Сохранить</span>
+                      </button>
                     </div>
                   </div>
+                  
+                  <!-- "Add new" button -->
+                  <button v-if="!showAddForm"
+                          @click="showAddForm = true"
+                          class="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                  >
+                    <Icon :name="effectiveOptions?.icons?.add || 'ph:plus-circle-duotone'" class="mr-1" />
+                    Добавить запись
+                  </button>
                 </div>
-                
-                <!-- Add new item form -->
-                <div v-if="showAddForm" class="border rounded-md p-4 bg-gray-50 overflow-x-auto">
-                  <h4 class="text-sm font-medium mb-3">Добавить запись</h4>
-                  <!-- Заменяем сетку, добавляем 12-колоночную систему -->
-                  <div class="grid grid-cols-12 gap-4 mb-4">
-                    <div 
-                      v-for="field in effectiveOptions?.fields || []" 
-                      :key="`new-${field.name}`"
-                      :class="[
-                        field.options?.formColumnClass || 
-                        effectiveOptions?.defaultFieldColumnClass || 
-                        'col-span-12 md:col-span-6'
-                      ]"
-                    >
-                      <div class="relative">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                          {{ field.label || field.name }}
-                        </label>
-                        <template v-if="field.type === 'text'">
-                          <div class="relative w-full">
-                            <input
-                              v-model="newItem[field.name]"
-                              type="text"
-                              :required="field.required"
-                              :readonly="field.options?.readonly"
-                              :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.pasteFromClipboard ? 'pr-8' : '', field.options?.inputClass]"
-                              :placeholder="field.options?.placeholder"
-                              @input="handleAutoSuggest(field.name, field.options?.autoSuggest)"
-                              @focus="isActiveSuggestion[field.name] = true"
-                            />
-                            
-                            <!-- Кнопка вставки из буфера -->
-                            <button 
-                              v-if="field.options?.pasteFromClipboard" 
-                              type="button" 
-                              @click="pasteFromClipboard(field.name, newItem)"
-                              class="absolute right-0 top-1/2 -translate-y-1/2 px-2 flex items-center text-gray-500 hover:text-gray-700"
-                              :title="field.options?.pasteFromClipboard?.title || 'Вставить из буфера обмена'"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                              </svg>
-                            </button>
-                            
-                            <!-- Выпадающий список подсказок -->
-                            <div
-                              v-if="field.options?.autoSuggest?.apiUrl"
-                              v-show="isActiveSuggestion[field.name] && suggestions[field.name]?.length > 0"
-                              ref="el => autoSuggestRefs[field.name] = el"
-                              class="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg max-h-60 overflow-auto border border-gray-200"
-                            >
-                              <!-- Индикатор загрузки -->
-                              <div v-if="suggestionsLoading[field.name]" class="p-2 text-sm text-gray-500">
-                                Загрузка...
-                              </div>
-                              
-                              <!-- Сообщение об отсутствии результатов -->
-                              <div v-else-if="suggestions[field.name]?.length === 0" class="p-2 text-sm text-gray-500">
-                                Ничего не найдено
-                              </div>
-                              
-                              <!-- Список подсказок -->
-                              <ul v-else class="py-1">
-                                <li
-                                  v-for="suggestion in suggestions[field.name]"
-                                  :key="suggestion.id || suggestion[field.options?.autoSuggest?.labelField || 'name']"
-                                  class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                                  @mousedown="handleSuggestionSelect(field.name, suggestion, field.options?.autoSuggest, $event)"
-                                >
-                                  {{ suggestion[field.options?.autoSuggest?.labelField || 'name'] }}
-                                </li>
-                              </ul>
-                            </div>
-                          </div>
-                        </template>
-                        
-                        <template v-if="field.type === 'date'">
-                          <input
-                            v-model="newItem[field.name]"
-                            type="date"
-                            :required="field.required"
-                            :readonly="field.options?.readonly"
-                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
-                            :placeholder="field.options?.placeholder"
-                          />
-                        </template>
-                        
-                        <template v-if="field.type === 'datetime'">
-                          <input
-                            v-model="newItem[field.name]"
-                            type="datetime-local"
-                            :required="field.required"
-                            :readonly="field.options?.readonly"
-                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
-                            :placeholder="field.options?.placeholder"
-                          />
-                        </template>
-                        
-                        <template v-if="field.type === 'time'">
-                          <input
-                            v-model="newItem[field.name]"
-                            type="time"
-                            :required="field.required"
-                            :readonly="field.options?.readonly"
-                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
-                            :placeholder="field.options?.placeholder"
-                          />
-                        </template>
-                        
-                        <template v-if="field.type === 'textarea'">
-                          <textarea
-                            v-model="newItem[field.name]"
-                            :required="field.required"
-                            :readonly="field.options?.readonly"
-                            :class="['w-full rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
-                            :placeholder="field.options?.placeholder"
-                            rows="2"
-                          ></textarea>
-                        </template>
-                        
-                        <template v-if="field.type === 'select'">
-                          <select
-                            v-model="newItem[field.name]"
-                            :required="field.required"
-                            :readonly="field.options?.readonly"
-                            :class="['w-full h-8 rounded-md shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500', field.options?.inputClass]"
-                          >
-                            <option v-if="field.options?.emptyable" value="">Не выбрано</option>
-                            <option
-                              v-for="option in field.options?.options"
-                              :key="option[field.options?.keyField || 'id']"
-                              :value="option[field.options?.keyField || 'id']"
-                            >
-                              {{ option[field.options?.labelField || 'name'] }}
-                            </option>
-                          </select>
-                        </template>
-                        
-                        <template v-if="field.type === 'toggle'">
-                          <div :class="field.options?.toggleWrapperClass || effectiveOptions?.defaultToggleWrapperClass || 'flex items-center'">
-                            <input
-                              type="checkbox"
-                              v-model="newItem[field.name]"
-                              :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
-                            />
-                            <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
-                              {{ field.options.toggleLabel }}
-                            </span>
-                          </div>
-                        </template>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex justify-end space-x-2">
-                    <button @click="cancelAddItem" class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                      Отмена
-                    </button>
-                    <button 
-                      @click="saveNewItem" 
-                      class="px-3 py-1 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-                      :disabled="loading">
-                      <Icon v-if="loading" name="svg-spinners:270-ring" class="animate-spin mr-1" size="1em" />
-                      <Icon v-else :name="effectiveOptions?.icons?.saveNew || 'ph:floppy-disk-duotone'" class="mr-1" />
-                      <span>Сохранить</span>
-                    </button>
-                  </div>
-                </div>
-                
-                <!-- "Add new" button -->
-                <button v-if="!showAddForm"
-                        @click="showAddForm = true"
-                        class="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                >
-                  <Icon :name="effectiveOptions?.icons?.add || 'ph:plus-circle-duotone'" class="mr-1" />
-                  Добавить запись
-                </button>
               </div>
             </div>
           </div>

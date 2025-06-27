@@ -283,7 +283,29 @@ const tableOptions = ref({
         //displayImageField: 'club2.image', // Вложенное поле
         displayIconField: 'sport.icon' // Плоское поле
       }
-
+    },
+    {
+      name: 'arenas',
+      label: '',
+      displayLabel: 'Спортсооружения',
+      title_icon: 'i-mdi:stadium',
+      type: 'morphToMany',
+      width: '50px',
+      sortable: false,
+      options: {
+        relationField: 'arenas',
+        relationLabel: 'спортсооружений',
+        hint: 'Спортсооружения для вида спорта',
+        titleField: 'title',
+        mainField: 'title',
+        searchEndpoint: api + '/api/arenas',
+        searchField: 'title',
+        valueField: 'id',
+        searchParam: 'q',
+        minSearchLength: 2,
+        empty_class: 'bg-red-400 hover:bg-red-300 text-gray-50',
+        tooltipField: 'title',
+      }
     },
     {
       name: 'telegrams',
@@ -724,6 +746,28 @@ const formOptions = ref({
 // Дополнитнльные поля в секции редактирования отдельных полей
 const extraFields = ref([
     {
+      name: 'gallery_id',
+      label: 'Галерея',
+      type: 'select',
+      min_width: '130px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/galleries?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'gallery.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
+    },
+    {
       name: 'vks',
       label: '',
       displayLabel: 'Страницы ВКонтакте',
@@ -866,7 +910,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['club_info'];
+const defaultVisibleFields = ['club_info', 'gallery_id'];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([

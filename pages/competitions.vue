@@ -217,6 +217,29 @@ const tableOptions = ref({
       }
     },
     {
+      name: 'arenas',
+      label: '',
+      displayLabel: 'Спортсооружения',
+      title_icon: 'i-mdi:stadium',
+      type: 'morphToMany',
+      width: '50px',
+      sortable: false,
+      options: {
+        relationField: 'arenas',
+        relationLabel: 'спортсооружений',
+        hint: 'Спортсооружения для вида спорта',
+        titleField: 'title',
+        mainField: 'title',
+        searchEndpoint: api + '/api/arenas',
+        searchField: 'title',
+        valueField: 'id',
+        searchParam: 'q',
+        minSearchLength: 2,
+        empty_class: 'bg-red-400 hover:bg-red-300 text-gray-50',
+        tooltipField: 'title',
+      }
+    },
+    {
       name: 'date_from',
       label: 'Дата от',
       type: 'date',
@@ -714,11 +737,33 @@ const extraFields = ref([
       readonly: true,
       cellClass: 'text-xs bg-gray-50 rounded text-gray-60 font-bold border px-1 pt-2 w-full min-h-8 text-left cursor-default'
     }
-  }
+  },
+    {
+      name: 'gallery_id',
+      label: 'Галерея',
+      type: 'select',
+      min_width: '130px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/galleries?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'gallery.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
+    },
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['title_short'];
+const defaultVisibleFields = ['title_short', 'sites', 'vks', 'youtubes', 'instagrams', 'facebooks', 'xs', 'gallery_id'];
 
 // Фильтры
 const additionalFilters = ref([

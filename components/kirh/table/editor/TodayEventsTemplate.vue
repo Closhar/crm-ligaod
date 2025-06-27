@@ -51,15 +51,20 @@ const formatEventDate = (dateStr: string): string => {
 
 // Функция форматирования телефона
 const formatPhone = (phone: string): string => {
+  if (!phone) return '';
   return phone.replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3-$4-$5');
 };
 
 // Функция форматирования текста для Telegram
 const formatForTelegram = (text: string): string => {
+  if (!text) return '';
   return text
-    .replace(/<br\s*\/?>/g, '\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<p[^>]*>/gi, '')
     .replace(/<[^>]*>/g, '')
-    .replace(/\n\s*\n/g, '\n')
+    .replace(/\n\s*\n\s*\n/g, '\n\n')
+    .replace(/^\s+|\s+$/g, '')
     .trim();
 };
 
@@ -114,8 +119,10 @@ const loadTodayEvents = async () => {
               homeTemplate += `🗺 [Открыть на карте](${mapUrl})\n`;
             }
           }
-          let address = event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd();
-          homeTemplate += `🏟 ${address}`;
+          if (event.arena.address) {
+            let address = event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd();
+            homeTemplate += `🏟 ${address}`;
+          }
           if (event.arena.phones) {
             const phones = event.arena.phones.split(',')
               .map((phone: string) => phone.split('|')[0].trim())
@@ -128,7 +135,7 @@ const loadTodayEvents = async () => {
           // Добавляем информацию о билетах только для домашних матчей
           if (event.free_tickets) {
             homeTemplate += `🆓 Вход свободный\n\n`;
-          } else if (event.tickets) {
+          } else if (event.tickets && typeof event.tickets === 'string') {
             const cleanTickets = event.tickets
               .replace(/<[^>]*>/g, '')
               .replace(/\n\s*\n/g, '\n')
@@ -138,11 +145,8 @@ const loadTodayEvents = async () => {
         }
         
         homeTemplate += `📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.about) {
-          const cleanAbout = formatForTelegram(event.about)
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
+        if (event.about && typeof event.about === 'string') {
+          const cleanAbout = formatForTelegram(event.about);
           homeTemplate += `${cleanAbout}\n\n`;
         }
         if (event.streams && event.streams.length > 0) {
@@ -195,11 +199,8 @@ const loadTodayEvents = async () => {
           awayTemplate += `*${event.event_name}*\n`;
         }
         awayTemplate += `\n\n📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
-        if (event.about) {
-          const cleanAbout = formatForTelegram(event.about)
-            .split('\n')
-            .filter(line => line.trim().length > 0)
-            .join('\n');
+        if (event.about && typeof event.about === 'string') {
+          const cleanAbout = formatForTelegram(event.about);
           awayTemplate += `${cleanAbout}\n\n`;
         }
         if (event.streams && event.streams.length > 0) {

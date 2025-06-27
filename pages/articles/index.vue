@@ -149,7 +149,7 @@ const tableOptions = ref({
       name: 'title',
       label: 'Заголовок',
       type: 'text',
-      min_width: '160px',
+      min_width: '360px',
       sortable: true,
       options: {
         readonly: false,
@@ -162,61 +162,13 @@ const tableOptions = ref({
       name: 'slug',
       label: 'слаг',
       type: 'text',
-      width: '220px',
+      min_width: '380px',
       sortable: false,
       options: {
         readonly: false,
         placeholder: 'slug',
         cellClass: 'text-xs h-8 bg-gray-100 rounded text-gray-800 border px-1 w-full',
         input_class: 'text-red-500'
-      }
-    },
-    {
-      name: 'description',
-      label: '',
-      displayLabel: 'Описание',
-      title_icon: 'fluent:text-description-16-filled',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        editorEnabled: false,
-        hint: 'Краткое описание новости',
-        icon: 'icon-park-outline:text',
-        title: 'Краткое описание статьи',
-        readonly: false,
-        sel_class: "text-gray-900 hover:text-blue-800",
-        placeholder: 'Введите краткое описание...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-400 hover:bg-red-300',
-      }
-    },
-    {
-      name: 'content',
-      label: '',
-      displayLabel: 'Контент статьи',
-      title_icon: 'material-symbols:description-outline',
-      type: 'textarea',
-      width: '50px',
-      uploadEnabled: true,
-      sortable: false,
-      options: {
-        editorEnabled: true,
-        hint: 'Содержание новости',
-        icon: 'icon-park-outline:text',
-        title: 'Содержание статьи',
-        readonly: false,
-        sel_class: "text-gray-900 hover:text-blue-800",
-        placeholder: 'Введите содержание статьи...',
-        uploadUrl: api + '/api/upload-image',
-        imageMaxWidth: 1200,
-        imageQuality: 0.8,
-        check_empty: true,
-        empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
     {
@@ -245,14 +197,14 @@ const tableOptions = ref({
     },
   ],
   editable: true,
-  editrow: false,
+  editrow: true,
   deleteable: true,
   sortable: true,
   separateFields: true,
   defaultSortField: 'data',
   defaultSortDirection: 'desc',
   link: 'slug',
-  link_prefix: site + '/articles',
+  link_prefix: site + '/news',
   pagination: true,
   main_field: 'title',
   pageSize: 30,
@@ -353,7 +305,7 @@ const formOptions = ref({
       required: true,
       options: {
         readonly: false,
-        editorEnabled: false,
+        editorEnabled: true,
         placeholder: 'краткое описание',
         cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
         inputClass: 'p-1 h-20 border border-gray-300 rounded text-md',
@@ -363,38 +315,6 @@ const formOptions = ref({
         minLength: 10
       }
     },
-    {
-      name: 'content',
-      label: 'Содержание',
-      type: 'editor',
-      required: true,
-      options: {
-        readonly: false,
-        placeholder: 'содержание новости',
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-full',
-        inputClass: 'p-1 h-40 border border-gray-300 rounded text-md',
-        uploadUrl: api + '/api/upload-image',
-        editorEnabled: true
-      },
-      validation: {
-        required: true,
-        minLength: 20
-      }
-    },
-    {
-      name: 'published',
-      label: 'Опубликовано',
-      type: 'toggle',
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold bg-gray-100 rounded text-gray-800 border px-1 w-64',
-        inputClass: 'p-1 h-10 border border-gray-300 rounded text-md',
-        trueValue: 1,
-        falseValue: 0,
-        trueLabel: 'Да',
-        falseLabel: 'Нет'
-      }
-    }
   ]
 });
 
@@ -433,12 +353,10 @@ const additionalFilters = ref([
     field: 'published',
     label: 'Опубликовано',
     type: 'toggle',
-    options: {
-      trueValue: 1,
-      falseValue: 0,
-      trueLabel: 'Да',
-      falseLabel: 'Нет'
-    },
+    options: [
+      { value: 1, label: 'Да' },
+      { value: 0, label: 'Нет' }
+    ],
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     empty_option: {value: '', label: 'Все'}
   }

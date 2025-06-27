@@ -354,6 +354,78 @@ const tableOptions = ref({
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
+    {
+      name: 'sports',
+      label: '',
+      displayLabel: 'Виды спорта',
+      title_icon: 'i-mdi:run',
+      type: 'morphedByMany',
+      width: '50px',
+      sortable: false,
+      options: {
+        relationField: 'sports',
+        relationLabel: 'видов спорта',
+        hint: 'Виды спорта спортсооружения',
+        relatedModelType: 'sport',
+        titleField: 'title',
+        mainField: 'title',
+        searchEndpoint: api + '/api/sports',
+        searchField: 'title',
+        valueField: 'id',
+        searchParam: 'q',
+        minSearchLength: 2,
+        empty_class: 'bg-red-400 hover:bg-red-300 text-gray-50',
+        tooltipField: 'title',
+      }
+    },
+    {
+      name: 'clubs',
+      label: '',
+      displayLabel: 'Команды',
+      title_icon: 'mdi:microsoft-teams',
+      type: 'morphedByMany',
+      width: '50px',
+      sortable: false,
+      options: {
+        relationField: 'clubs',
+        relationLabel: 'команд',
+        hint: 'Команды спортсооружения',
+        relatedModelType: 'club',
+        titleField: 'title',
+        mainField: 'title',
+        searchEndpoint: api + '/api/clubs',
+        searchField: 'full_info',
+        valueField: 'id',
+        searchParam: 'q',
+        minSearchLength: 2,
+        empty_class: 'bg-red-400 hover:bg-red-300 text-gray-50',
+        tooltipField: 'full_info',
+      }
+    },
+    {
+      name: 'competitions',
+      label: '',
+      displayLabel: 'Соревнования',
+      title_icon: 'mdi:trophy',
+      type: 'morphedByMany',
+      width: '50px',
+      sortable: false,
+      options: {
+        relationField: 'competitions',
+        relationLabel: 'соревнований',
+        hint: 'Соревнования спортсооружения',
+        relatedModelType: 'competition',
+        titleField: 'title_short',
+        mainField: 'title_short',
+        searchEndpoint: api + '/api/v1/competitions',
+        searchField: 'title_short',
+        valueField: 'id',
+        searchParam: 'q',
+        minSearchLength: 2,
+        empty_class: 'bg-red-400 hover:bg-red-300 text-gray-50',
+        tooltipField: 'title_short',
+      }
+    },
   ],
   editable: true,
   editrow: false,
@@ -633,10 +705,32 @@ const extraFields = ref([
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
+    {
+      name: 'gallery_id',
+      label: 'Галерея',
+      type: 'select',
+      min_width: '130px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/galleries?type=async',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'title',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+
+        // Поля для отображения в статическом режиме
+        displayLabelField: 'gallery.title', // Вложенное поле
+        //displayImageField: 'club_info.logo', // Вложенное поле
+        //displayIconField: 'icon' // Плоское поле
+      },
+    },
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['title'];
+const defaultVisibleFields = ['title', 'vks', 'youtubes', 'telegrams', 'instagrams', 'facebooks', 'xs', 'gallery_id'];
 
 // Фильтры-селкты и фильтры-переключатели
 const additionalFilters = ref([

@@ -352,12 +352,12 @@
         </div>
 
         <!-- Контейнер с горизонтальной прокруткой для таблицы -->
-        <div class="kirh-table-scroll-container overflow-x-auto">
+        <div class="kirh-table-scroll-container overflow-x-auto overflow-y-auto" style="max-height: 70vh;" ref="tableScrollRef">
           <!-- Таблица -->
           <div class="kirh-table w-full min-w-max">
 
             <!-- Заголовки -->
-            <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b">
+            <div class="kirh-header flex mb-px text-xs font-medium cursor-pointer border-b sticky top-0 z-20 bg-gray-100 shadow-sm">
               <!-- Колонка с чекбоксами -->
               <div 
                   v-if="tableOptions.enableBulkActions"
@@ -682,15 +682,18 @@
                         :is="getFieldComponent(column.type)"
                         :error="error"
                         :options="column.options"
+                        :column="column"
                         :readonly="column.options.readonly"
                         :type="column.type"
-                        v-model="row[column.name]"
+                        :model-value="row[column.name]"
                         :row-data="row"
+                        :row="row"
                         :api-url="apiUrl"
-                        @blur="column.type === 'aigen' ? handleAigenBlur(row, column.name, $event) : handleBlur(row, column.name)"
-                        @input="column.type === 'aigen' ? null : updateValue(row, column.name, $event)"
-                        @change="column.type === 'aigen' ? null : updateValue(row, column.name, $event)"
-                        @keyup.enter="column.type === 'aigen' ? null : handleBlur(row, column.name)"
+                        @update:model-value="column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
+                        @blur="column.type === 'aigen' ? handleAigenBlur(row, column.name, $event) : (column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : handleBlur(row, column.name))"
+                        @input="column.type === 'aigen' || column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
+                        @change="column.type === 'aigen' || column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
+                        @keyup.enter="column.type === 'aigen' ? null : (column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : handleBlur(row, column.name))"
                         @click="handleCellClick(row, column)"
                     />
                   </template>
@@ -707,13 +710,13 @@
                      class="kirh-actions-cell border-b border-gray-100 flex gap-1 items-center justify-center"
                      style="flex: 0 0 80px;"
                 >
-                  <button v-if="tableOptions.editrow && tableOptions.editable"
+                  <NuxtLink v-if="tableOptions.editrow && tableOptions.editable"
+                          :to="`/articles/${row.id}`"
                           class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
                           title="Редактировать"
-                          @click="editRow(row)"
                   >
                     <Icon name="akar-icons:edit" size="1.5em"/>
-                  </button>
+                  </NuxtLink>
                   <button v-if="tableOptions.deleteable"
                           class="kirh-delete-btn text-red-500 hover:text-red-700 transition-colors p-0.5"
                           title="Удалить"
@@ -917,7 +920,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeUnmount } from 'vue';
 import { debounce } from 'lodash-es';
 import KirhTextField from './fields/KirhTextField.vue';
 import KirhSelectField from './fields/KirhSelectField.vue';
@@ -927,12 +930,16 @@ import ToggleFilter from "./filters/ToggleFilter.vue";
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhTextareaField from "./fields/KirhTextareaField.vue";
 import KirhHasManyField from './fields/KirhHasManyField.vue';
+import KirhMorphedByManyField from './fields/KirhMorphedByManyField.vue';
+import KirhBelongsToManyField from './fields/KirhBelongsToManyField.vue';
+import KirhMorphToManyField from './fields/KirhMorphToManyField.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
 import KirhSwapField from './fields/KirhSwapField.vue';
 import RichTextEditor from "./editor/RichTextEditor.vue";
 import ParseTableField from './fields/ParseTableField.vue'
 import ParseTableLockField from './fields/ParseTableLockField.vue'
 import AIGenField from './fields/AIGenField.vue'
+import KirhHasManySelectField from './fields/KirhHasManySelectField.vue'
 
 export default {
   name: 'KirhTable',
@@ -945,12 +952,16 @@ export default {
     KirhImageField,
     KirhTextareaField,
     KirhHasManyField,
+    KirhMorphedByManyField,
+    KirhBelongsToManyField,
+    KirhMorphToManyField,
     KirhTableForm,
     KirhSwapField,
     RichTextEditor,
     ParseTableField,
     ParseTableLockField,
     AIGenField,
+    KirhHasManySelectField,
   },
   props: {
     apiUrl: {
@@ -1035,11 +1046,11 @@ export default {
     const currentPage = ref(1);
     const totalPages = ref(1);
     const totalItems = ref(0);
-    const currentPageSize = ref(parseInt(props.tableOptions.pageSize, 10) || 10); // Инициализируем текущий размер страницы
-    const sortField = ref(props.tableOptions.defaultSortField);
-    const sortDirection = ref(props.tableOptions.defaultSortDirection);
+    const currentPageSize = ref(props.tableOptions.pageSize || 30);
+    const sortField = ref(props.tableOptions.defaultSortField || 'id');
+    const sortDirection = ref(props.tableOptions.defaultSortDirection || 'desc');
     const error = ref(null);
-    const showFieldSelector = ref(false);
+    const showFieldSelector = ref(props.tableOptions.enableFieldSelector || false);
     const searchQuery = ref('');
     const selectedFilters = ref({});
     const activeSelect = ref(null);
@@ -1048,7 +1059,7 @@ export default {
     const imageErrors = ref({});
     const showDeleteModal = ref(false);
     const deleteItem = ref(null);
-    const selectedFields = ref([...props.defaultVisibleFields]);
+    const selectedFields = ref([]);
     const clickOutsideHandler = ref(null);
     const idFilter = ref(null);
     const showMobileFilters = ref(false);
@@ -1087,12 +1098,16 @@ export default {
         toggle: KirhToggleField,
         image: KirhImageField,
         hasmany: KirhHasManyField,
+        morphedByMany: KirhMorphedByManyField,
+        belongsToMany: KirhBelongsToManyField,
+        morphToMany: KirhMorphToManyField,
         swap: KirhSwapField,
         rel_value: KirhTextField,
         parse_table: ParseTableField,
         parse_table_lock: ParseTableLockField,
         hidden: KirhTextField, // Добавляем поддержку hidden полей
         aigen: AIGenField, // Добавляем поддержку AI генерации
+        'has-many-select': KirhHasManySelectField,
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1820,11 +1835,6 @@ export default {
       editingRow.value = null;
     };
 
-    const editRow = (row) => {
-      editingRow.value = row;
-      showForm.value = true;
-    };
-
     const cancelForm = () => {
       showForm.value = false;
       editingRow.value = null;
@@ -2500,7 +2510,6 @@ export default {
       nextPage,
       getFieldComponent,
       addNewRow,
-      editRow,
       cancelForm,
       confirmDelete,
       executeDelete,
@@ -3144,5 +3153,15 @@ export default {
 
 .rel-value-cell:hover {
   opacity: 0.8;
+}
+
+/* Добавьте стили для фиксированного заголовка */
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: #f3f4f6;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border-bottom: 2px solid #e5e7eb;
 }
 </style>
