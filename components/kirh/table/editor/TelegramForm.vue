@@ -109,7 +109,9 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useGlobalsStore } from '~/stores/globals';
+import { storeToRefs } from 'pinia';
 
 const config = useRuntimeConfig();
 const api = config.public.API_URL;
@@ -184,47 +186,80 @@ const selectedChannelTitle = computed(() => {
 const showPreviewModal = ref(false);
 const telegramPreviewContent = ref('');
 
-// Функция форматирования HTML в Markdown для телеграм
-const formatForTelegram = (html: string): string => {
-  // Заменяем HTML-теги на Markdown
-  let markdown = html
-    // Заголовки
-    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '*$1*\n\n')
-    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '*$1*\n\n')
-    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '*$1*\n\n')
-    // Жирный текст
-    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '*$1*')
-    // Курсив
-    .replace(/<em[^>]*>(.*?)<\/em>/gi, '_$1_')
-    // Ссылки
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-    // Параграфы
-    .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
-    // Переносы строк
-    .replace(/<br\s*\/?>/gi, '\n')
-    // Удаляем оставшиеся HTML-теги
-    .replace(/<[^>]*>/g, '')
-    // Декодируем HTML-сущности
+// Функция конвертации HTML в MarkdownV2 для Telegram
+const convertToTelegramText = (html: string): string => {
+  let text = html;
+  
+  // Обрабатываем ссылки
+  text = text.replace(/<a\s+href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi, '[$2]($1)');
+  
+  // Обрабатываем жирный текст
+  text = text.replace(/<(strong|b)>([^<]+)<\/(strong|b)>/gi, '*$2*');
+  
+  // Обрабатываем заголовки
+  text = text.replace(/<h[1-6]>([^<]+)<\/h[1-6]>/gi, '*$1*');
+  
+  // Обрабатываем списки
+  text = text.replace(/<ul>\s*<li>([^<]+)<\/li>\s*<\/ul>/gi, '• $1');
+  text = text.replace(/<li>([^<]+)<\/li>/gi, '• $1');
+  
+  // Обрабатываем горизонтальные линии
+  text = text.replace(/<hr[^>]*>/gi, '\n➖➖➖➖➖➖➖➖➖➖\n');
+  
+  // Обрабатываем переносы строк
+  text = text.replace(/<p[^>]*>([^<]*)<\/p>/gi, '$1\n');
+  text = text.replace(/<br\s*\/?>/gi, '\n');
+  
+  // Удаляем остальные HTML-теги
+  text = text.replace(/<[^>]*>/g, '');
+  
+  // Декодируем HTML-сущности
+  text = text
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-
-  // Убираем лишние переносы строк, но сохраняем разделители
-  markdown = markdown
-    .replace(/\n{3,}/g, '\n\n')  // Заменяем 3 и более переноса на 2
-    .replace(/([^\n])\n➖➖➖➖➖➖➖➖➖➖/g, '$1\n\n➖➖➖➖➖➖➖➖➖➖')  // Добавляем перенос перед разделителем
-    .replace(/➖➖➖➖➖➖➖➖➖➖\n([^\n])/g, '➖➖➖➖➖➖➖➖➖➖\n\n$1')  // Добавляем перенос после разделителя
+    .replace(/&#39;/g, "'")
+    .replace(/&mdash;/g, '-')
+    .replace(/&ndash;/g, '-')
+    .replace(/&hellip;/g, '...');
+  
+  // Убираем проблемные символы
+  text = text
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
+    .replace(/[–—]/g, '-')
+    .replace(/[…]/g, '...');
+  
+  // Заменяем проблемные эмодзи на проверенные
+  text = text
+    .replace(/\*️⃣/g, '')  // Удаляем эмодзи со звездочкой
+    .replace(/📣/g, '📢')
+    .replace(/🥇/g, '🏆')
+    .replace(/🎊/g, '🎉')
+    .replace(/🎵/g, '🎶')
+    .replace(/✨/g, '⭐')
+    .replace(/🙌/g, '👍');
+  
+  // Убираем лишние пробелы и переносы
+  text = text
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ ]{2,}/g, ' ')
     .trim();
 
-  return markdown;
+  return text;
+};
+
+// Функция для предпросмотра текста в формате Telegram
+const getTelegramPreview = (html: string): string => {
+  const result = convertToTelegramText(html);
+  return result;
 };
 
 // Показать предпросмотр
 const showPreview = () => {
-  telegramPreviewContent.value = formatForTelegram(props.editorContent);
+  telegramPreviewContent.value = getTelegramPreview(props.editorContent);
   showPreviewModal.value = true;
 };
 
@@ -235,70 +270,14 @@ const sendToTelegram = async () => {
   try {
     isSending.value = true;
 
-    const fullContent = formatForTelegram(props.editorContent);
-    const MAX_MESSAGE_LENGTH_TEXT = 4000;
-    const MAX_MESSAGE_LENGTH_PHOTO = 1024;
-    const eventSeparator = '➖➖➖➖➖➖➖➖➖➖\n\n';
+    // Конвертируем HTML в MarkdownV2
+    const fullContent = convertToTelegramText(props.editorContent);
+    
+    const MAX_MESSAGE_LENGTH_TEXT = 4000; // Уменьшаем максимальную длину для безопасности
+    const MAX_MESSAGE_LENGTH_PHOTO = 1000; // Уменьшаем для сообщений с фото
 
-    // Разбиваем контент на домашние и выездные события
-    const [homeContent, awayContent] = fullContent.split('*НАШИ НА ВЫЕЗДЕ').map((part, index) => 
-      index === 0 ? part : '*НАШИ НА ВЫЕЗДЕ' + part
-    );
-
-    const parts: string[] = [];
-    let isFirstPart = true;
-
-    // Обрабатываем домашние события
-    if (homeContent) {
-      const events = homeContent.split(eventSeparator).filter(event => event.trim().length > 0);
-      let currentPart = '';
-      const currentLimit = isFirstPart && props.selectedImage !== null ? MAX_MESSAGE_LENGTH_PHOTO : MAX_MESSAGE_LENGTH_TEXT;
-
-      for (const event of events) {
-        const eventWithSeparator = event + (event !== events[events.length - 1] ? eventSeparator : '');
-        if ((currentPart + eventWithSeparator).length <= currentLimit) {
-          currentPart += eventWithSeparator;
-        } else {
-          if (currentPart) {
-            parts.push(currentPart);
-            isFirstPart = false;
-          }
-          currentPart = eventWithSeparator;
-        }
-      }
-      if (currentPart) {
-        parts.push(currentPart);
-        isFirstPart = false;
-      }
-    }
-
-    // Обрабатываем выездные события
-    if (awayContent) {
-      const events = awayContent.split(eventSeparator).filter(event => event.trim().length > 0);
-      let currentPart = '';
-      const currentLimit = isFirstPart && props.selectedImage !== null ? MAX_MESSAGE_LENGTH_PHOTO : MAX_MESSAGE_LENGTH_TEXT;
-
-      for (const event of events) {
-        const eventWithSeparator = event + (event !== events[events.length - 1] ? eventSeparator : '');
-        if ((currentPart + eventWithSeparator).length <= currentLimit) {
-          currentPart += eventWithSeparator;
-        } else {
-          if (currentPart) {
-            parts.push(currentPart);
-            isFirstPart = false;
-          }
-          currentPart = eventWithSeparator;
-        }
-      }
-      if (currentPart) {
-        parts.push(currentPart);
-      }
-    }
-
-    // Если нет частей, но есть контент, добавляем его как одну часть
-    if (parts.length === 0 && fullContent.length > 0) {
-      parts.push(fullContent);
-    }
+    // Разбиваем контент на части по длине
+    const parts = splitHomeAndAwayEvents(props.editorContent, fullContent, MAX_MESSAGE_LENGTH_TEXT);
 
     // Если контент пустой, добавляем пустую часть
     if (parts.length === 0) {
@@ -313,8 +292,20 @@ const sendToTelegram = async () => {
       const settingsArray = Object.values(publishSettings.value);
 
       try {
-        console.log(`Отправка части ${i + 1} (длина: ${partContent.length})${sendImageWithThisPart ? ' с изображением' : ''}...`);
-        console.log(`Содержимое части ${i + 1} (первые 200 символов):`, partContent.substring(0, 200) + (partContent.length > 200 ? '...' : ''));
+        // Используем MarkdownV2 для форматирования
+        let finalContent = partContent;
+        let parseMode = 'MarkdownV2';
+        
+        // Проверяем на критические проблемы с Markdown
+        const criticalIssues = partContent.includes('**') && !partContent.includes('**') ||
+                              partContent.includes('[') && !partContent.includes(']') ||
+                              partContent.includes('(') && !partContent.includes(')');
+        
+        if (criticalIssues) {
+          parseMode = '';
+          // Убираем все символы разметки для обычного текста
+          finalContent = partContent.replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+        }
 
         let response;
         if (sendImageWithThisPart) {
@@ -328,19 +319,21 @@ const sendToTelegram = async () => {
               },
               body: JSON.stringify({
                 channel_id: selectedChannel.value,
-                content: partContent,
+                content: finalContent,
                 settings: settingsArray,
                 image_url: props.selectedImage.url,
-                disable_web_page_preview: true
+                disable_web_page_preview: true,
+                parse_mode: parseMode
               })
             });
           } else if (props.selectedImage?.type === 'file') {
             const formData = new FormData();
             formData.append('channel_id', selectedChannel.value);
-            formData.append('content', partContent);
+            formData.append('content', finalContent);
             formData.append('settings', JSON.stringify(settingsArray));
             formData.append('image', props.selectedImage.file!, props.selectedImage.name);
             formData.append('disable_web_page_preview', 'true');
+            formData.append('parse_mode', parseMode);
 
             response = await fetch(`${api}/api/telegram/send`, {
               method: 'POST',
@@ -363,32 +356,40 @@ const sendToTelegram = async () => {
             },
             body: JSON.stringify({
               channel_id: selectedChannel.value,
-              content: partContent,
+              content: finalContent,
               settings: settingsArray,
-              disable_web_page_preview: true
+              disable_web_page_preview: true,
+              parse_mode: parseMode
             })
           });
         }
 
         if (!response || !response.ok) {
           const errorText = response ? await response.text() : 'Нет ответа от сервера';
-          console.error(`Полный ответ сервера при HTTP ошибке ${response?.status || 'unknown'}:`, errorText);
+          
+          // Попробуем распарсить JSON для получения детальной информации об ошибке
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.response && errorJson.response.description) {
+              throw new Error(`Ошибка Telegram: ${errorJson.response.description}`);
+            }
+          } catch (parseError) {
+            // Если не удалось распарсить JSON, используем обычный текст
+          }
+          
           throw new Error(`HTTP ошибка при отправке части ${i + 1}: ${response?.status || 'unknown'}`);
         }
 
         const result = await response.json();
         
         if (!result.success) {
-          console.error(`Полный ответ API при ошибке success:false для части ${i + 1}:`, result);
           throw new Error(result.message || `Ошибка API при отправке части ${i + 1}`);
         }
-        console.log(`Часть ${i + 1} успешно отправлена.`);
 
         if (parts.length > 1 && i < parts.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       } catch (error) {
-        console.error(`Ошибка при отправке части ${i + 1}:`, error);
         alert(`Не удалось отправить часть ${i + 1} сообщения. Проверьте консоль для деталей.`);
         throw error;
       }
@@ -403,7 +404,6 @@ const sendToTelegram = async () => {
     selectedChannel.value = telegramChannels.value[0]?.id.toString() || '';
     
   } catch (error) {
-    console.error('Ошибка при отправке в Telegram:', error);
     alert(`Произошла ошибка при отправке в Telegram: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
   } finally {
     isSending.value = false;
@@ -414,4 +414,102 @@ const sendToTelegram = async () => {
 onMounted(() => {
   fetchChannels();
 });
+
+// Функция разбивки сообщений по разделителям
+const splitHtmlMessage = (text: string, maxLength: number): string[] => {
+  const parts: string[] = [];
+  const separator = '➖➖➖➖➖➖➖➖➖➖';
+  
+  // Если текст короче максимальной длины, возвращаем как есть
+  if (text.length <= maxLength) {
+    return [text];
+  }
+  
+  // Разбиваем по разделителям
+  const sections = text.split(separator);
+  let currentPart = '';
+  
+  for (const section of sections) {
+    const sectionWithSeparator = section + (section !== sections[sections.length - 1] ? '\n' + separator + '\n' : '');
+    
+    // Если добавление секции превысит лимит, сохраняем текущую часть и начинаем новую
+    if (currentPart.length + sectionWithSeparator.length > maxLength && currentPart.length > 0) {
+      parts.push(currentPart.trim());
+      currentPart = sectionWithSeparator;
+    } else {
+      currentPart += sectionWithSeparator;
+    }
+  }
+  
+  // Добавляем последнюю часть, если она не пустая
+  if (currentPart.trim()) {
+    parts.push(currentPart.trim());
+  }
+  
+  // Если все еще есть части длиннее лимита, разбиваем их принудительно
+  const finalParts: string[] = [];
+  for (const part of parts) {
+    if (part.length <= maxLength) {
+      finalParts.push(part);
+    } else {
+      // Разбиваем по словам
+      const words = part.split(' ');
+      let currentChunk = '';
+      
+      for (const word of words) {
+        if (currentChunk.length + word.length + 1 <= maxLength) {
+          currentChunk += (currentChunk ? ' ' : '') + word;
+        } else {
+          if (currentChunk) {
+            finalParts.push(currentChunk);
+            currentChunk = word;
+          } else {
+            // Если слово само по себе длиннее лимита, разбиваем его
+            finalParts.push(word.substring(0, maxLength));
+            currentChunk = word.substring(maxLength);
+          }
+        }
+      }
+      
+      if (currentChunk) {
+        finalParts.push(currentChunk);
+      }
+    }
+  }
+  
+  return finalParts;
+};
+
+// Функция разбивки сообщений для отдельной отправки домашних и выездных событий
+const splitHomeAndAwayEvents = (htmlContent: string, convertedContent: string, maxLength: number): string[] => {
+  const parts: string[] = [];
+  
+  // Ищем разделитель между домашними и выездными событиями в исходном HTML
+  const awayEventsSeparator = '<hr style="border: 2px solid #e5e7eb; margin: 30px 0;">';
+  const separatorIndex = htmlContent.indexOf(awayEventsSeparator);
+  
+  if (separatorIndex === -1) {
+    // Если разделителя нет, отправляем как одно сообщение
+    return splitHtmlMessage(convertedContent, maxLength);
+  }
+  
+  // Разделяем на домашние и выездные события в исходном HTML
+  const homeEventsHtml = htmlContent.substring(0, separatorIndex).trim();
+  const awayEventsHtml = htmlContent.substring(separatorIndex + awayEventsSeparator.length).trim();
+  
+  // Конвертируем каждую часть отдельно
+  if (homeEventsHtml) {
+    const homeEventsConverted = convertToTelegramText(homeEventsHtml);
+    const homeParts = splitHtmlMessage(homeEventsConverted, maxLength);
+    parts.push(...homeParts);
+  }
+  
+  if (awayEventsHtml) {
+    const awayEventsConverted = convertToTelegramText(awayEventsHtml);
+    const awayParts = splitHtmlMessage(awayEventsConverted, maxLength);
+    parts.push(...awayParts);
+  }
+  
+  return parts;
+};
 </script> 

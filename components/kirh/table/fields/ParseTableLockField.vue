@@ -598,7 +598,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import debounce from 'lodash/debounce'
-import { withDefaults } from 'vue'
 import KirhNote from '~/components/kirh/fields/KirhNote.vue'
 
 // Добавляем типы для suggestion
@@ -611,7 +610,7 @@ interface Suggestion {
   [key: string]: any
 }
 
-const props = withDefaults(defineProps<{
+const props = defineProps<{
   value: string | number | null
   error: string | null
   options: {
@@ -630,11 +629,7 @@ const props = withDefaults(defineProps<{
     title?: string
   }
   row?: Record<string, any>
-}>(), {
-  row: () => ({}),
-  value: null,
-  error: null
-})
+}>()
 
 // Добавляем типы для данных таблицы
 interface TableField {

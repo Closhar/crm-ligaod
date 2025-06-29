@@ -171,6 +171,7 @@ import DayResultsTemplate from "~/components/kirh/table/editor/DayResultsTemplat
 import AIGenerationTemplate from "~/components/kirh/table/editor/AIGenerationTemplate.vue"
 import TelegramParseTemplate from "~/components/kirh/table/editor/TelegramParseTemplate.vue"
 import TelegramForm from "~/components/kirh/table/editor/TelegramForm.vue"
+import {convertToTelegramText} from "~/utils/telegramUtils"
 
 // Добавляем интерфейс для статьи
 interface Article {
@@ -214,12 +215,12 @@ const api = config.public.API_URL;
 const site = config.public.SITE_URL;
 
 useSeoMeta({
-  title: ((params.value as any).adminka_name || 'Админка') + ' - Телеграм',
+  title: ((params.value as any).adminka_name || 'Админка') + ' - Тексты',
   description: 'Работа с телеграм',
 });
 
 const p_icon = "stash:telegram";
-const p_description = 'Работа с телеграм';
+const p_description = 'Работа с текстами и парсер телеграм';
 const breadcrumbs: Array<{id: number, title: string, icon: string, slug: string}> = [];
 
 const {isAuthenticated, user, logout, checkAuth} = useAuth();

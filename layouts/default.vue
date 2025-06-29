@@ -83,7 +83,7 @@
 
       <!-- Content -->
       <main class="flex-1 overflow-y-auto bg-gray-50">
-        <slot />
+        <NuxtPage />
       </main>
 
       <!-- Desktop Footer -->
@@ -92,17 +92,19 @@
 
   </div>
 
-  <div v-else class="">
+  <div v-else>
     <KirhUnauthenticatedUserBlock :google-auth-enable="googleAuthEnable"
                                   :registration="registration"
                                   :show-logo=true
                                   restore-pass="Восстановить пароль"
                                   title="Аутентификация"
     />
+    <NuxtPage />
   </div>
 </template>
 
 <script setup>
+import {computed, ref, onMounted, watch} from "vue";
 import {useAuth} from "~/composables/useAuth.js";
 import {useGlobalsStore} from "~/stores/globals.js";
 import {storeToRefs} from "pinia";
@@ -121,29 +123,38 @@ const api = config.public.API_URL
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
-const adminka_name = params.value.adminka_name
-const site_logo = images.value.site_logo
-const copyrights = params.value.adminka_copyrights
-const copy_link = params.value.adminka_copy_link
-const registration = params.value.admin_reg === "true"; //Наличие регистрации для незарегистрированного пользователя
-const googleAuthEnable = params.value.adminka_google_auth === "true"; //Наличие авторизации через Google
-const isMC = params.value.adminka_menu_collapsed === "true"; // свернут ли блок меню
-const isMenuCollapsed = ref(isMC);
+const adminka_name = computed(() => params.value.adminka_name || 'Админка')
+const site_logo = computed(() => images.value.site_logo || '/images/logo.png')
+const copyrights = computed(() => params.value.adminka_copyrights || '© 2024 Все права защищены')
+const copy_link = computed(() => params.value.adminka_copy_link || '#')
+const registration = computed(() => params.value.admin_reg === "true"); //Наличие регистрации для незарегистрированного пользователя
+const googleAuthEnable = computed(() => params.value.adminka_google_auth === "true"); //Наличие авторизации через Google
+const isMC = computed(() => params.value.adminka_menu_collapsed === "true"); // свернут ли блок меню
+const isMenuCollapsed = ref(isMC.value);
 
 const toggleMenu = () => {
   isMenuCollapsed.value = !isMenuCollapsed.value;
 };
 
 const isLoading = ref(true);
-const ym_counter_id = params.value.ym_counter_id
-const ga_tracking_id = params.value.ga_tracking_id
+const ym_counter_id = computed(() => params.value.ym_counter_id)
+const ga_tracking_id = computed(() => params.value.ga_tracking_id)
 
-onMounted(() => {
+// Отслеживаем изменения состояния меню
+watch(isMC, (newValue) => {
+  isMenuCollapsed.value = newValue;
+});
+
+onMounted(async () => {
   checkAuth();
+  
+  // Загружаем данные из store
+  await globalsStore.fetchData();
+  
   // Симуляция загрузки данных
   setTimeout(() => {
     isLoading.value = false;
-  }, 2000); // Загрузка данных занимает 3 секунды
+  }, 2000); // Загрузка данных занимает 2 секунды
 });
 </script>
 

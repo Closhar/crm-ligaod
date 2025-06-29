@@ -42,7 +42,7 @@
       />
 
       <h2 class="text-xl font-semibold text-gray-800 mb-4 px-4 mt-8 flex items-center gap-2">
-        <Icon name="material-symbols:calendar-yesterday" class="text-blue-600" size="1.5em" />
+        <Icon name="material-symbols:calendar-today" class="text-blue-600" size="1.5em" />
         События вчера
       </h2>
       <KirhTable
@@ -168,160 +168,6 @@ const tableOptions = ref({
           warn_ev: "00:00",
           class_warn_ev: "text-xs font-bold bg-red-200 rounded h-8 text-gray-800 border px-1 w-full"
         }],
-      }
-    },
-    {
-      name: 'sport_icon',
-      label: '',
-      title_icon: 'i-ic:round-sports-kabaddi',
-      type: 'icon',
-      width: '35px',
-      sortable: false,
-      options: {
-        readonly: true,
-        only_icon: true,
-        cellClass: 'bg-green-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default'
-      }
-    },
-    {
-      name: 'gender_icon',
-      label: '',
-      title_icon: 'icons8:gender',
-      type: 'icon',
-      width: '35px',
-      sortable: false,
-      options: {
-        readonly: true,
-        only_icon: true,
-        cellClass: 'bg-blue-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default',
-        ev: [{
-          warn_ev: "fa:female",
-          class_warn_ev: "bg-red-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default"
-        },
-          {
-            warn_ev: "foundation:male-female",
-            class_warn_ev: "bg-green-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default"
-          }],
-      }
-    },
-    {
-      name: 'club1_id',
-      label: 'Команда (хоз)',
-      type: 'select',
-      min_width: '130px',
-      sortable: false,
-      options: {
-        apiUrl: api + '/api/clubs?type=1',
-        keyField: 'id',
-        labelField: 'club_info',
-        imageField: 'full_image_path',
-        enableSearch: true,
-        emptyable: true,
-        sel_class: "",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        limit: 20,
-        displayLabelField: 'club1.club_info',
-        displayImageField: 'club1.image',
-      },
-    },
-    {
-      name: 'swap_fields',
-      label: '',
-      title_icon: 'ic:outline-change-circle',
-      width: '60px',
-      sortable: false,
-      type: 'swap',
-      options: {
-        hint: 'Поменять местами команды',
-        field1: 'club1_id',
-        field2: 'club2_id',
-        icon: 'ri:exchange-box-line',
-        button_text: '',
-        cell_class: 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
-      }
-    },
-    {
-      name: 'club2_id',
-      label: 'Команда (гос)',
-      type: 'select',
-      min_width: '130px',
-      sortable: true,
-      options: {
-        apiUrl: api + '/api/clubs?type=1',
-        keyField: 'id',
-        emptyable: true,
-        labelField: 'club_info',
-        imageField: 'full_image_path',
-        enableSearch: true,
-        sel_class: "",
-        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
-        list_item: null,
-        limit: 20,
-        displayLabelField: 'club2.club_info',
-        displayImageField: 'club2.image',
-      },
-    },
-    {
-      name: 'title',
-      label: 'Название/этап',
-      type: 'text',
-      min_width: '110px',
-      sortable: true,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
-      }
-    },
-    {
-      name: 'parse_table_id',
-      label: '',
-      displayLabel: 'таблица турнира',
-      title_icon: 'fluent:table-lightning-28-regular',
-      type: 'parse_table',
-      width: '60px',
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold bg-gray-600 rounded h-8 text-gray-50 border px-1 w-full',
-        hint: 'таблица турнира',
-        apiUrl: api + '/api/parse-tables',
-        searchField: 'title',
-        valueField: 'id',
-        displayField: 'title',
-        displayValueField: 'parse_table_id',
-        displayTitleField: 'parse_table.title',
-        saveValueField: 'id',
-        tableName: 'parse_tables',
-        apiEndpoint: '/api/parse-tables',
-        simple_view:true
-      }
-    },
-    {
-      name: 'result',
-      label: 'Результат',
-      type: 'text',
-      width: '80px',
-      sortable: false,
-      checkFreshness: true,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold bg-red-100 rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',
-        ev: [{
-          warn_ev: "",
-          class_warn_ev: "text-xs font-bold bg-red-500 rounded h-8 text-gray-50 border px-1 w-full text-center cursor-pointer"
-        }],
-      }
-    },
-    {
-      name: 'result_dop',
-      label: 'Доп. рез-т',
-      type: 'text',
-      width: '80px',
-      sortable: false,
-      checkFreshness: true,
-      options: {
-        readonly: false,
-        cellClass: 'text-xs font-bold rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',
       }
     },
     {
@@ -567,8 +413,163 @@ const tableOptions = ref({
           }
         },
       ],
-    }
-  },
+    },
+    
+    },
+    {
+      name: 'sport_icon',
+      label: '',
+      title_icon: 'i-ic:round-sports-kabaddi',
+      type: 'icon',
+      width: '35px',
+      sortable: false,
+      options: {
+        readonly: true,
+        only_icon: true,
+        cellClass: 'bg-green-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default'
+      }
+    },
+    {
+      name: 'gender_icon',
+      label: '',
+      title_icon: 'icons8:gender',
+      type: 'icon',
+      width: '35px',
+      sortable: false,
+      options: {
+        readonly: true,
+        only_icon: true,
+        cellClass: 'bg-blue-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default',
+        ev: [{
+          warn_ev: "fa:female",
+          class_warn_ev: "bg-red-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default"
+        },
+          {
+            warn_ev: "foundation:male-female",
+            class_warn_ev: "bg-green-50 rounded h-8 text-gray-500 border px-1 pt-2 w-full text-center cursor-default"
+          }],
+      }
+    },
+    {
+      name: 'club1_id',
+      label: 'Команда (хоз)',
+      type: 'select',
+      min_width: '130px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/clubs?type=1',
+        keyField: 'id',
+        labelField: 'club_info',
+        imageField: 'full_image_path',
+        enableSearch: true,
+        emptyable: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        limit: 20,
+        displayLabelField: 'club1.club_info',
+        displayImageField: 'club1.image',
+      },
+    },
+    {
+      name: 'swap_fields',
+      label: '',
+      title_icon: 'ic:outline-change-circle',
+      width: '60px',
+      sortable: false,
+      type: 'swap',
+      options: {
+        hint: 'Поменять местами команды',
+        field1: 'club1_id',
+        field2: 'club2_id',
+        icon: 'ri:exchange-box-line',
+        button_text: '',
+        cell_class: 'bg-yellow-100 hover:bg-yellow-200 cursor-pointer'
+      }
+    },
+    {
+      name: 'club2_id',
+      label: 'Команда (гос)',
+      type: 'select',
+      min_width: '130px',
+      sortable: true,
+      options: {
+        apiUrl: api + '/api/clubs?type=1',
+        keyField: 'id',
+        emptyable: true,
+        labelField: 'club_info',
+        imageField: 'full_image_path',
+        enableSearch: true,
+        sel_class: "",
+        options_list: "bg-gray-100 text-gray-50 max-h-[200px] border border-gray-300 bg-gray-100  text-gray-600 rounded-md",
+        list_item: null,
+        limit: 20,
+        displayLabelField: 'club2.club_info',
+        displayImageField: 'club2.image',
+      },
+    },
+    {
+      name: 'result',
+      label: 'Результат',
+      type: 'text',
+      width: '80px',
+      sortable: false,
+      checkFreshness: true,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold bg-red-100 rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',
+        ev: [{
+          warn_ev: "",
+          class_warn_ev: "text-xs font-bold bg-red-500 rounded h-8 text-gray-50 border px-1 w-full text-center cursor-pointer"
+        }],
+      }
+    },
+    {
+      name: 'result_dop',
+      label: 'Доп. рез-т',
+      type: 'text',
+      width: '80px',
+      sortable: false,
+      checkFreshness: true,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold rounded h-8 text-gray-700 border px-1 w-full text-center cursor-pointer',
+      }
+    },
+    {
+      name: 'title',
+      label: 'Название/этап',
+      type: 'text',
+      min_width: '110px',
+      sortable: true,
+      options: {
+        readonly: false,
+        cellClass: 'text-xs rounded h-8 text-gray-700 border px-1 w-full cursor-pointer',
+      }
+    },
+    {
+      name: 'parse_table_id',
+      label: '',
+      displayLabel: 'таблица турнира',
+      title_icon: 'fluent:table-lightning-28-regular',
+      type: 'parse_table',
+      width: '60px',
+      options: {
+        readonly: false,
+        cellClass: 'text-xs font-bold bg-gray-600 rounded h-8 text-gray-50 border px-1 w-full',
+        hint: 'таблица турнира',
+        apiUrl: api + '/api/parse-tables',
+        searchField: 'title',
+        valueField: 'id',
+        displayField: 'title',
+        displayValueField: 'parse_table_id',
+        displayTitleField: 'parse_table.title',
+        saveValueField: 'id',
+        tableName: 'parse_tables',
+        apiEndpoint: '/api/parse-tables',
+        simple_view:true
+      }
+    },
   ],
   modelName: "Event",
   editable: true,

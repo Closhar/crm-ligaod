@@ -28,18 +28,14 @@ export const useGlobalsStore = defineStore('globals', () => {
             params.value = {};
             images.value = {};
 
-            // Заполняем параметры
-            if (data.params && Array.isArray(data.params)) {
-                data.params.forEach((item) => {
-                    params.value[item.name] = item.value;
-                });
+            // Заполняем параметры - новый формат: объект вместо массива
+            if (data.params && typeof data.params === 'object') {
+                params.value = data.params;
             }
 
-            // Заполняем изображения
-            if (data.images && Array.isArray(data.images)) {
-                data.images.forEach((item) => {
-                    images.value[item.name] = item.path;
-                });
+            // Заполняем изображения - новый формат: объект вместо массива
+            if (data.images && typeof data.images === 'object') {
+                images.value = data.images;
             }
 
             lastFetchTime.value = Date.now();
@@ -51,12 +47,17 @@ export const useGlobalsStore = defineStore('globals', () => {
             params.value = {
                 adminka_name: 'Админка',
                 site_name: 'Спортивный портал',
-                site_description: 'Информационный портал о спортивных событиях'
+                site_description: 'Информационный портал о спортивных событиях',
+                admin_reg: 'false',
+                adminka_google_auth: 'false',
+                adminka_menu_collapsed: 'false',
+                adminka_copyrights: '© 2024 Все права защищены',
+                adminka_copy_link: '#'
             };
             
             images.value = {
                 default_user: '/images/default-avatar.png',
-                logo: '/images/logo.png'
+                site_logo: '/images/logo.png'
             };
         } finally {
             isLoading.value = false;

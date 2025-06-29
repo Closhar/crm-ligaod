@@ -55,6 +55,21 @@ const formatPhone = (phone: string): string => {
   return phone.replace(/\D/g, '').replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, '+$1 ($2) $3-$4-$5');
 };
 
+// Функция очистки текста от проблемных символов
+const cleanText = (text: string): string => {
+  if (!text) return '';
+  return text
+    .replace(/\0/g, '') // Удаляем нулевые байты
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Удаляем управляющие символы
+    .replace(/[ ]{2,}/g, ' ') // Удаляем множественные пробелы
+    // Заменяем только самые проблемные символы
+    .replace(/[""]/g, '"') // Заменяем кавычки на обычные
+    .replace(/['']/g, "'") // Заменяем кавычки на обычные
+    .replace(/[–—]/g, '-') // Заменяем тире на обычный дефис
+    .replace(/[…]/g, '...') // Заменяем многоточие на обычное
+    .trim();
+};
+
 // Функция форматирования текста для Telegram
 const formatForTelegram = (text: string): string => {
   if (!text) return '';
@@ -65,6 +80,11 @@ const formatForTelegram = (text: string): string => {
     .replace(/<[^>]*>/g, '')
     .replace(/\n\s*\n\s*\n/g, '\n\n')
     .replace(/^\s+|\s+$/g, '')
+    // Заменяем только самые проблемные символы
+    .replace(/[""]/g, '"') // Заменяем кавычки на обычные
+    .replace(/['']/g, "'") // Заменяем кавычки на обычные
+    .replace(/[–—]/g, '-') // Заменяем тире на обычный дефис
+    .replace(/[…]/g, '...') // Заменяем многоточие на обычное
     .trim();
 };
 
@@ -89,83 +109,84 @@ const loadTodayEvents = async () => {
 
     // Добавляем домашние события только если они есть
     if (homeEvents.length > 0) {
-      let homeTemplate = `*${props.region_title}\nСПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}*\n\n`;
+      let homeTemplate = `<h1>${props.region_title}<br>СПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}</h1>\n\n`;
       homeEvents.forEach((event: any, index: number) => {
         if (index > 0) {
-          homeTemplate += '➖➖➖➖➖➖➖➖➖➖\n\n';
+          homeTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
         }
         if (event.club1 && event.club2) {
-          homeTemplate += `*${event.competition.title_short}*\n`;
-          homeTemplate += `*${event.event_name_top}*\n`;
+          homeTemplate += `<h2>${cleanText(event.competition.title_short)}</h2>\n`;
+          homeTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n`;
           if (event.title && event.title !== event.competition.title_short) {
-            homeTemplate += `*${event.title}*\n\n`;
+            homeTemplate += `<h4>${cleanText(event.title)}</h4>\n\n`;
           } else {
             homeTemplate += '\n';
           }
           if (event.series_count) {
-            homeTemplate += `Счет в серии: ${event.series_count}\n`;
+            homeTemplate += `<p><strong>Счет в серии:</strong> ${cleanText(event.series_count)}</p>\n`;
             if (event.series?.description) {
-              homeTemplate += `${event.series.description}\n`;
+              homeTemplate += `<p>${cleanText(event.series.description)}</p>\n`;
             }
           }
         } else {
-          homeTemplate += `*${event.event_name}*\n\n`;
+          homeTemplate += `<h2>${cleanText(event.event_name)}</h2>\n\n`;
         }
         if (event.arena) {
-          homeTemplate += `📍 ${event.arena.title}\n`;
+          homeTemplate += `<p><strong>📍 ${cleanText(event.arena.title)}</strong></p>\n`;
           if (event.arena.map && typeof event.arena.map === 'string') {
             const mapUrl = event.arena.map.match(/src="([^"]+)"/)?.[1];
             if (mapUrl) {
-              homeTemplate += `🗺 [Открыть на карте](${mapUrl})\n`;
+              homeTemplate += `<p>🗺 <a href="${mapUrl}" target="_blank">Открыть на карте</a></p>\n`;
             }
           }
           if (event.arena.address) {
-            let address = event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd();
-            homeTemplate += `🏟 ${address}`;
+            let address = cleanText(event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd());
+            homeTemplate += `<p>🏟 ${address}</p>\n`;
           }
           if (event.arena.phones) {
-            const phones = event.arena.phones.split(',')
+            const phones = cleanText(event.arena.phones).split(',')
               .map((phone: string) => phone.split('|')[0].trim())
               .map(formatPhone)
               .join(', ');
-            homeTemplate += `\n📞 ${phones}`;
+            homeTemplate += `<p>📞 ${phones}</p>\n`;
           }
-          homeTemplate += '\n\n';
+          homeTemplate += '\n';
           
           // Добавляем информацию о билетах только для домашних матчей
           if (event.free_tickets) {
-            homeTemplate += `🆓 Вход свободный\n\n`;
+            homeTemplate += `<p><strong>🆓 Вход свободный</strong></p>\n\n`;
           } else if (event.tickets && typeof event.tickets === 'string') {
-            const cleanTickets = event.tickets
+            const cleanTickets = cleanText(event.tickets)
               .replace(/<[^>]*>/g, '')
               .replace(/\n\s*\n/g, '\n')
               .trim();
-            homeTemplate += `💳 ${cleanTickets}\n\n`;
+            homeTemplate += `<p><strong>💳</strong> ${cleanTickets}</p>\n\n`;
           }
         }
         
-        homeTemplate += `📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
+        homeTemplate += `<p><strong>📅</strong> ${formatEventDate(event.date_from)}</p>\n`;
+        homeTemplate += `<p><strong>⏰ Время начала:</strong> ${cleanText(event.time)}</p>\n\n`;
         if (event.about && typeof event.about === 'string') {
-          const cleanAbout = formatForTelegram(event.about);
-          homeTemplate += `${cleanAbout}\n\n`;
+          // Передаем поле about как есть, без очистки HTML
+          homeTemplate += `<p>${event.about}</p>\n\n`;
         }
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
-            homeTemplate += '*📺 Трансляции события:*\n';
+            homeTemplate += `<p><strong>📺 Трансляции события:</strong></p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
-              homeTemplate += `• [${stream.title}](${stream.link})\n`;
+              homeTemplate += `<li><a href="${stream.link}" target="_blank">${cleanText(stream.title)}</a></li>\n`;
             });
-            homeTemplate += '\n';
+            homeTemplate += `</ul>\n\n`;
           } else {
-            homeTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
+            homeTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
           }
         } else {
-          homeTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
+          homeTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
         }
-        homeTemplate += `🔗 [Подробнее](${`${props.site}/events/${event.id}`})\n`;
+        homeTemplate += `<p><strong>🔗</strong> <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
       });
-      homeTemplate += '\n' + props.hashtags;
+      homeTemplate += `<p><br>${props.hashtags}</p>`;
       finalTemplate += homeTemplate;
     }
 
@@ -174,52 +195,53 @@ const loadTodayEvents = async () => {
       let awayTemplate = '';
       // Добавляем разделитель только если есть домашние события
       if (homeEvents.length > 0) {
-        awayTemplate = '\n\n';
+        awayTemplate = '<hr style="border: 2px solid #e5e7eb; margin: 30px 0;">\n\n';
       }
-      awayTemplate += `*НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}*\n\n`;
+      awayTemplate += `<h1>НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}</h1>\n\n`;
       awayEvents.forEach((event: any, index: number) => {
         if (index > 0) {
-          awayTemplate += '\n\n➖➖➖➖➖➖➖➖➖➖\n\n';
+          awayTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
         }
         if (event.club1 && event.club2) {
-          awayTemplate += `*${event.competition.title_short}*\n`;
-          awayTemplate += `*${event.event_name_top}*\n`;
+          awayTemplate += `<h2>${cleanText(event.competition.title_short)}</h2>\n`;
+          awayTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n`;
           if (event.title && event.title !== event.competition.title_short) {
-            awayTemplate += `*${event.title}*\n\n`;
+            awayTemplate += `<h4>${cleanText(event.title)}</h4>\n\n`;
           } else {
             awayTemplate += '\n';
           }
           if (event.series_count) {
-            awayTemplate += `Счет в серии: ${event.series_count}\n`;
+            awayTemplate += `<p><strong>Счет в серии:</strong> ${cleanText(event.series_count)}</p>\n`;
             if (event.series?.description) {
-              awayTemplate += `${event.series.description}\n`;
+              awayTemplate += `<p>${cleanText(event.series.description)}</p>\n`;
             }
           }
         } else {
-          awayTemplate += `*${event.event_name}*\n`;
+          awayTemplate += `<h2>${cleanText(event.event_name)}</h2>\n`;
         }
-        awayTemplate += `\n\n📅 ${formatEventDate(event.date_from)}\n⏰ Время начала: *${event.time}*\n\n`;
+        awayTemplate += `\n\n<p><strong>📅</strong> ${formatEventDate(event.date_from)}</p>\n`;
+        awayTemplate += `<p><strong>⏰ Время начала:</strong> ${cleanText(event.time)}</p>\n\n`;
         if (event.about && typeof event.about === 'string') {
-          const cleanAbout = formatForTelegram(event.about);
-          awayTemplate += `${cleanAbout}\n\n`;
+          // Передаем поле about как есть, без очистки HTML
+          awayTemplate += `<p>${event.about}</p>\n\n`;
         }
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
-            awayTemplate += '*📺 Трансляции события:*\n';
+            awayTemplate += `<p><strong>📺 Трансляции события:</strong></p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
-              awayTemplate += `• [${stream.title}](${stream.link})\n`;
+              awayTemplate += `<li><a href="${stream.link}" target="_blank">${cleanText(stream.title)}</a></li>\n`;
             });
-            awayTemplate += '\n';
+            awayTemplate += `</ul>\n\n`;
           } else {
-            awayTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
+            awayTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
           }
         } else {
-          awayTemplate += '*📺 Ссылок на трансляцию пока нет*\n\n';
+          awayTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
         }
-        awayTemplate += `🔗 [Подробнее](${`${props.site}/events/${event.id}`})\n`;
+        awayTemplate += `<p><strong>🔗</strong> <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
       });
-      awayTemplate += '\n' + props.hashtags;
+      awayTemplate += `<p><br>${props.hashtags}</p>`;
       finalTemplate += awayTemplate;
     }
 

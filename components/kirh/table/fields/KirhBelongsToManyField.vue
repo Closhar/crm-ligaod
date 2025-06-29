@@ -135,9 +135,9 @@ interface Props {
   apiUrl: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  value: undefined
-});
+const props = defineProps<Props & {
+  value?: any
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: any]
@@ -525,4 +525,4 @@ input[type="checkbox"]:checked + div {
 .w-5.h-5:hover {
   transform: scale(1.05);
 }
-</style> 
+</style>

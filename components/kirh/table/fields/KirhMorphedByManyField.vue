@@ -121,9 +121,9 @@ interface Props {
   apiUrl: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  value: undefined
-});
+const props = defineProps<Props & {
+  value?: any
+}>();
 
 const emit = defineEmits<{
   'update:modelValue': [value: any]
