@@ -631,6 +631,19 @@ const formOptions = ref({
         activeClass: 'bg-green-500 text-white',
         inactiveClass: 'bg-red-400 text-red-800'
       }
+    },
+    {
+      name: 'free_tickets',
+      label: 'бесплатные билеты',
+      type: 'toggle',
+      width: '120px',
+      sortable: false,
+      options: {
+        defaultChecked: true,
+        display: 'switch',
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-400 text-red-800'
+      }
     }
   ],
   additionalFields: { // Новые параметры для дополнительных полей
