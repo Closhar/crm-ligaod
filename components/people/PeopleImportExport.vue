@@ -156,11 +156,33 @@ import { computed, defineProps, reactive, ref, watch } from 'vue'
 import * as XLSX from 'xlsx'
 // @ts-ignore
 import { Icon } from '@iconify/vue'
-import Papa from 'papaparse'
 import { defineEmits } from 'vue'
 import { useApi } from '../../composables/useApi'
 import AmpluaSelect from './AmpluaSelect.vue'
 import PositionSelect from './PositionSelect.vue'
+// Простая функция для парсинга CSV
+function parseCSV(csv: string): string[][] {
+  const lines = csv.split('\n').filter(line => line.trim())
+  return lines.map(line => {
+    const result = []
+    let current = ''
+    let inQuotes = false
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i]
+      if (char === '"') {
+        inQuotes = !inQuotes
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim())
+        current = ''
+      } else {
+        current += char
+      }
+    }
+    result.push(current.trim())
+    return result
+  })
+}
 const ampluasList = ref<any[]>([])
 const positionsList = ref<any[]>([])
 const { apiRequest } = useApi()
@@ -294,8 +316,8 @@ function onImportUpload() {
         fillImportPreview(json)
       } else if (file.name.endsWith('.csv') || file.name.endsWith('.txt')) {
         // CSV/TXT
-        const parsed = Papa.parse(data as string, { skipEmptyLines: true })
-        fillImportPreview(parsed.data)
+        const parsed = parseCSV(data as string)
+        fillImportPreview(parsed)
       } else {
         alert('Неподдерживаемый формат файла')
       }
@@ -315,8 +337,8 @@ function onImportUpload() {
       fetch(csvUrl)
         .then(r => r.text())
         .then(csv => {
-          const parsed = Papa.parse(csv, { skipEmptyLines: true })
-          fillImportPreview(parsed.data)
+          const parsed = parseCSV(csv)
+          fillImportPreview(parsed)
         })
         .catch(() => alert('Не удалось загрузить Google Sheets как CSV. Проверьте публичность документа.'))
     } else {
@@ -582,7 +604,11 @@ async function exportPeopleData() {
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       saveAsFile(wbout, 'people_export.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     } else if (exportFormat.value === 'csv' || exportFormat.value === 'txt') {
-      const csv = Papa.unparse(exportRows)
+      const csv = exportRows.map(row => 
+        Object.values(row).map(value => 
+          typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+        ).join(',')
+      ).join('\n')
       const mime = exportFormat.value === 'csv' ? 'text/csv' : 'text/plain'
       const ext = exportFormat.value === 'csv' ? 'csv' : 'txt'
       saveAsFile(csv, `people_export.${ext}`, mime)

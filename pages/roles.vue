@@ -526,7 +526,7 @@ onMounted(async () => {
 }
 
 .form-textarea {
-  @apply resize-vertical;
+  @apply resize-y;
 }
 
 .form-checkbox {
