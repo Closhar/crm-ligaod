@@ -33,12 +33,12 @@
 
 <script lang="ts" setup>
 
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
@@ -95,13 +95,12 @@ const tableOptions = ref({
         apiUrl: api + '/api/regions?type=async',
         keyField: 'id',
         emptyable: true,
-      hint: 'Регион',
+        hint: 'Регион',
         labelField: 'title_short',
         enableSearch: true,
         options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
         sel_class: "text-xs text-blue-800 font-bold",
         list_item: null,
-        // Поля для отображения в статическом режиме
         displayLabelField: 'region.title_short', 
       },
       emptyOption: {
@@ -486,7 +485,7 @@ const tableOptions = ref({
   ],
   // Колонка Действия
   editable: true, // редактирование записи
-  editrow: false, // кнопка редактирования записи
+  editrow: true, // кнопка редактирования записи
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   separateFields: true, // редактирование отдельных полей
@@ -494,6 +493,7 @@ const tableOptions = ref({
   defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
   link_prefix: site + '/clubs', // префикс ссылки
+  editrow_link_prefix: '/clubs',
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу
@@ -746,6 +746,30 @@ const formOptions = ref({
 // Дополнитнльные поля в секции редактирования отдельных полей
 const extraFields = ref([
     {
+      name: 'rating_region_id',
+      label: 'Регион рейтинга',
+      title_icon: 'i-ph:map-pin-area',
+      type: 'select',
+      min_width: '180px',
+      sortable: false,
+      options: {
+        apiUrl: api + '/api/v1/rating/regions',
+        keyField: 'id',
+        labelField: 'name',
+        emptyable: true,
+        enableSearch: true,
+        hint: 'Регион для рейтинга SRRR',
+        options_list: "bg-gray-100 font-xs font-bold max-h-[200px] border border-gray-300 text-blue-800 rounded-md",
+        sel_class: "text-xs text-blue-800 font-bold",
+        list_item: null,
+        displayLabelField: 'rating_region.name',
+      },
+      emptyOption: {
+        value: null,
+        label: '-',
+      },
+    },
+    {
       name: 'gallery_id',
       label: 'Галерея',
       type: 'select',
@@ -910,7 +934,7 @@ const extraFields = ref([
 ]);
 
 // Поля, видимые по умолчанию в доп.таблице
-const defaultVisibleFields = ['club_info', 'gallery_id'];
+const defaultVisibleFields = ['club_info', 'rating_region_id', 'gallery_id'];
 
 // Фильтры-селкты и фильтры-переключатели (type: 'toggle')
 const additionalFilters = ref([

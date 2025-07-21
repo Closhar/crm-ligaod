@@ -1,6 +1,6 @@
 // stores/globals.js
-import {defineStore} from 'pinia';
-import {ref} from 'vue';
+import { defineStore } from 'pinia';
+import { ref } from 'vue';
 
 export const useGlobalsStore = defineStore('globals', () => {
     const params = ref({});
@@ -52,12 +52,15 @@ export const useGlobalsStore = defineStore('globals', () => {
                 adminka_google_auth: 'false',
                 adminka_menu_collapsed: 'false',
                 adminka_copyrights: '© 2024 Все права защищены',
-                adminka_copy_link: '#'
+                adminka_copy_link: '#',
+                person_img_width: '500',
+                person_img_height: '750'
             };
             
             images.value = {
                 default_user: '/images/default-avatar.png',
-                site_logo: '/images/logo.png'
+                site_logo: '/images/logo.png',
+                person_logo: '/images/logo.png'
             };
         } finally {
             isLoading.value = false;

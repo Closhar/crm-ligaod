@@ -219,6 +219,33 @@
       <Icon name="ph:robot" size="20"/>
     </button>
 
+    <div class="relative">
+      <button
+          class="p-2 rounded hover:bg-gray-200"
+          title="Эмодзи"
+          type="button"
+          @click="showEmojiPicker = !showEmojiPicker"
+      >
+        <Icon name="ph:smiley" size="20"/>
+      </button>
+      <div
+          v-if="showEmojiPicker"
+          class="absolute z-50 grid grid-cols-8 gap-1 p-3 mt-1 bg-white border rounded-lg shadow-lg overflow-y-auto"
+          style="width: 400px; max-height: 300px; top: 100%; left: 0;"
+      >
+      <button
+          v-for="emoji in popularEmojis"
+          :key="emoji.emoji"
+          :title="emoji.name"
+          type="button"
+          class="p-2 text-xl hover:bg-gray-100 rounded transition-colors"
+          @click="insertEmoji(emoji.emoji)"
+      >
+        {{ emoji.emoji }}
+      </button>
+    </div>
+    </div>
+
     <button
         class="p-2 rounded hover:bg-gray-200"
         title="Исходный код"
@@ -284,10 +311,203 @@ const emit = defineEmits([
   'toggle-source',
   'show-link-modal',
   'show-ai-modal',
-  'clear-content'
+  'clear-content',
+  'insert-emoji'
 ])
 
 const showColorPicker = ref(false)
+const showEmojiPicker = ref(false)
+const popularEmojis = [
+  // Спортивные мячи
+  { emoji: '⚽', name: 'Футбол' },
+  { emoji: '🏀', name: 'Баскетбол' },
+  { emoji: '🏈', name: 'Американский футбол' },
+  { emoji: '🏐', name: 'Волейбол' },
+  { emoji: '🏒', name: 'Хоккей' },
+  { emoji: '🎾', name: 'Теннис' },
+  { emoji: '🏓', name: 'Настольный теннис' },
+  { emoji: '🏸', name: 'Бадминтон' },
+  { emoji: '🏉', name: 'Регби' },
+  { emoji: '🎱', name: 'Бильярд' },
+  { emoji: '🏓', name: 'Пинг-понг' },
+  { emoji: '🎯', name: 'Дартс' },
+  { emoji: '🏹', name: 'Стрельба из лука' },
+  { emoji: '⛳', name: 'Гольф' },
+  { emoji: '🏌️', name: 'Гольфист' },
+  { emoji: '🏊', name: 'Плавание' },
+  { emoji: '🏃', name: 'Бег' },
+  { emoji: '🚴', name: 'Велоспорт' },
+  { emoji: '🏋️', name: 'Тяжелая атлетика' },
+  { emoji: '🤸', name: 'Гимнастика' },
+  { emoji: '🤺', name: 'Фехтование' },
+  { emoji: '🥊', name: 'Бокс' },
+  { emoji: '🥋', name: 'Боевые искусства' },
+  { emoji: '🏆', name: 'Кубок' },
+  { emoji: '🥇', name: 'Золотая медаль' },
+  { emoji: '🥈', name: 'Серебряная медаль' },
+  { emoji: '🥉', name: 'Бронзовая медаль' },
+  { emoji: '🏅', name: 'Спортивная медаль' },
+  { emoji: '🎖️', name: 'Военная медаль' },
+  { emoji: '🏟️', name: 'Стадион' },
+  { emoji: '⚽', name: 'Футбольное поле' },
+  { emoji: '🏟️', name: 'Арена' },
+  { emoji: '🎪', name: 'Цирк' },
+  { emoji: '🎭', name: 'Театр' },
+  { emoji: '🎨', name: 'Искусство' },
+  { emoji: '🎬', name: 'Кино' },
+  { emoji: '🎤', name: 'Микрофон' },
+  { emoji: '🎧', name: 'Наушники' },
+  { emoji: '🎵', name: 'Музыка' },
+  { emoji: '🎶', name: 'Ноты' },
+  { emoji: '🎸', name: 'Гитара' },
+  { emoji: '🎹', name: 'Пианино' },
+  { emoji: '🎺', name: 'Труба' },
+  { emoji: '🎻', name: 'Скрипка' },
+  { emoji: '🥁', name: 'Барабан' },
+  { emoji: '📢', name: 'Объявление' },
+  { emoji: '📣', name: 'Мегафон' },
+  { emoji: '📯', name: 'Горн' },
+  { emoji: '🔔', name: 'Колокольчик' },
+  { emoji: '🔕', name: 'Колокольчик перечеркнут' },
+  { emoji: '📅', name: 'Календарь' },
+  { emoji: '📆', name: 'Календарь-блокнот' },
+  { emoji: '🗓️', name: 'Календарь-спираль' },
+  { emoji: '⏰', name: 'Будильник' },
+  { emoji: '⏱️', name: 'Секундомер' },
+  { emoji: '⏲️', name: 'Таймер' },
+  { emoji: '🕐', name: 'Время' },
+  { emoji: '🕑', name: 'Время' },
+  { emoji: '🕒', name: 'Время' },
+  { emoji: '🕓', name: 'Время' },
+  { emoji: '🕔', name: 'Время' },
+  { emoji: '🕕', name: 'Время' },
+  { emoji: '🕖', name: 'Время' },
+  { emoji: '🕗', name: 'Время' },
+  { emoji: '🕘', name: 'Время' },
+  { emoji: '🕙', name: 'Время' },
+  { emoji: '🕚', name: 'Время' },
+  { emoji: '🕛', name: 'Время' },
+  { emoji: '📍', name: 'Место' },
+  { emoji: '🗺️', name: 'Карта' },
+  { emoji: '🗽', name: 'Статуя Свободы' },
+  { emoji: '🗼', name: 'Токийская башня' },
+  { emoji: '🏰', name: 'Замок' },
+  { emoji: '🏯', name: 'Японский замок' },
+  { emoji: '🏛️', name: 'Классическое здание' },
+  { emoji: '🏗️', name: 'Строительство' },
+  { emoji: '🏘️', name: 'Дома' },
+  { emoji: '🏚️', name: 'Заброшенный дом' },
+  { emoji: '🏠', name: 'Дом' },
+  { emoji: '🏡', name: 'Дом с садом' },
+  { emoji: '🏢', name: 'Офисное здание' },
+  { emoji: '🏣', name: 'Почта' },
+  { emoji: '🏤', name: 'Европейская почта' },
+  { emoji: '🏥', name: 'Больница' },
+  { emoji: '🏦', name: 'Банк' },
+  { emoji: '🏨', name: 'Отель' },
+  { emoji: '🏩', name: 'Любовный отель' },
+  { emoji: '🏪', name: 'Магазин' },
+  { emoji: '🏫', name: 'Школа' },
+  { emoji: '🏬', name: 'Торговый центр' },
+  { emoji: '🏭', name: 'Фабрика' },
+  { emoji: '🏮', name: 'Фонарь' },
+  { emoji: '🏯', name: 'Японский замок' },
+  { emoji: '🎫', name: 'Билет' },
+  { emoji: '🎟️', name: 'Билеты' },
+  { emoji: '🎪', name: 'Цирк' },
+  { emoji: '🎭', name: 'Театр' },
+  { emoji: '🎨', name: 'Искусство' },
+  { emoji: '🎬', name: 'Кино' },
+  { emoji: '🎤', name: 'Микрофон' },
+  { emoji: '🎧', name: 'Наушники' },
+  { emoji: '🎵', name: 'Музыка' },
+  { emoji: '🎶', name: 'Ноты' },
+  { emoji: '🎸', name: 'Гитара' },
+  { emoji: '🎹', name: 'Пианино' },
+  { emoji: '🎺', name: 'Труба' },
+  { emoji: '🎻', name: 'Скрипка' },
+  { emoji: '🥁', name: 'Барабан' },
+  { emoji: '💰', name: 'Деньги' },
+  { emoji: '💴', name: 'Банкнота' },
+  { emoji: '💵', name: 'Доллар' },
+  { emoji: '💶', name: 'Евро' },
+  { emoji: '💷', name: 'Фунт' },
+  { emoji: '💸', name: 'Деньги с крыльями' },
+  { emoji: '💳', name: 'Кредитная карта' },
+  { emoji: '💎', name: 'Алмаз' },
+  { emoji: '💍', name: 'Кольцо' },
+  { emoji: '💎', name: 'Драгоценный камень' },
+  { emoji: '🔥', name: 'Огонь' },
+  { emoji: '💥', name: 'Взрыв' },
+  { emoji: '✨', name: 'Блестки' },
+  { emoji: '⭐', name: 'Звезда' },
+  { emoji: '🌟', name: 'Светящаяся звезда' },
+  { emoji: '💫', name: 'Вращающаяся звезда' },
+  { emoji: '⚡', name: 'Молния' },
+  { emoji: '💢', name: 'Символ гнева' },
+  { emoji: '💦', name: 'Капли пота' },
+  { emoji: '💨', name: 'Ветер' },
+  { emoji: '💧', name: 'Капля' },
+  { emoji: '🌊', name: 'Волна' },
+  { emoji: '💪', name: 'Сила' },
+  { emoji: '👊', name: 'Кулак' },
+  { emoji: '✊', name: 'Поднятый кулак' },
+  { emoji: '👋', name: 'Приветствие' },
+  { emoji: '👌', name: 'OK' },
+  { emoji: '👍', name: 'Большой палец вверх' },
+  { emoji: '👎', name: 'Большой палец вниз' },
+  { emoji: '👏', name: 'Аплодисменты' },
+  { emoji: '🙌', name: 'Поднятые руки' },
+  { emoji: '👐', name: 'Открытые ладони' },
+  { emoji: '🤲', name: 'Ладони вверх' },
+  { emoji: '🤝', name: 'Рукопожатие' },
+  { emoji: '🙏', name: 'Молитва' },
+  { emoji: '✍️', name: 'Письмо' },
+  { emoji: '💅', name: 'Маникюр' },
+  { emoji: '🤳', name: 'Селфи' },
+  { emoji: '💃', name: 'Танцующая женщина' },
+  { emoji: '🕺', name: 'Танцующий мужчина' },
+  { emoji: '👯', name: 'Танцоры' },
+  { emoji: '👯‍♀️', name: 'Танцующие женщины' },
+  { emoji: '👯‍♂️', name: 'Танцующие мужчины' },
+  { emoji: '🎉', name: 'Праздник' },
+  { emoji: '🎊', name: 'Конфетти' },
+  { emoji: '🎋', name: 'Бамбук' },
+  { emoji: '🎍', name: 'Сосновые украшения' },
+  { emoji: '🎎', name: 'Японские куклы' },
+  { emoji: '🎏', name: 'Карп' },
+  { emoji: '🎐', name: 'Ветряной колокольчик' },
+  { emoji: '🎀', name: 'Лента' },
+  { emoji: '🎁', name: 'Подарок' },
+  { emoji: '🎂', name: 'Торт' },
+  { emoji: '🎃', name: 'Тыква' },
+  { emoji: '🎄', name: 'Рождественская елка' },
+  { emoji: '🎅', name: 'Дед Мороз' },
+  { emoji: '🎆', name: 'Фейерверк' },
+  { emoji: '🎇', name: 'Бенгальский огонь' },
+  { emoji: '🧨', name: 'Петарда' },
+  { emoji: '✨', name: 'Блестки' },
+  { emoji: '🎈', name: 'Воздушный шар' },
+  { emoji: '🎉', name: 'Праздник' },
+  { emoji: '🎊', name: 'Конфетти' },
+  { emoji: '🎋', name: 'Бамбук' },
+  { emoji: '🎍', name: 'Сосновые украшения' },
+  { emoji: '🎎', name: 'Японские куклы' },
+  { emoji: '🎏', name: 'Карп' },
+  { emoji: '🎐', name: 'Ветряной колокольчик' },
+  { emoji: '🎀', name: 'Лента' },
+  { emoji: '🎁', name: 'Подарок' },
+  { emoji: '🎂', name: 'Торт' },
+  { emoji: '🎃', name: 'Тыква' },
+  { emoji: '🎄', name: 'Рождественская елка' },
+  { emoji: '🎅', name: 'Дед Мороз' },
+  { emoji: '🎆', name: 'Фейерверк' },
+  { emoji: '🎇', name: 'Бенгальский огонь' },
+  { emoji: '🧨', name: 'Петарда' },
+  { emoji: '✨', name: 'Блестки' },
+  { emoji: '🎈', name: 'Воздушный шар' }
+]
+
 const colors = [
   {name: 'Чёрный', value: '#000000'},
   {name: 'Красный', value: '#ff0000'},
@@ -319,6 +539,13 @@ const setLink = () => {
     text: text,
     openInNewTab: isLinkActive ? props.editor.getAttributes('link').target === '_blank' : false
   })
+}
+
+const insertEmoji = (emoji) => {
+  if (props.editor) {
+    props.editor.chain().focus().insertContent(emoji).run()
+  }
+  showEmojiPicker.value = false
 }
 </script>
 

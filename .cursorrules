@@ -1,0 +1,54 @@
+# Правила для работы с API в проекте
+
+## API Конфигурация
+
+ВСЕГДА используйте правильную схему для получения API URL:
+
+```typescript
+// ✅ ПРАВИЛЬНО - используем только useRuntimeConfig()
+const config = useRuntimeConfig()
+const api = config.public.API_URL
+
+// ❌ НЕПРАВИЛЬНО - не используем fallback значения
+const api = config.public.API_URL || 'http://127.0.0.1:8000'
+```
+
+## Composable useApi
+
+ПРЕДПОЧТИТЕЛЬНО используйте composable `useApi()` для всех API запросов:
+
+```typescript
+// ✅ ПРАВИЛЬНО
+const { api, apiRequest } = useApi()
+
+// Примеры использования
+const response = await apiRequest('/people')
+const createResponse = await apiRequest('/people', { 
+  method: 'POST', 
+  body: data 
+})
+```
+
+## Структура API запросов
+
+Все API запросы должны:
+1. Использовать `useRuntimeConfig()` для получения API URL
+2. Автоматически добавлять токен авторизации
+3. Использовать правильные заголовки Content-Type
+4. Начинаться с `/` (например, `/people`, а не `people`)
+
+## Переменные окружения
+
+API URL берется из переменной окружения `NUXT_PUBLIC_API_URL`, которая должна быть настроена в `.env` файле:
+
+```bash
+NUXT_PUBLIC_API_URL=https://p.sportrep.ru
+```
+
+## Важные моменты
+
+- НЕ используйте fallback значения для API URL
+- НЕ используйте `useAppConfig()` для API URL
+- ВСЕГДА используйте `useRuntimeConfig()`
+- ПРЕДПОЧТИТЕЛЬНО используйте composable `useApi()`
+- Все эндпоинты должны начинаться с `/` 

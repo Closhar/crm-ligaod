@@ -33,20 +33,23 @@
 
 <script lang="ts" setup>
 
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { onMounted, ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = await useAsyncData('globals', async () => {
-  await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
-  return {params: globalsStore.params, images: globalsStore.images};
+// const {data} = await useAsyncData('globals', async () => {
+//   await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
+//   return {params: globalsStore.params, images: globalsStore.images};
+// });
+onMounted(async () => {
+  await globalsStore.fetchData();
 });
 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
@@ -225,6 +228,25 @@ const tableOptions = ref({
         imageMaxWidth: 1200,
         imageQuality: 0.8,
         check_empty: true,
+        empty_class: 'bg-red-400 hover:bg-red-300',
+      }
+    },
+    // Новое поле типа multi_field_modal
+    {
+      name: 'contacts_modal',
+      label: '',
+      displayLabel: 'Координаты (модалка)',
+      title_icon: 'mdi:map-marker-radius',
+      type: 'multi_field_modal',
+      width: '60px',
+      sortable: false,
+      options: {
+        icon: 'mdi:map-marker-radius',
+        fields: ['latitude', 'longitude'],
+        fieldLabels: { latitude: 'Широта', longitude: 'Долгота' },
+        modalTitle: 'Редактирование координат',
+        apiUrl: api + '/api/arenas/update-contacts',
+        hint: 'Редактировать широту и долготу спортсооружения',
         empty_class: 'bg-red-400 hover:bg-red-300',
       }
     },
@@ -436,6 +458,7 @@ const tableOptions = ref({
   defaultSortDirection: 'desc',
   link: 'slug',
   link_prefix: site + '/arenas',
+  editrow_link_prefix: '/arenas',
   pagination: true,
   main_field: 'title',
   pageSize: 30,

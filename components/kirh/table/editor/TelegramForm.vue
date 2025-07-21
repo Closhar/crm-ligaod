@@ -109,9 +109,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
-import { useGlobalsStore } from '~/stores/globals';
-import { storeToRefs } from 'pinia';
+import { computed, ref } from 'vue';
 
 const config = useRuntimeConfig();
 const api = config.public.API_URL;
@@ -137,6 +135,8 @@ const props = defineProps<{
     name: string;
   } | null;
   selectedImagePreview: string;
+  addEventLink?: boolean;
+  addTelegramChannelLink?: boolean;
 }>();
 
 // Emits
@@ -186,18 +186,22 @@ const selectedChannelTitle = computed(() => {
 const showPreviewModal = ref(false);
 const telegramPreviewContent = ref('');
 
-// Функция конвертации HTML в MarkdownV2 для Telegram
+// Функция конвертации HTML в чистый текст для Telegram
 const convertToTelegramText = (html: string): string => {
   let text = html;
   
-  // Обрабатываем ссылки
-  text = text.replace(/<a\s+href=["']([^"']+)["'][^>]*>([^<]+)<\/a>/gi, '[$2]($1)');
+  // Обрабатываем ссылки - используем Markdown формат без экранирования
+  text = text.replace(/<a\s+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (match, url, linkText) => {
+    // Очищаем linkText от HTML тегов
+    const cleanLinkText = linkText.replace(/<[^>]*>/g, '').trim();
+    return `[${cleanLinkText}](${url})`;
+  });
   
-  // Обрабатываем жирный текст
-  text = text.replace(/<(strong|b)>([^<]+)<\/(strong|b)>/gi, '*$2*');
+  // Обрабатываем жирный текст - просто убираем теги
+  text = text.replace(/<(strong|b)>([^<]+)<\/(strong|b)>/gi, '$2');
   
-  // Обрабатываем заголовки
-  text = text.replace(/<h[1-6]>([^<]+)<\/h[1-6]>/gi, '*$1*');
+  // Обрабатываем заголовки - просто убираем теги
+  text = text.replace(/<h[1-6]>([^<]+)<\/h[1-6]>/gi, '$1');
   
   // Обрабатываем списки
   text = text.replace(/<ul>\s*<li>([^<]+)<\/li>\s*<\/ul>/gi, '• $1');
@@ -209,6 +213,9 @@ const convertToTelegramText = (html: string): string => {
   // Обрабатываем переносы строк
   text = text.replace(/<p[^>]*>([^<]*)<\/p>/gi, '$1\n');
   text = text.replace(/<br\s*\/?>/gi, '\n');
+  
+  // Обрабатываем пустые параграфы для создания пустых строк
+  text = text.replace(/<p[^>]*><\/p>/gi, '\n');
   
   // Удаляем остальные HTML-теги
   text = text.replace(/<[^>]*>/g, '');
@@ -247,6 +254,19 @@ const convertToTelegramText = (html: string): string => {
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ ]{2,}/g, ' ')
     .trim();
+
+  // Добавляем автоматические дополнения
+  const additions = [];
+  
+  // Ссылка на Telegram канал
+  if (props.addTelegramChannelLink) {
+    additions.push('Подпишись и будь в курсе спортивных событий Питера: @spbsportrep');
+  }
+  
+  // Добавляем дополнения в конец текста
+  if (additions.length > 0) {
+    text += '\n\n' + additions.join('\n');
+  }
 
   return text;
 };
@@ -292,20 +312,12 @@ const sendToTelegram = async () => {
       const settingsArray = Object.values(publishSettings.value);
 
       try {
-        // Используем MarkdownV2 для форматирования
+        // Используем обычный Markdown для ссылок
         let finalContent = partContent;
-        let parseMode = 'MarkdownV2';
+        let parseMode = 'Markdown';
         
-        // Проверяем на критические проблемы с Markdown
-        const criticalIssues = partContent.includes('**') && !partContent.includes('**') ||
-                              partContent.includes('[') && !partContent.includes(']') ||
-                              partContent.includes('(') && !partContent.includes(')');
-        
-        if (criticalIssues) {
-          parseMode = '';
-          // Убираем все символы разметки для обычного текста
-          finalContent = partContent.replace(/\*\*/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-        }
+        // Убираем звездочки из жирного текста, но оставляем ссылки
+        finalContent = partContent.replace(/\*\*/g, '');
 
         let response;
         if (sendImageWithThisPart) {

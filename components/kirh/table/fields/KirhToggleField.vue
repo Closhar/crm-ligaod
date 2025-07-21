@@ -8,7 +8,7 @@
         @change="handleSingleChange"
     />
     <span class="toggle-track"></span>
-    <span class="toggle-label">{{ labelText }}</span>
+    <!-- <span class="toggle-label">{{ labelText }}</span> -->
   </label>
 </template>
 

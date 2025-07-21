@@ -33,12 +33,12 @@
 
 <script lang="ts" setup>
 
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
@@ -205,6 +205,7 @@ const tableOptions = ref({
   defaultSortDirection: 'desc',
   link: 'slug',
   link_prefix: site + '/news',
+  editrow_link_prefix: '/articles',
   pagination: true,
   main_field: 'title',
   pageSize: 30,

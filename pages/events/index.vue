@@ -34,13 +34,12 @@
 
 <script lang="ts" setup>
 
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
-import {Icon} from '@iconify/vue';
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
@@ -392,7 +391,7 @@ const tableOptions = ref({
   // Основные параметры
   modelName: "Event",
   editable: true, // редактирование
-  editrow: false, // редактирование строки
+  editrow: true, // редактирование строки
   deleteable: true, // удаление
   sortable: true, // сортировка
   defaultSortField: 'date_from', // Поле для сортировки по умолчанию
@@ -401,6 +400,7 @@ const tableOptions = ref({
   showIdFilter: true, // отображать фильтр по ID
   link: 'id',
   link_prefix: site + '/events',
+  editrow_link_prefix: '/events',
   pagination: true,
   main_field: 'event_name',
   pageSize: 15,

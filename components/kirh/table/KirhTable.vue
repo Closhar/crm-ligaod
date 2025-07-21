@@ -711,7 +711,7 @@
                      style="flex: 0 0 80px;"
                 >
                   <NuxtLink v-if="tableOptions.editrow && tableOptions.editable"
-                          :to="`/articles/${row.id}`"
+                          :to="`${tableOptions.editrow_link_prefix || '/articles'}/${row.id}`"
                           class="kirh-edit-btn text-blue-500 hover:text-blue-700 transition-colors p-0.5"
                           title="Редактировать"
                   >
@@ -920,26 +920,27 @@
 </template>
 
 <script>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted, onBeforeUnmount } from 'vue';
 import { debounce } from 'lodash-es';
-import KirhTextField from './fields/KirhTextField.vue';
-import KirhSelectField from './fields/KirhSelectField.vue';
-import KirhToggleField from './fields/KirhToggleField.vue';
-import KirhDateTimeField from './fields/KirhDateTimeField.vue';
-import ToggleFilter from "./filters/ToggleFilter.vue";
-import KirhImageField from './fields/KirhImageField.vue';
-import KirhTextareaField from "./fields/KirhTextareaField.vue";
-import KirhHasManyField from './fields/KirhHasManyField.vue';
-import KirhMorphedByManyField from './fields/KirhMorphedByManyField.vue';
-import KirhBelongsToManyField from './fields/KirhBelongsToManyField.vue';
-import KirhMorphToManyField from './fields/KirhMorphToManyField.vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import KirhMultiFieldModal from './KirhMultiFieldModal.vue';
 import KirhTableForm from './components/KirhTableForm.vue';
-import KirhSwapField from './fields/KirhSwapField.vue';
 import RichTextEditor from "./editor/RichTextEditor.vue";
-import ParseTableField from './fields/ParseTableField.vue'
-import ParseTableLockField from './fields/ParseTableLockField.vue'
-import AIGenField from './fields/AIGenField.vue'
-import KirhHasManySelectField from './fields/KirhHasManySelectField.vue'
+import AIGenField from './fields/AIGenField.vue';
+import KirhBelongsToManyField from './fields/KirhBelongsToManyField.vue';
+import KirhDateTimeField from './fields/KirhDateTimeField.vue';
+import KirhHasManyField from './fields/KirhHasManyField.vue';
+import KirhHasManySelectField from './fields/KirhHasManySelectField.vue';
+import KirhImageField from './fields/KirhImageField.vue';
+import KirhMorphToManyField from './fields/KirhMorphToManyField.vue';
+import KirhMorphedByManyField from './fields/KirhMorphedByManyField.vue';
+import KirhSelectField from './fields/KirhSelectField.vue';
+import KirhSwapField from './fields/KirhSwapField.vue';
+import KirhTextField from './fields/KirhTextField.vue';
+import KirhTextareaField from "./fields/KirhTextareaField.vue";
+import KirhToggleField from './fields/KirhToggleField.vue';
+import ParseTableField from './fields/ParseTableField.vue';
+import ParseTableLockField from './fields/ParseTableLockField.vue';
+import ToggleFilter from "./filters/ToggleFilter.vue";
 
 export default {
   name: 'KirhTable',
@@ -962,6 +963,7 @@ export default {
     ParseTableLockField,
     AIGenField,
     KirhHasManySelectField,
+    KirhMultiFieldModal,
   },
   props: {
     apiUrl: {
@@ -1108,6 +1110,7 @@ export default {
         hidden: KirhTextField, // Добавляем поддержку hidden полей
         aigen: AIGenField, // Добавляем поддержку AI генерации
         'has-many-select': KirhHasManySelectField,
+        multi_field_modal: KirhMultiFieldModal, // Новый тип поля
       };
       return componentMap[type] || KirhTextField;
     };

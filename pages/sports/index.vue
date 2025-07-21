@@ -33,21 +33,19 @@
 
 <script lang="ts" setup>
 
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobals } from '~/composables/useGlobals';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = await useAsyncData('globals', async () => {
-  await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
-  return {params: globalsStore.params, images: globalsStore.images};
-});
+const { data } = useGlobals()
 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
@@ -437,7 +435,7 @@ const tableOptions = ref({
   ],
   // Колонка Действия
   editable: true, // редактирование записи
-  editrow: false, // кнопка редактирования записи
+  editrow: true, // кнопка редактирования записи
   deleteable: true, // кнопка удаления записи
   sortable: true, // сортировка полей
   searchable: true, // Строка текстового поиска - параметр q= (настраивается на бэкенде)
@@ -447,6 +445,7 @@ const tableOptions = ref({
   defaultSortDirection: 'desc', // Направление сортировки по умолчанию (asc или desc)
   link: 'slug', // поле, значение которого передается во внешнюю ссылку в таблице (если null - ссылка не выводится)
   link_prefix: site + '/sports', // префикс ссылки
+  editrow_link_prefix: '/sports',
   pagination: true, // пагинация
   main_field: 'title', // Главное поле. выводится при удалении строки с предупреждением
   pageSize: 30, // записей на страницу

@@ -13,6 +13,7 @@
             @toggle-source="toggleSource"
             @show-ai-modal="showAIModal = true"
             @clear-content="clearContent"
+            @insert-emoji="handleInsertEmoji"
         />
         <div v-else class="p-2 bg-gray-50 flex justify-between items-center">
           <span class="text-sm font-medium">Режим исходного кода</span>
@@ -200,21 +201,20 @@
   </template>
   
   <script setup lang="ts">
-  import {Editor, EditorContent} from '@tiptap/vue-3'
-  import {Node} from '@tiptap/core'
-  import StarterKit from '@tiptap/starter-kit'
-  import Image from '@tiptap/extension-image'
-  import TextAlign from '@tiptap/extension-text-align'
-  import TextStyle from '@tiptap/extension-text-style'
-  import Color from '@tiptap/extension-color'
-  import Underline from '@tiptap/extension-underline'
-  import Link from '@tiptap/extension-link'
-  import Placeholder from '@tiptap/extension-placeholder'
-  import EditorToolbar from './EditorToolbar.vue'
-  import ImageUploadModal from './ImageUploadModal.vue'
-  import IframeModal from './IframeModal.vue'
-  import LinkModal from './LinkModal.vue'
-  import {nextTick, watch} from 'vue'
+  import { Node } from '@tiptap/core'
+import Color from '@tiptap/extension-color'
+import Image from '@tiptap/extension-image'
+import Link from '@tiptap/extension-link'
+import TextAlign from '@tiptap/extension-text-align'
+import TextStyle from '@tiptap/extension-text-style'
+import Underline from '@tiptap/extension-underline'
+import StarterKit from '@tiptap/starter-kit'
+import { Editor, EditorContent } from '@tiptap/vue-3'
+import { nextTick, watch } from 'vue'
+import EditorToolbar from './EditorToolbar.vue'
+import IframeModal from './IframeModal.vue'
+import ImageUploadModal from './ImageUploadModal.vue'
+import LinkModal from './LinkModal.vue'
   
   const IframeExtension = Node.create({
     name: 'iframe',
@@ -419,6 +419,12 @@
         editor.value.commands.clearContent()
         emit('update:modelValue', '')
       }
+    }
+  }
+
+  const handleInsertEmoji = (emoji) => {
+    if (editor.value) {
+      editor.value.chain().focus().insertContent(emoji).run()
     }
   }
   

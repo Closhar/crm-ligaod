@@ -61,21 +61,16 @@
 </template>
 
 <script setup>
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobals } from '~/composables/useGlobals';
 
-const globalsStore = useGlobalsStore();
-const {params, images} = storeToRefs(globalsStore);
+const { loadGlobals, params, images } = useGlobals();
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = await useAsyncData('globals', async () => {
-  await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
-  return {params: globalsStore.params, images: globalsStore.images};
-});
+await loadGlobals();
 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
@@ -97,7 +92,7 @@ const route = useRoute();
 const {data: pageData} = await useFetch(api + `/api/v1/apage/1`);
 
 useSeoMeta({
-  title: params.value.adminka_name + ' - ' + (pageData.value?.title || 'Главная'),
+  title: params.adminka_name + ' - ' + (pageData.value?.title || 'Главная'),
   description: pageData.value?.description || 'Главная страница',
 });
 

@@ -109,7 +109,7 @@ const loadTodayEvents = async () => {
 
     // Добавляем домашние события только если они есть
     if (homeEvents.length > 0) {
-      let homeTemplate = `<h1>${props.region_title}<br>СПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}</h1>\n\n`;
+      let homeTemplate = `<h1>${props.region_title}<br>СПОРТИВНЫЕ СОБЫТИЯ ${formatDateForTemplate(today)}</h1><p></p>`;
       homeEvents.forEach((event: any, index: number) => {
         if (index > 0) {
           homeTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
@@ -133,22 +133,15 @@ const loadTodayEvents = async () => {
         }
         if (event.arena) {
           homeTemplate += `<p><strong>📍 ${cleanText(event.arena.title)}</strong></p>\n`;
-          if (event.arena.map && typeof event.arena.map === 'string') {
-            const mapUrl = event.arena.map.match(/src="([^"]+)"/)?.[1];
-            if (mapUrl) {
-              homeTemplate += `<p>🗺 <a href="${mapUrl}" target="_blank">Открыть на карте</a></p>\n`;
-            }
-          }
           if (event.arena.address) {
             let address = cleanText(event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd());
-            homeTemplate += `<p>🏟 ${address}</p>\n`;
-          }
-          if (event.arena.phones) {
-            const phones = cleanText(event.arena.phones).split(',')
-              .map((phone: string) => phone.split('|')[0].trim())
-              .map(formatPhone)
-              .join(', ');
-            homeTemplate += `<p>📞 ${phones}</p>\n`;
+            // Формируем ссылку на Яндекс.Карты по координатам
+            if (event.arena.latitude && event.arena.longitude) {
+              const mapUrl = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
+              homeTemplate += `<p>🏟 <a href="${mapUrl}" target="_blank">${address}</a></p>\n`;
+            } else {
+              homeTemplate += `<p>🏟 ${address}</p>\n`;
+            }
           }
           homeTemplate += '\n';
           
@@ -164,12 +157,6 @@ const loadTodayEvents = async () => {
           }
         }
         
-        homeTemplate += `<p><strong>📅</strong> ${formatEventDate(event.date_from)}</p>\n`;
-        homeTemplate += `<p><strong>⏰ Время начала:</strong> ${cleanText(event.time)}</p>\n\n`;
-        if (event.about && typeof event.about === 'string') {
-          // Передаем поле about как есть, без очистки HTML
-          homeTemplate += `<p>${event.about}</p>\n\n`;
-        }
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
@@ -197,7 +184,7 @@ const loadTodayEvents = async () => {
       if (homeEvents.length > 0) {
         awayTemplate = '<hr style="border: 2px solid #e5e7eb; margin: 30px 0;">\n\n';
       }
-      awayTemplate += `<h1>НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}</h1>\n\n`;
+      awayTemplate += `<h1>НАШИ НА ВЫЕЗДЕ ${formatDateForTemplate(today)}</h1><p></p>`;
       awayEvents.forEach((event: any, index: number) => {
         if (index > 0) {
           awayTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
@@ -217,14 +204,21 @@ const loadTodayEvents = async () => {
             }
           }
         } else {
-          awayTemplate += `<h2>${cleanText(event.event_name)}</h2>\n`;
+          awayTemplate += `<h2>${cleanText(event.event_name)}</h2>\n\n`;
         }
-        awayTemplate += `\n\n<p><strong>📅</strong> ${formatEventDate(event.date_from)}</p>\n`;
-        awayTemplate += `<p><strong>⏰ Время начала:</strong> ${cleanText(event.time)}</p>\n\n`;
-        if (event.about && typeof event.about === 'string') {
-          // Передаем поле about как есть, без очистки HTML
-          awayTemplate += `<p>${event.about}</p>\n\n`;
+        
+        // Добавляем информацию об арене для выездных событий, если есть
+        if (event.arena && event.arena.address) {
+          let address = cleanText(event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd());
+          if (event.arena.latitude && event.arena.longitude) {
+            const mapUrl = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
+            awayTemplate += `<p>🏟 <a href="${mapUrl}" target="_blank">${address}</a></p>\n`;
+          } else {
+            awayTemplate += `<p>🏟 ${address}</p>\n`;
+          }
+          awayTemplate += '\n';
         }
+        
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {

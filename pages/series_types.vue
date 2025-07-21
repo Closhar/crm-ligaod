@@ -24,21 +24,19 @@
 </template>
 
 <script lang="ts" setup>
-import {ref, onMounted, watch} from 'vue';
-import {useAuth} from '~/composables/useAuth';
-import {useGlobalsStore} from '~/stores/globals';
-import {storeToRefs} from 'pinia';
-import Head from "~/components/parts/Head.vue"
+import { storeToRefs } from 'pinia';
+import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
+import Head from "~/components/parts/Head.vue";
+import { useAuth } from '~/composables/useAuth';
+import { useGlobals } from '~/composables/useGlobals';
+import { useGlobalsStore } from '~/stores/globals';
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = await useAsyncData('globals', async () => {
-  await globalsStore.fetchData();
-  return {params: globalsStore.params, images: globalsStore.images};
-});
+const { data } = useGlobals()
 
 const config = useRuntimeConfig();
 const api = config.public.API_URL;

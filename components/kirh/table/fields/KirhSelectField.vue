@@ -77,8 +77,9 @@
  * KirhSelectField - компонент селекта с возможностью асинхронной загрузки данных
  * @version 1.2 - исправлен вывод пустого объекта в поле выбора
  */
-import {ref, watch, onMounted, onUnmounted, computed} from 'vue';
-import {Icon} from '@iconify/vue';
+import { useRuntimeConfig } from '#app';
+import { Icon } from '@iconify/vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
   options: {
@@ -131,7 +132,7 @@ const props = defineProps({
   },
   sel_class: {
     type: String,
-    default: 'text-white'
+    default: 'text-gray-900'
   },
   options_list: {
     type: String,
@@ -187,7 +188,8 @@ const getNestedValue = (obj, path) => {
 const filteredOptions = computed(() => {
   let options = [];
 
-  if (props.options.length > 0) {
+  // Безопасно проверяем props.options
+  if (Array.isArray(props.options) && props.options.length > 0) {
     options = [...props.options];
   } else {
     options = [...apiOptions.value];
@@ -236,10 +238,27 @@ const getDisplayValue = computed(() => {
 
 // Инициализация значения по умолчанию
 const initializeDefaultValue = () => {
-  if (props.defaultValue !== null && props.defaultValue !== undefined) {
-    const allOptions = [...props.options, ...apiOptions.value];
+  // Безопасно получаем массив опций
+  const optionsArray = Array.isArray(props.options) ? props.options : [];
+  const apiOptionsArray = Array.isArray(apiOptions.value) ? apiOptions.value : [];
+  const allOptions = [...optionsArray, ...apiOptionsArray];
+  
+  // Если есть modelValue, используем его
+  if (props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== '') {
     const defaultOption = allOptions.find(
-        option => option[props.keyField] === props.defaultValue
+        option => option[props.keyField] == props.modelValue // Используем нестрогое сравнение
+    );
+
+    if (defaultOption) {
+      selectedOption.value = defaultOption;
+      return;
+    }
+  }
+  
+  // Если есть defaultValue и нет modelValue, используем defaultValue
+  if (props.defaultValue !== null && props.defaultValue !== undefined && props.defaultValue !== '') {
+    const defaultOption = allOptions.find(
+        option => option[props.keyField] == props.defaultValue // Используем нестрогое сравнение
     );
 
     if (defaultOption) {
@@ -286,45 +305,52 @@ const fetchOptions = async (query = '') => {
 
   isLoading.value = true;
   try {
-    // Определяем базовый URL (текущий хост)
-    const baseUrl = window.location.origin;
+    // Получаем конфигурацию API
+    const config = useRuntimeConfig();
+    const api = config.public.API_URL;
     
-    // Создаем URL с учетом базового пути
-    let fullUrl;
+    // Формируем полный URL
+    let apiUrl;
     if (props.apiUrl.startsWith('http')) {
-      // Если URL абсолютный, используем его как есть
-      fullUrl = new URL(props.apiUrl);
+      // Если это полный URL, используем как есть
+      apiUrl = props.apiUrl;
+    } else if (props.apiUrl.startsWith('/')) {
+      // Если начинается с /, добавляем к базовому URL
+      apiUrl = `${api}${props.apiUrl}`;
     } else {
-      // Иначе добавляем базовый URL
-      fullUrl = new URL(props.apiUrl, baseUrl);
+      // Иначе добавляем /api/ к базовому URL
+      apiUrl = `${api}/api/${props.apiUrl}`;
     }
     
-    // Добавляем параметры запроса
-    Object.entries({...props.apiParams, q: query, limit: props.limit}).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        fullUrl.searchParams.append(key, value);
+    // Используем $fetch для правильной работы с API
+    const params = { ...props.apiParams, q: query, limit: props.limit };
+    
+    // Удаляем пустые параметры
+    Object.keys(params).forEach(key => {
+      if (params[key] === undefined || params[key] === null || params[key] === '') {
+        delete params[key];
       }
     });
 
-    const response = await fetch(fullUrl);
-    
-    if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`);
-
-    const data = await response.json();
+    const data = await $fetch(apiUrl, {
+      method: 'GET',
+      params: params
+    });
 
     // Проверяем, что данные в правильном формате
-    if (!Array.isArray(data)) {
-      console.error('API вернул не массив:', data);
+    let optionsData = data;
+    
+    // Если API возвращает объект с полем data, извлекаем массив
+    if (data && typeof data === 'object' && data.data && Array.isArray(data.data)) {
+      optionsData = data.data;
+    } else if (!Array.isArray(data)) {
       apiOptions.value = [];
       return;
     }
 
     // Проверяем, что у всех элементов есть нужные поля
-    const validData = data.filter(item => {
+    const validData = optionsData.filter(item => {
       const hasRequiredFields = item[props.keyField] !== undefined && item[props.labelField] !== undefined;
-      if (!hasRequiredFields) {
-        console.warn('Элемент без обязательных полей:', item);
-      }
       return hasRequiredFields;
     });
 
@@ -333,7 +359,6 @@ const fetchOptions = async (query = '') => {
     // После загрузки данных инициализируем значение по умолчанию
     initializeDefaultValue();
   } catch (error) {
-    console.error('Ошибка при загрузке данных:', error);
     apiOptions.value = [];
   } finally {
     isLoading.value = false;
@@ -352,7 +377,7 @@ onMounted(() => {
   document.addEventListener('click', handleClickOutside);
 
   // Если есть статические опции - инициализируем сразу
-  if (props.options.length > 0) {
+  if (Array.isArray(props.options) && props.options.length > 0) {
     initializeDefaultValue();
   }
   // Если есть API URL - загружаем данные
