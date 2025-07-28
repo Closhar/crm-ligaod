@@ -554,7 +554,8 @@ import LinkModal from './LinkModal.vue'
           attributes: {class: 'prose focus:outline-none min-h-[200px] text-left'}
         },
         onUpdate: () => {
-          emit('update:modelValue', editor.value.getHTML())
+          const html = editor.value.getHTML()
+          emit('update:modelValue', html)
         }
       })
     }

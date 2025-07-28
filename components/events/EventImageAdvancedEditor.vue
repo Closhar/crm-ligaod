@@ -1053,6 +1053,22 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 const config = useRuntimeConfig();
 const apiUrl = config.public.API_URL;
 
+// Функция для безопасного форматирования даты события
+const formatEventDate = (dateString) => {
+  if (!dateString) return ''
+  
+  try {
+    const date = new Date(dateString)
+    // Проверяем, что дата валидна
+    if (isNaN(date.getTime())) {
+      return dateString // Возвращаем исходную строку, если дата невалидна
+    }
+    return date.toLocaleDateString('ru-RU')
+  } catch (error) {
+    return dateString // Возвращаем исходную строку в случае ошибки
+  }
+}
+
 // Константы типов для шаблонов
 const IMAGE_TYPES = {
   EVENT_IMAGE: 'event_image',
@@ -2342,7 +2358,7 @@ function insertEventValueToLayer(idx, type) {
   const d = props.eventData || {};
   let value = '';
   if (type === 'title') value = d.title || '[Название]';
-  if (type === 'date') value = d.date_formatted ? new Date(d.date_formatted).toLocaleDateString('ru-RU') : '[Дата]';
+  if (type === 'date') value = d.date_formatted ? formatEventDate(d.date_formatted) : '[Дата]';
   if (type === 'time') value = d.time_formatted || '[Время]';
   if (type === 'score') value = d.result || '[Счёт]';
   if (type === 'result_dop') value = d.result_dop || '[Доп.счёт]';

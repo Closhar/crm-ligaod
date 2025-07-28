@@ -45,9 +45,10 @@ const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = await useAsyncData('globals', async () => {
-  await globalsStore.fetchData(); // Вызываем метод fetchData из хранилища
-  return {params: globalsStore.params, images: globalsStore.images};
+const {data} = useAsyncData('globals', () => {
+  return globalsStore.fetchData().then(() => {
+    return {params: globalsStore.params, images: globalsStore.images};
+  });
 });
 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()

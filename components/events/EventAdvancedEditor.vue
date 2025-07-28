@@ -489,6 +489,22 @@ const eventId = route.params.id;
 const { apiRequest } = useApi();
 const config = useRuntimeConfig();
 
+// Функция для безопасного форматирования даты события
+const formatEventDate = (dateString) => {
+  if (!dateString) return ''
+  
+  try {
+    const date = new Date(dateString)
+    // Проверяем, что дата валидна
+    if (isNaN(date.getTime())) {
+      return dateString // Возвращаем исходную строку, если дата невалидна
+    }
+    return date.toLocaleDateString('ru-RU')
+  } catch (error) {
+    return dateString // Возвращаем исходную строку в случае ошибки
+  }
+}
+
 const props = defineProps({
   eventData: Object,
   teamActions: {
@@ -1002,7 +1018,7 @@ const insertEventData = (field) => {
   const d = props.eventData || {};
   
   if (field === 'title') value = d.title || '[Название события]';
-  if (field === 'date') value = d.date_formatted ? new Date(d.date_formatted).toLocaleDateString('ru-RU') : '[Дата]';
+  if (field === 'date') value = d.date_formatted ? formatEventDate(d.date_formatted) : '[Дата]';
   if (field === 'score') value = d.result || '[Счёт]';
   if (field === 'clubs') {
     const c1 = d.club1?.title || '';
@@ -1365,9 +1381,9 @@ const formatEventText = (action) => {
     const actionName = actionShortName ? `<strong>${actionShortName}</strong>` : '';
     return `${minute}${actionName} ${playerName}`;
   } else if (isPoints) {
-    // Очки: {Игрок} (значение, если больше 1)
+    // Очки: {Игрок} (целое значение)
     const pointsValue = action.value || 0;
-    const pointsText = pointsValue && pointsValue > 1 ? ` (<strong>${pointsValue}</strong>)` : '';
+    const pointsText = pointsValue ? ` (<strong>${Math.floor(pointsValue)}</strong>)` : '';
     return `${playerName}${pointsText}`;
   } else {
     // Остальные события: минута' {краткое название} {Игрок}
@@ -1428,7 +1444,7 @@ function insertEventField(field) {
   let value = '';
   const d = props.eventData || {};
   if (field === 'title') value = d.title || '[Название события]';
-  if (field === 'date') value = d.date_formatted ? new Date(d.date_formatted).toLocaleDateString('ru-RU') : '[Дата]';
+  if (field === 'date') value = d.date_formatted ? formatEventDate(d.date_formatted) : '[Дата]';
   if (field === 'score') value = d.result || '[Счёт]';
   if (field === 'clubs') {
     const c1 = d.club1?.title || '';

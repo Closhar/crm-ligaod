@@ -1280,6 +1280,18 @@ export default {
         // Обновляем локальное значение
         row[fieldName] = value;
 
+        // Подготовка значения для отправки
+        let valueToSave = value;
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (fieldName === 'free_tickets' || fieldName === 'is_active') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+
         // Отправляем изменения на сервер
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
@@ -1287,7 +1299,7 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            [fieldName]: value
+            [fieldName]: valueToSave
           })
         });
 
@@ -1358,6 +1370,24 @@ export default {
         // Если селект работает с объектами (например, {id: 1, name: "Value"})
         if (column.options?.saveOnlyId) {
           valueToSave = value?.id ?? null;
+        }
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (column.type === 'toggle') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+
+        // Дополнительная проверка для поля free_tickets
+        if (fieldName === 'free_tickets') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
         }
 
         // Временно обновляем значение в локальных данных
@@ -1442,12 +1472,24 @@ export default {
           }
         }
 
+        // Подготовка значения для отправки
+        let valueToSave = row[fieldName];
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (fieldName === 'free_tickets' || fieldName === 'is_active') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({[fieldName]: row[fieldName]})
+          body: JSON.stringify({[fieldName]: valueToSave})
         });
 
         if (!response.ok) {
@@ -1503,12 +1545,24 @@ export default {
           }
         }
 
+        // Подготовка значения для отправки
+        let valueToSave = value;
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (fieldName === 'free_tickets' || fieldName === 'is_active') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({[fieldName]: value})
+          body: JSON.stringify({[fieldName]: valueToSave})
         });
 
         if (!response.ok) {
@@ -1516,7 +1570,7 @@ export default {
         }
 
         // Обновляем значение в row
-        row[fieldName] = value;
+        row[fieldName] = valueToSave;
         
         await fetchData();
         isFreshnessChecked.value = false; // Сбрасываем флаг после успешного сохранения
@@ -2159,13 +2213,25 @@ export default {
     // Метод для сохранения изменений текстовых полей
     const saveTextChanges = async (row, fieldName, value) => {
       try {
+        // Подготовка значения для отправки
+        let valueToSave = value;
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (fieldName === 'free_tickets' || fieldName === 'is_active') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+
         // Отправляем на сервер
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({[fieldName]: value})
+          body: JSON.stringify({[fieldName]: valueToSave})
         });
 
         if (!response.ok) {
@@ -2218,14 +2284,27 @@ export default {
         if (!currentCell.value) return;
         
         const { row, column } = currentCell.value;
-        row[column.name] = serverValue.value;
+        
+        // Подготовка значения для отправки
+        let valueToSave = serverValue.value;
+
+        // Для toggle полей преобразуем числовые значения в boolean
+        if (column.name === 'free_tickets' || column.name === 'is_active') {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+            valueToSave = true;
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+            valueToSave = false;
+          }
+        }
+        
+        row[column.name] = valueToSave;
         
         const response = await fetch(`${props.apiUrl}/${row.id}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({[column.name]: serverValue.value})
+          body: JSON.stringify({[column.name]: valueToSave})
         });
 
         if (!response.ok) {

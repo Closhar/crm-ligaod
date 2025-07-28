@@ -156,7 +156,6 @@ import { computed, defineProps, reactive, ref, watch } from 'vue'
 import * as XLSX from 'xlsx'
 // @ts-ignore
 import { Icon } from '@iconify/vue'
-import { defineEmits } from 'vue'
 import { useApi } from '../../composables/useApi'
 import AmpluaSelect from './AmpluaSelect.vue'
 import PositionSelect from './PositionSelect.vue'

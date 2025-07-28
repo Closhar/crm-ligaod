@@ -115,13 +115,12 @@ const loadTodayEvents = async () => {
           homeTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
         }
         if (event.club1 && event.club2) {
-          homeTemplate += `<h2>${cleanText(event.competition.title_short)}</h2>\n`;
-          homeTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n`;
+          homeTemplate += `<h2>${cleanText(event.competition.title_short)}`;
           if (event.title && event.title !== event.competition.title_short) {
-            homeTemplate += `<h4>${cleanText(event.title)}</h4>\n\n`;
-          } else {
-            homeTemplate += '\n';
+            homeTemplate += ` (${cleanText(event.title)})`;
           }
+          homeTemplate += `</h2>\n`;
+          homeTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n\n`;
           if (event.series_count) {
             homeTemplate += `<p><strong>Счет в серии:</strong> ${cleanText(event.series_count)}</p>\n`;
             if (event.series?.description) {
@@ -132,46 +131,61 @@ const loadTodayEvents = async () => {
           homeTemplate += `<h2>${cleanText(event.event_name)}</h2>\n\n`;
         }
         if (event.arena) {
-          homeTemplate += `<p><strong>📍 ${cleanText(event.arena.title)}</strong></p>\n`;
-          if (event.arena.address) {
-            let address = cleanText(event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd());
-            // Формируем ссылку на Яндекс.Карты по координатам
-            if (event.arena.latitude && event.arena.longitude) {
-              const mapUrl = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
-              homeTemplate += `<p>🏟 <a href="${mapUrl}" target="_blank">${address}</a></p>\n`;
-            } else {
-              homeTemplate += `<p>🏟 ${address}</p>\n`;
+          // Форматируем время начала события
+          const eventTime = event.date_from ? new Date(event.date_from).toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit'
+          }) : '';
+          
+          // Формируем ссылку на карту
+          let mapLink = '';
+          if (event.arena.latitude && event.arena.longitude) {
+            mapLink = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
+          }
+          
+          // Отображаем название арены с ссылкой на карту и временем отдельно
+          if (mapLink) {
+            homeTemplate += `<p>📍 <a href="${mapLink}" target="_blank">${cleanText(event.arena.title)} (на карте)</a>`;
+            if (eventTime) {
+              homeTemplate += ` - <strong>${eventTime}</strong>`;
             }
+            homeTemplate += `</p>\n`;
+          } else {
+            homeTemplate += `<p>📍 ${cleanText(event.arena.title)}`;
+            if (eventTime) {
+              homeTemplate += ` - <strong>${eventTime}</strong>`;
+            }
+            homeTemplate += `</p>\n`;
           }
           homeTemplate += '\n';
           
           // Добавляем информацию о билетах только для домашних матчей
           if (event.free_tickets) {
-            homeTemplate += `<p><strong>🆓 Вход свободный</strong></p>\n\n`;
+            homeTemplate += `<p>🆓 Вход свободный</p>\n\n`;
           } else if (event.tickets && typeof event.tickets === 'string') {
             const cleanTickets = cleanText(event.tickets)
               .replace(/<[^>]*>/g, '')
               .replace(/\n\s*\n/g, '\n')
               .trim();
-            homeTemplate += `<p><strong>💳</strong> ${cleanTickets}</p>\n\n`;
+            homeTemplate += `<p>💳 ${cleanTickets}</p>\n\n`;
           }
         }
         
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
-            homeTemplate += `<p><strong>📺 Трансляции события:</strong></p>\n<ul>\n`;
+            homeTemplate += `<p>📺 Трансляции события:</p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
               homeTemplate += `<li><a href="${stream.link}" target="_blank">${cleanText(stream.title)}</a></li>\n`;
             });
             homeTemplate += `</ul>\n\n`;
           } else {
-            homeTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
+            homeTemplate += `<p>📺 Ссылок на трансляцию пока нет</p>\n\n`;
           }
         } else {
-          homeTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
+          homeTemplate += `<p>📺 Ссылок на трансляцию пока нет</p>\n\n`;
         }
-        homeTemplate += `<p><strong>🔗</strong> <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
+        homeTemplate += `<p>🔗 <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
       });
       homeTemplate += `<p><br>${props.hashtags}</p>`;
       finalTemplate += homeTemplate;
@@ -190,13 +204,12 @@ const loadTodayEvents = async () => {
           awayTemplate += '<hr style="border: 1px solid #e5e7eb; margin: 20px 0;">\n\n';
         }
         if (event.club1 && event.club2) {
-          awayTemplate += `<h2>${cleanText(event.competition.title_short)}</h2>\n`;
-          awayTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n`;
+          awayTemplate += `<h2>${cleanText(event.competition.title_short)}`;
           if (event.title && event.title !== event.competition.title_short) {
-            awayTemplate += `<h4>${cleanText(event.title)}</h4>\n\n`;
-          } else {
-            awayTemplate += '\n';
+            awayTemplate += ` (${cleanText(event.title)})`;
           }
+          awayTemplate += `</h2>\n`;
+          awayTemplate += `<h3>${cleanText(event.event_name_top)}</h3>\n\n`;
           if (event.series_count) {
             awayTemplate += `<p><strong>Счет в серии:</strong> ${cleanText(event.series_count)}</p>\n`;
             if (event.series?.description) {
@@ -207,33 +220,55 @@ const loadTodayEvents = async () => {
           awayTemplate += `<h2>${cleanText(event.event_name)}</h2>\n\n`;
         }
         
+        // Форматируем время начала события
+        const eventTime = event.date_from ? new Date(event.date_from).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : '';
+        
         // Добавляем информацию об арене для выездных событий, если есть
-        if (event.arena && event.arena.address) {
-          let address = cleanText(event.arena.address.replace(/<br\s*\/?>/g, '').trimEnd());
+        if (event.arena && event.arena.title) {
+          // Формируем ссылку на карту
+          let mapLink = '';
           if (event.arena.latitude && event.arena.longitude) {
-            const mapUrl = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
-            awayTemplate += `<p>🏟 <a href="${mapUrl}" target="_blank">${address}</a></p>\n`;
+            mapLink = `https://yandex.ru/maps/?pt=${event.arena.longitude},${event.arena.latitude}&z=16&l=map`;
+          }
+          
+          // Отображаем название арены с ссылкой на карту и временем отдельно
+          if (mapLink) {
+            awayTemplate += `<p>📍 <a href="${mapLink}" target="_blank">${cleanText(event.arena.title)} (на карте)</a>`;
+            if (eventTime) {
+              awayTemplate += ` - <strong>${eventTime}</strong>`;
+            }
+            awayTemplate += `</p>\n`;
           } else {
-            awayTemplate += `<p>🏟 ${address}</p>\n`;
+            awayTemplate += `<p>📍 ${cleanText(event.arena.title)}`;
+            if (eventTime) {
+              awayTemplate += ` - <strong>${eventTime}</strong>`;
+            }
+            awayTemplate += `</p>\n`;
           }
           awayTemplate += '\n';
+        } else if (eventTime) {
+          // Если нет арены, но есть время, показываем только время
+          awayTemplate += `<p>🕐 <strong>${eventTime}</strong></p>\n\n`;
         }
         
         if (event.streams && event.streams.length > 0) {
           const filteredStreams = event.streams.filter((stream: any) => stream.in_player === 0 && stream.in_profile === 0);
           if (filteredStreams.length > 0) {
-            awayTemplate += `<p><strong>📺 Трансляции события:</strong></p>\n<ul>\n`;
+            awayTemplate += `<p>📺 Трансляции события:</p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
               awayTemplate += `<li><a href="${stream.link}" target="_blank">${cleanText(stream.title)}</a></li>\n`;
             });
             awayTemplate += `</ul>\n\n`;
           } else {
-            awayTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
+            awayTemplate += `<p>📺 Ссылок на трансляцию пока нет</p>\n\n`;
           }
         } else {
-          awayTemplate += `<p><strong>📺 Ссылок на трансляцию пока нет</strong></p>\n\n`;
+          awayTemplate += `<p>📺 Ссылок на трансляцию пока нет</p>\n\n`;
         }
-        awayTemplate += `<p><strong>🔗</strong> <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
+        awayTemplate += `<p>🔗 <a href="${props.site}/events/${event.id}" target="_blank">Подробнее</a></p>\n`;
       });
       awayTemplate += `<p><br>${props.hashtags}</p>`;
       finalTemplate += awayTemplate;
@@ -249,4 +284,4 @@ const loadTodayEvents = async () => {
     isLoadingEvents.value = false;
   }
 };
-</script> 
+</script>

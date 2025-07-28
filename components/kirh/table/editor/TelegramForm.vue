@@ -110,6 +110,7 @@
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
+import { htmlToMarkdown } from '~/utils/htmlToMarkdown';
 
 const config = useRuntimeConfig();
 const api = config.public.API_URL;
@@ -188,72 +189,8 @@ const telegramPreviewContent = ref('');
 
 // Функция конвертации HTML в чистый текст для Telegram
 const convertToTelegramText = (html: string): string => {
-  let text = html;
-  
-  // Обрабатываем ссылки - используем Markdown формат без экранирования
-  text = text.replace(/<a\s+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (match, url, linkText) => {
-    // Очищаем linkText от HTML тегов
-    const cleanLinkText = linkText.replace(/<[^>]*>/g, '').trim();
-    return `[${cleanLinkText}](${url})`;
-  });
-  
-  // Обрабатываем жирный текст - просто убираем теги
-  text = text.replace(/<(strong|b)>([^<]+)<\/(strong|b)>/gi, '$2');
-  
-  // Обрабатываем заголовки - просто убираем теги
-  text = text.replace(/<h[1-6]>([^<]+)<\/h[1-6]>/gi, '$1');
-  
-  // Обрабатываем списки
-  text = text.replace(/<ul>\s*<li>([^<]+)<\/li>\s*<\/ul>/gi, '• $1');
-  text = text.replace(/<li>([^<]+)<\/li>/gi, '• $1');
-  
-  // Обрабатываем горизонтальные линии
-  text = text.replace(/<hr[^>]*>/gi, '\n➖➖➖➖➖➖➖➖➖➖\n');
-  
-  // Обрабатываем переносы строк
-  text = text.replace(/<p[^>]*>([^<]*)<\/p>/gi, '$1\n');
-  text = text.replace(/<br\s*\/?>/gi, '\n');
-  
-  // Обрабатываем пустые параграфы для создания пустых строк
-  text = text.replace(/<p[^>]*><\/p>/gi, '\n');
-  
-  // Удаляем остальные HTML-теги
-  text = text.replace(/<[^>]*>/g, '');
-  
-  // Декодируем HTML-сущности
-  text = text
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&mdash;/g, '-')
-    .replace(/&ndash;/g, '-')
-    .replace(/&hellip;/g, '...');
-  
-  // Убираем проблемные символы
-  text = text
-    .replace(/[""]/g, '"')
-    .replace(/['']/g, "'")
-    .replace(/[–—]/g, '-')
-    .replace(/[…]/g, '...');
-  
-  // Заменяем проблемные эмодзи на проверенные
-  text = text
-    .replace(/\*️⃣/g, '')  // Удаляем эмодзи со звездочкой
-    .replace(/📣/g, '📢')
-    .replace(/🥇/g, '🏆')
-    .replace(/🎊/g, '🎉')
-    .replace(/🎵/g, '🎶')
-    .replace(/✨/g, '⭐')
-    .replace(/🙌/g, '👍');
-  
-  // Убираем лишние пробелы и переносы
-  text = text
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/[ ]{2,}/g, ' ')
-    .trim();
+  // Используем утилиту htmlToMarkdown для корректного преобразования
+  let text = htmlToMarkdown(html);
 
   // Добавляем автоматические дополнения
   const additions = [];
@@ -273,8 +210,7 @@ const convertToTelegramText = (html: string): string => {
 
 // Функция для предпросмотра текста в формате Telegram
 const getTelegramPreview = (html: string): string => {
-  const result = convertToTelegramText(html);
-  return result;
+  return convertToTelegramText(html);
 };
 
 // Показать предпросмотр
@@ -316,8 +252,8 @@ const sendToTelegram = async () => {
         let finalContent = partContent;
         let parseMode = 'Markdown';
         
-        // Убираем звездочки из жирного текста, но оставляем ссылки
-        finalContent = partContent.replace(/\*\*/g, '');
+        // Сохраняем Markdown разметку как есть
+        finalContent = partContent;
 
         let response;
         if (sendImageWithThisPart) {

@@ -9,7 +9,7 @@
     <div class="flex flex-wrap items-center gap-4 text-gray-700 text-base my-2">
       <div v-if="eventData && eventData.date_formatted" class="flex items-center gap-1">
         
-        <span class="text-gray-800 font-bold text-xl">{{ new Date(eventData.date_formatted).toLocaleDateString('ru-RU') }}</span>
+        <span class="text-gray-800 font-bold text-xl">{{ formatEventDate(eventData.date_formatted) }}</span>
       </div>
       <div v-if="eventData && eventData.competition && eventData.competition.sport" class="flex items-center gap-1">
         
@@ -32,16 +32,20 @@
       <div class="flex items-center w-full justify-between">
         <div class="flex items-center gap-6">
           <template v-if="eventData && eventData.club1">
-            <img :src="eventData.club1.club_image_path" alt="Эмблема клуба 1" class="w-10 h-10 object-contain rounded-full border mr-2" />
-            <div class="font-bold text-base mr-4">
-              {{ eventData.club1.title }}<span v-if="eventData.club1.city?.title"> ({{ eventData.club1.city.title }})</span>
-            </div>
+            <NuxtLink :to="`/clubs/${eventData.club1.id}`" class="flex items-center gap-2 hover:opacity-80 transition-opacity" title="Редактировать команду">
+              <img :src="eventData.club1.club_image_path" alt="Эмблема клуба 1" class="w-10 h-10 object-contain rounded-full border mr-2" />
+              <div class="font-bold text-base mr-4">
+                {{ eventData.club1.title }}<span v-if="eventData.club1.city?.title"> ({{ eventData.club1.city.title }})</span>
+              </div>
+            </NuxtLink>
           </template>
           <template v-if="eventData && eventData.club2">
-            <img :src="eventData.club2.club_image_path" alt="Эмблема клуба 2" class="w-10 h-10 object-contain rounded-full border mr-2" />
-            <div class="font-bold text-base">
-              {{ eventData.club2.title }}<span v-if="eventData.club2.city?.title"> ({{ eventData.club2.city.title }})</span>
-            </div>
+            <NuxtLink :to="`/clubs/${eventData.club2.id}`" class="flex items-center gap-2 hover:opacity-80 transition-opacity" title="Редактировать команду">
+              <img :src="eventData.club2.club_image_path" alt="Эмблема клуба 2" class="w-10 h-10 object-contain rounded-full border mr-2" />
+              <div class="font-bold text-base">
+                {{ eventData.club2.title }}<span v-if="eventData.club2.city?.title"> ({{ eventData.club2.city.title }})</span>
+              </div>
+            </NuxtLink>
           </template>
         </div>
         <div class="flex flex-col items-end ml-auto">
@@ -58,6 +62,7 @@
 
       <div class="flex gap-2">
         <button
+          v-if="clubs.length > 0"
           :class="[
             'tab-btn',
             activeMainTab === 0 ? 'tab-active-players' : 'tab-inactive-players'
@@ -79,7 +84,7 @@
         </button>
       </div>
 
-      <div v-show="activeMainTab === 0" class="bg-blue-50 p-6 rounded-b-lg tab-active-players border-b-2 border-l-2 border-r-2">
+      <div v-show="activeMainTab === 0 && clubs.length > 0" class="bg-blue-50 p-6 rounded-b-lg tab-active-players border-b-2 border-l-2 border-r-2">
         <!-- Весь основной контент страницы (грид с составами и событиями) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Левая колонка: Составы -->
@@ -558,6 +563,15 @@
                     </button>
                   </div>
                 </div>
+                
+                <!-- Статистика очков игроков -->
+                <EventScoreStats 
+                  :event-id="eventId" 
+                  :clubs="clubs" 
+                  :action-types="actionTypes"
+                  ref="scoreStatsRef"
+                />
+                
                 <!-- Кнопка сортировки по минутам -->
                 <div v-if="actions.length > 0" class="flex items-center justify-end mb-2 gap-2">
                   <button
@@ -599,10 +613,28 @@
                               action.club_id === clubs[0]?.id ? 'bg-blue-50 self-start justify-start' : 'bg-red-50 self-end justify-end'
                             ]"
                           >
-                            <span class="text-gray-400 mr-2 cursor-pointer" v-if="editingMinuteId !== action.id" @click="startEditMinute(action)">
-                              {{ action.minute !== null && action.minute !== undefined && action.minute !== '' ? action.minute + "'" : '—' }}
-                            </span>
-                            <input v-else
+                            <div class="flex items-center mr-2" v-if="editingMinuteId !== action.id && getActionTypeObj(action.action_type_id)?.group != 2">
+                              <span class="text-gray-400 cursor-pointer" @click="startEditMinute(action)">
+                                {{ action.minute !== null && action.minute !== undefined && action.minute !== '' ? action.minute + (action.is_overtime ? '+' : '') + "'" : '—' }}
+                              </span>
+                              <!-- Кнопка "+" для overtime -->
+                              <button 
+                                v-if="action.minute !== null && action.minute !== undefined && action.minute !== ''"
+                                @click="toggleOvertime(action)"
+                                :disabled="action.isLoading"
+                                :class="[
+                                  'ml-1 px-1 py-0.5 text-xs rounded transition-colors flex items-center justify-center',
+                                  action.isLoading ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 
+                                  action.is_overtime ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                ]"
+                                title="Дополнительное время"
+                                style="min-width: 20px; min-height: 20px;"
+                              >
+                                <div v-if="action.isLoading" class="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                                <span v-else>+</span>
+                              </button>
+                            </div>
+                            <input v-else-if="editingMinuteId === action.id && getActionTypeObj(action.action_type_id)?.group != 2"
                               type="text"
                               class="w-14 p-1 border rounded text-center mr-2"
                               v-model="editingMinuteValue"
@@ -626,7 +658,7 @@
                             </span>
                             <span v-if="action.person" class="mr-2">{{ action.person.full_name }}</span>
                             <span v-else class="mr-2">{{ action.player_name }}</span>
-                            <span v-if="action.value" class="mr-2">({{ action.value }})</span>
+                            <span v-if="action.value" class="mr-2">({{ getActionTypeObj(action.action_type_id)?.group == 2 ? Math.floor(parseFloat(action.value)) : action.value }})</span>
                             <button @click="askRemoveAction(action)" class="ml-2 text-red-400 hover:text-red-700" title="Удалить">
                               <Icon icon="iconamoon:trash" class="w-5 h-5" />
                             </button>
@@ -660,11 +692,11 @@
                   </div>
                   <div>
                     <label class="block text-sm font-medium mb-1">Значение 1</label>
-                    <input v-model="newTeamAction.value_home" type="number" class="w-24 p-2 border rounded" placeholder="0" />
+                    <input v-model="newTeamAction.value_home" type="text" class="w-24 p-2 border rounded" placeholder="0" step="0.1" />
                   </div>
                   <div>
                     <label class="block text-sm font-medium mb-1">Значение 2</label>
-                    <input v-model="newTeamAction.value_away" type="number" class="w-24 p-2 border rounded" placeholder="0" />
+                    <input v-model="newTeamAction.value_away" type="text" class="w-24 p-2 border rounded" placeholder="0" step="0.1" />
                   </div>
                   <button @click="addTeamAction" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Добавить</button>
                 </div>
@@ -681,7 +713,7 @@
                           <!-- Индикатор соотношения -->
                           <div class="flex items-center gap-2 mt-2">
                             <span class="font-mono font-bold text-blue-700" style="min-width: 36px;">
-                              <input type="number" :value="action.value_home" @change="e => updateTeamActionValue(action, 'value_home', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" />
+                              <input type="text" :value="action.value_home" @change="e => updateTeamActionValue(action, 'value_home', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" step="0.1" />
                             </span>
                             <div class="flex-1 relative h-6 rounded overflow-hidden mx-2" style="min-width: 120px; background: linear-gradient(90deg, #2563eb 0%, #059669 100%);">
                               <div v-if="action.value_home + action.value_away > 0" :style="{ width: ((action.value_home / (action.value_home + action.value_away)) * 100) + '%', background: '#2563eb', height: '100%', position: 'absolute', left: 0, top: 0 }"></div>
@@ -689,7 +721,7 @@
                               <div v-if="action.value_home + action.value_away === 0" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">0%</div>
                             </div>
                             <span class="font-mono font-bold text-green-700" style="min-width: 36px;">
-                              <input type="number" :value="action.value_away" @change="e => updateTeamActionValue(action, 'value_away', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" />
+                              <input type="text" :value="action.value_away" @change="e => updateTeamActionValue(action, 'value_away', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" step="0.1" />
                             </span>
                             <button @click="askRemoveTeamAction(action)" class="ml-2 text-red-400 hover:text-red-700" title="Удалить">
                               <Icon icon="iconamoon:trash" class="w-5 h-5" />
@@ -742,8 +774,8 @@
                 <label class="flex items-center gap-2 cursor-pointer w-full">
                   <span class="custom-switch">
                     <input type="checkbox"
-                      :id="'player-'+player.id"
-                      :value="player.id"
+                      :id="'player-'+player.person_id"
+                      :value="player.person_id"
                       v-model="selectedPlayers"
                       class="hidden"
                       :disabled="isPlayerLocked(player)"
@@ -798,7 +830,7 @@
             <KirhSelect
               :options="actionClubPlayers"
               v-model="actionSelectedPersonId"
-              :keyField="'id'"
+              :keyField="'person_id'"
               :labelField="'label'"
               :imageField="'main_image'"
               :enableSearch="true"
@@ -841,16 +873,22 @@
               :placeholder="'Выберите тип события'"
             />
           </div>
-          <div class="mb-3 flex gap-3">
-            <div class="flex-1">
-              <label class="block text-sm font-medium mb-1">Минута</label>
-              <input v-model="actionForm.minute" type="text" class="w-full p-2 border rounded" placeholder="Минута (можно оставить пустым)" />
+                      <div class="mb-3 flex gap-3">
+              <div class="flex-1">
+                <label class="block text-sm font-medium mb-1">Минута</label>
+                <input v-model="actionForm.minute" type="text" class="w-full p-2 border rounded" placeholder="Минута (можно оставить пустым)" />
+              </div>
+              <div class="flex-1">
+                <label class="block text-sm font-medium mb-1">Значение</label>
+                <input v-model="actionForm.value" type="text" class="w-full p-2 border rounded" placeholder="Значение (например, голы)" step="0.1" />
+              </div>
             </div>
-            <div class="flex-1">
-              <label class="block text-sm font-medium mb-1">Значение</label>
-              <input v-model="actionForm.value" type="number" class="w-full p-2 border rounded" placeholder="Значение (например, голы)" />
+            <div class="mb-3">
+              <label class="flex items-center gap-2">
+                <input v-model="actionForm.is_overtime" type="checkbox" class="w-4 h-4" />
+                <span class="text-sm font-medium">Дополнительное время (+)</span>
+              </label>
             </div>
-          </div>
           <div class="flex justify-end gap-3 mt-6">
             <button @click="closeActionModal" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300">Отмена</button>
             <button @click="saveAction" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Добавить</button>
@@ -959,7 +997,7 @@
             </div>
             <div class="flex flex-col">
               <label class="text-xs font-semibold mb-1">Очки</label>
-              <input v-model="newActionType.points" type="number" class="border rounded px-2 py-1 w-20" placeholder="0" />
+              <input v-model="newActionType.points" type="text" class="border rounded px-2 py-1 w-20" placeholder="0" step="0.1" />
             </div>
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Добавить</button>
           </form>
@@ -1005,7 +1043,7 @@
                     </select>
                   </td>
                   <td class="p-2 border">
-                    <input v-model="type.points" @change="updateActionType(type)" type="number" class="border rounded px-1 py-0.5 w-14" />
+                    <input v-model="type.points" @change="updateActionType(type)" type="text" class="border rounded px-1 py-0.5 w-14" step="0.1" />
                   </td>
                   <td class="p-2 border text-center">
                     <button @click="askRemoveActionType(type)" class="text-red-500 hover:text-red-700" title="Удалить тип события">
@@ -1155,14 +1193,16 @@
 
 <script setup>
 import { Icon } from '@iconify/vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import Draggable from 'vuedraggable'
 import ConfirmModal from '~/components/ConfirmModal.vue'
 import EventAdvancedEditor from '~/components/events/EventAdvancedEditor.vue'
+import EventScoreStats from '~/components/events/EventScoreStats.vue'
 import KirhSelect from '~/components/kirh/table/fields/KirhSelectField.vue'
 import Head from '~/components/parts/Head.vue'
 import { useApi } from '~/composables/useApi'
+// Динамический импорт для совместимости с SSR
+const Draggable = defineAsyncComponent(() => import('vuedraggable'))
 
 const route = useRoute()
 const eventId = route.params.id
@@ -1183,6 +1223,7 @@ const actionForm = ref({
   player_name: '',
   action_type_id: '',
   minute: '',
+  is_overtime: false,
   value: ''
 })
 
@@ -1257,9 +1298,16 @@ const addPlayerToLineup = async () => {
   closeAddPlayerModal()
 }
 const updatePlayerNumber = async (player) => {
+  let number = player.number
+  if (number === '' || number === undefined || number === null) {
+    number = null
+  } else {
+    const parsedNumber = parseInt(number)
+    number = isNaN(parsedNumber) ? null : parsedNumber
+  }
   await apiRequest(`/event-lineups/${player.id}`, {
     method: 'PUT',
-    body: { number: player.number }
+    body: { number }
   })
 }
 const removePlayerFromLineup = async (player) => {
@@ -1273,6 +1321,7 @@ const openAddActionModalForClub = (club) => {
     player_name: '',
     action_type_id: '',
     minute: '',
+    is_overtime: false,
     value: ''
   }
   showActionModal.value = true
@@ -1281,23 +1330,54 @@ const closeActionModal = () => {
   showActionModal.value = false
 }
 const saveAction = async () => {
-  let minute = actionForm.value.minute
-  if (minute === '' || minute === undefined || minute === null || isNaN(Number(minute))) minute = null
-  let payload = {
-    event_id: eventId,
-    club_id: actionForm.value.club.id,
-    player_name: actionForm.value.player_name,
-    person_id: actionSelectedPersonId.value || null,
-    action_type_id: actionForm.value.action_type_id,
-    minute,
-    value: actionForm.value.value || null
+  // Валидация обязательных полей
+  if (!actionForm.value.club?.id) {
+    alert('Выберите клуб')
+    return
   }
-  await apiRequest(`/events/${eventId}/actions`, {
-    method: 'POST',
-    body: payload
-  })
-  await loadData()
-  closeActionModal()
+  if (!actionForm.value.action_type_id) {
+    alert('Выберите тип действия')
+    return
+  }
+  if (!actionForm.value.player_name && !actionSelectedPersonId.value) {
+    alert('Введите имя игрока или выберите игрока из базы')
+    return
+  }
+  
+  let minute = actionForm.value.minute
+  if (minute === '' || minute === undefined || minute === null || isNaN(Number(minute))) {
+    minute = null
+  } else {
+    minute = parseInt(minute)
+  }
+  let value = actionForm.value.value
+  if (value === '' || value === undefined || value === null) {
+    value = null
+  } else {
+    const parsedValue = parseFloat(value)
+    value = isNaN(parsedValue) ? null : parsedValue
+  }
+  let payload = {
+    event_id: parseInt(eventId),
+    club_id: parseInt(actionForm.value.club.id),
+    player_name: actionForm.value.player_name,
+    person_id: actionSelectedPersonId.value ? parseInt(actionSelectedPersonId.value) : null,
+    action_type_id: parseInt(actionForm.value.action_type_id),
+    minute,
+    is_overtime: actionForm.value.is_overtime,
+    value
+  }
+  
+  try {
+    await apiRequest(`/events/${eventId}/actions`, {
+      method: 'POST',
+      body: payload
+    })
+    await loadData()
+    closeActionModal()
+  } catch (error) {
+    throw error
+  }
 }
 const removeAction = async (action) => {
   await apiRequest(`/event-actions/${action.id}`, { method: 'DELETE' })
@@ -1343,6 +1423,11 @@ const loadData = async () => {
   })
   const typesRes = await apiRequest('/action-types')
   actionTypes.value = Array.isArray(typesRes) ? typesRes : (typesRes?.data || [])
+  
+  // Обновляем статистику очков
+  if (scoreStatsRef.value) {
+    scoreStatsRef.value.loadScoreStats()
+  }
 }
 
 const clubPlayers = ref([])
@@ -1407,7 +1492,8 @@ const sortLineupByNumber = async (clubId) => {
 const preparePlayerLabel = (arr) => {
   return arr.map(item => ({
     ...item,
-    label: item.person?.short_name || item.player_name || ''
+    label: item.person?.short_name || item.player_name || '',
+    person_id: item.person_id || null
   }))
 }
 const loadClubPlayers = async (clubId) => {
@@ -1416,8 +1502,14 @@ const loadClubPlayers = async (clubId) => {
   if (!clubId) return
   try {
     const res = await apiRequest(`/clubs/${clubId}/players`)
-    clubPlayers.value = preparePlayerLabel(Array.isArray(res) ? res : (res?.data || []))
-  } catch (e) { clubPlayers.value = [] }
+    const allPersons = Array.isArray(res) ? res : (res?.data || Object.values(res) || [])
+    // API теперь возвращает только игроков, фильтрация не нужна
+    const playersOnly = allPersons
+    clubPlayers.value = preparePlayerLabel(playersOnly)
+  } catch (e) { 
+    console.error('Ошибка загрузки игроков:', e)
+    clubPlayers.value = [] 
+  }
 }
 // Загрузка игроков клуба для модалки события
 const loadActionClubPlayers = async (clubId) => {
@@ -1426,8 +1518,16 @@ const loadActionClubPlayers = async (clubId) => {
   if (!clubId) return
   try {
     const res = await apiRequest(`/clubs/${clubId}/players`)
-    actionClubPlayers.value = preparePlayerLabel(Array.isArray(res) ? res : (res?.data || []))
-  } catch (e) { actionClubPlayers.value = [] }
+    const allPersons = Array.isArray(res) ? res : (res?.data || Object.values(res) || [])
+    // API теперь возвращает только игроков, фильтрация не нужна
+    const playersOnly = allPersons
+    const players = preparePlayerLabel(playersOnly)
+    // Сортируем игроков по алфавиту
+    actionClubPlayers.value = players.sort((a, b) => (a.label || '').localeCompare(b.label || '', 'ru'))
+  } catch (e) { 
+    console.error('Ошибка загрузки игроков для событий:', e)
+    actionClubPlayers.value = [] 
+  }
 }
 
 // Следим за открытием модалки состава
@@ -1486,8 +1586,8 @@ const addSubstitution = async (parentPlayer) => {
   } else if (!selectedPlayer || !selectedPlayer.person) {
     // Ручной ввод — сравниваем только по имени и номеру среди ручных
     isAlreadyInLineup = clubLineup.some(p =>
-      (!p.person_id && p.player_name === subPlayerName.value && Number(p.number || null) === Number(subPlayerNumber.value || null)) ||
-      (Array.isArray(p.substitutions) && p.substitutions.some(sub => !sub.person_id && sub.player_name === subPlayerName.value && Number(sub.number || null) === Number(subPlayerNumber.value || null)))
+      (!p.person_id && p.player_name === subPlayerName.value && parseInt(p.number || null) === parseInt(subPlayerNumber.value || null)) ||
+      (Array.isArray(p.substitutions) && p.substitutions.some(sub => !sub.person_id && sub.player_name === subPlayerName.value && parseInt(sub.number || null) === parseInt(subPlayerNumber.value || null)))
     );
   }
   if ((selectedPlayer && selectedPlayer.person_id && isAlreadyInLineup) || ((!selectedPlayer || !selectedPlayer.person) && isAlreadyInLineup)) {
@@ -1496,13 +1596,20 @@ const addSubstitution = async (parentPlayer) => {
   }
   subError.value = '';
   let number = selectedPlayer?.person?.player_number ?? null
+  let minuteIn = subMinuteIn.value
+  if (minuteIn === '' || minuteIn === undefined || minuteIn === null) {
+    minuteIn = null
+  } else {
+    const parsedMinute = parseInt(minuteIn)
+    minuteIn = isNaN(parsedMinute) ? null : parsedMinute
+  }
   let payload = {
     event_id: eventId,
     club_id: parentPlayer.club_id,
     person_id: subPersonId.value || null,
     number,
     parent_lineup_id: parentPlayer.id,
-    minute_in: subMinuteIn.value || null
+    minute_in: minuteIn
   }
   if (!selectedPlayer || !selectedPlayer.person) {
     payload.player_name = subPlayerName.value
@@ -1516,9 +1623,16 @@ const addSubstitution = async (parentPlayer) => {
 }
 
 const updateSubMinuteIn = async (sub) => {
+  let minuteIn = sub.minute_in
+  if (minuteIn === '' || minuteIn === undefined || minuteIn === null) {
+    minuteIn = null
+  } else {
+    const parsedMinute = parseInt(minuteIn)
+    minuteIn = isNaN(parsedMinute) ? null : parsedMinute
+  }
   await apiRequest(`/event-lineups/${sub.id}`, {
     method: 'PUT',
-    body: { minute_in: sub.minute_in }
+    body: { minute_in: minuteIn }
   })
 }
 
@@ -1607,7 +1721,7 @@ const addManualPlayer = () => {
   if (clubId && lineupsByClub.value[clubId]) {
     const allLineups = flattenLineups(lineupsByClub.value[clubId])
     if (manualPlayerNumber.value) {
-      const duplicate = allLineups.some(l => !l.person_id && Number(l.number || null) === Number(manualPlayerNumber.value))
+      const duplicate = allLineups.some(l => !l.person_id && parseInt(l.number || null) === parseInt(manualPlayerNumber.value))
       if (duplicate) {
         manualPlayerError.value = 'Игрок с таким номером уже добавлен вручную!';
         return;
@@ -1615,14 +1729,21 @@ const addManualPlayer = () => {
     }
   }
   // Проверка локальной уникальности в manualPlayers
-  const duplicateLocal = manualPlayers.value.some(mp => mp.label === manualPlayerName.value && Number(mp.number || null) === Number(manualPlayerNumber.value || null))
+      const duplicateLocal = manualPlayers.value.some(mp => mp.label === manualPlayerName.value && parseInt(mp.number || null) === parseInt(manualPlayerNumber.value || null))
   if (duplicateLocal) {
     manualPlayerError.value = 'Такой игрок уже добавлен в список!';
     return;
   }
+  let number = manualPlayerNumber.value
+  if (number === '' || number === undefined || number === null) {
+    number = null
+  } else {
+    const parsedNumber = parseInt(number)
+    number = isNaN(parsedNumber) ? null : parsedNumber
+  }
   manualPlayers.value.push({
     label: manualPlayerName.value,
-    number: manualPlayerNumber.value ? Number(manualPlayerNumber.value) : null
+    number
   })
   addManualSuccess.value = `В состав добавлен: ${manualPlayerName.value}${manualPlayerNumber.value ? ' (' + manualPlayerNumber.value + ')' : ''}`
   manualPlayerName.value = ''
@@ -1654,7 +1775,14 @@ function closeEditManualModal() {
 function saveEditManualPlayer() {
   if (editManualIdx.value !== null) {
     manualPlayers.value[editManualIdx.value].label = editManualName.value
-    manualPlayers.value[editManualIdx.value].number = editManualNumber.value
+    let number = editManualNumber.value
+    if (number === '' || number === undefined || number === null) {
+      number = null
+    } else {
+      const parsedNumber = parseInt(number)
+      number = isNaN(parsedNumber) ? null : parsedNumber
+    }
+    manualPlayers.value[editManualIdx.value].number = number
   }
   closeEditManualModal()
 }
@@ -1681,7 +1809,7 @@ const addSelectedPlayersToLineup = async () => {
   // Оставляем только тех, кого ещё нет в составе
   const toAdd = uniquePersonIds.filter(pid => !existingPersonIds.has(pid))
   for (const personId of toAdd) {
-    const player = clubPlayers.value.find(p => p.id === personId || p.person_id === personId)
+    const player = clubPlayers.value.find(p => p.person_id === personId)
     // Если у игрока есть person_id — это реальный игрок
     if (player && player.person_id) {
       let number = player.person?.player_number ?? null
@@ -1704,16 +1832,16 @@ const addSelectedPlayersToLineup = async () => {
     await apiRequest(`/event-lineups/${lineupId}`, { method: 'DELETE' })
   }
   // 1.2. Удалить вручную добавленных, которых нет в manualPlayers
-  const manualToRemove = currentLineup
-    .filter(p => !p.person_id)
-    .filter(p => !manualPlayers.value.some(mp => mp.label === p.player_name && Number(mp.number || null) === Number(p.number || null)))
-    .map(p => p.id)
+      const manualToRemove = currentLineup
+      .filter(p => !p.person_id)
+      .filter(p => !manualPlayers.value.some(mp => mp.label === p.player_name && parseInt(mp.number || null) === parseInt(p.number || null)))
+      .map(p => p.id)
   for (const lineupId of manualToRemove) {
     await apiRequest(`/event-lineups/${lineupId}`, { method: 'DELETE' })
   }
   // 2. Добавить вручную введённых
   for (const mp of manualPlayers.value) {
-    const alreadyExists = currentLineup.some(p => !p.person_id && p.player_name === mp.label && Number(p.number || null) === Number(mp.number || null))
+    const alreadyExists = currentLineup.some(p => !p.person_id && p.player_name === mp.label && parseInt(p.number || null) === parseInt(mp.number || null))
     if (alreadyExists) continue
     await apiRequest(`/events/${eventId}/lineups`, {
       method: 'POST',
@@ -1813,6 +1941,9 @@ const paginatedActionTypesFiltered = computed(() => {
 
 const { apiRequest } = useApi()
 
+// Ссылка на компонент статистики очков
+const scoreStatsRef = ref(null)
+
 async function loadActionTypes() {
   const res = await apiRequest('/action-types')
   actionTypesList.value = Array.isArray(res) ? res : (res?.data || [])
@@ -1827,6 +1958,13 @@ async function addActionType() {
   if (!newActionType.value.name) return
   const payload = { ...newActionType.value }
   payload.group = String(payload.group)
+  // Обработка дробных чисел для points
+  if (payload.points !== '' && payload.points !== null && payload.points !== undefined) {
+    const parsedPoints = parseFloat(payload.points)
+    payload.points = isNaN(parsedPoints) ? 0 : parsedPoints
+  } else {
+    payload.points = 0
+  }
   const res = await apiRequest('/action-types', { method: 'POST', body: payload })
   if (res && res.id) {
     actionTypesList.value.unshift(res)
@@ -1840,6 +1978,13 @@ async function updateActionType(type) {
   if (!type.id) return
   const payload = { ...type }
   payload.group = String(payload.group)
+  // Обработка дробных чисел для points
+  if (payload.points !== '' && payload.points !== null && payload.points !== undefined) {
+    const parsedPoints = parseFloat(payload.points)
+    payload.points = isNaN(parsedPoints) ? 0 : parsedPoints
+  } else {
+    payload.points = 0
+  }
   const res = await apiRequest(`/action-types/${type.id}`, { method: 'PUT', body: payload })
   if (res && res.id) {
     // Обновляем локально
@@ -1868,12 +2013,14 @@ function nextActionTypesPage() {
 const actionTypesSearch = ref("");
 
 const actionTypeOptions = computed(() => {
-  return actionTypes.value.map(type => ({
-    id: type.id,
-    name: type.name,
-    group: type.group,
-    icon: type.icon // добавлено поле для отображения иконки
-  }))
+  return actionTypes.value
+    .map(type => ({
+      id: type.id,
+      name: type.name,
+      group: type.group,
+      icon: type.icon // добавлено поле для отображения иконки
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
 })
 
 const selectedActionGroup = ref('all')
@@ -1917,6 +2064,26 @@ async function saveEditMinute(action) {
 function cancelEditMinute() {
   editingMinuteId.value = null
   editingMinuteValue.value = ''
+}
+
+// Переключение overtime для события
+async function toggleOvertime(action) {
+  // Добавляем индикатор загрузки
+  action.isLoading = true
+  
+  try {
+    const newOvertimeValue = !action.is_overtime
+    await apiRequest(`/event-actions/${action.id}`, {
+      method: 'PUT',
+      body: { is_overtime: newOvertimeValue }
+    })
+    await loadData()
+  } catch (error) {
+    console.error('Ошибка при переключении overtime:', error)
+  } finally {
+    // Убираем индикатор загрузки
+    action.isLoading = false
+  }
 }
 
 // Получить объект типа события по id
@@ -2040,12 +2207,15 @@ const activeEventTab = ref(0)
 // --- События команд ---
 const teamActionTypes = ref([])
 const teamActions = ref([])
-const teamActionTypeOptions = computed(() => teamActionTypes.value.map(t => ({
-  id: t.id,
-  name: t.name,
-  icon: t.icon,
-  short_name: t.short_name
-})))
+const teamActionTypeOptions = computed(() => teamActionTypes.value
+  .map(t => ({
+    id: t.id,
+    name: t.name,
+    icon: t.icon,
+    short_name: t.short_name
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+)
 const newTeamAction = ref({
   team_action_type_id: '',
   value_home: '',
@@ -2079,8 +2249,8 @@ async function addTeamAction() {
     body: {
       event_id: eventId,
       team_action_type_id: newTeamAction.value.team_action_type_id,
-      value_home: Number(newTeamAction.value.value_home) || 0,
-      value_away: Number(newTeamAction.value.value_away) || 0
+      value_home: parseFloat(newTeamAction.value.value_home) || 0,
+      value_away: parseFloat(newTeamAction.value.value_away) || 0
     }
   })
   newTeamAction.value = { team_action_type_id: '', value_home: '', value_away: '' }
@@ -2089,7 +2259,7 @@ async function addTeamAction() {
 async function updateTeamActionValue(action, field, value) {
   await apiRequest(`/event-team-actions/${action.id}`, {
     method: 'PUT',
-    body: { [field]: Number(value) || 0 }
+    body: { [field]: parseFloat(value) || 0 }
   })
   await loadTeamActions()
 }
@@ -2208,6 +2378,29 @@ const breadcrumbs = computed(() => [
 ].filter(Boolean))
 
 const activeMainTab = ref(0)
+
+// Автоматически переключаем на вкладку редактора, если нет клубов
+watch(clubs, (newClubs) => {
+  if (newClubs.length === 0) {
+    activeMainTab.value = 1
+  }
+}, { immediate: true })
+
+// Функция для безопасного форматирования даты события
+const formatEventDate = (dateString) => {
+  if (!dateString) return ''
+  
+  try {
+    const date = new Date(dateString)
+    // Проверяем, что дата валидна
+    if (isNaN(date.getTime())) {
+      return dateString // Возвращаем исходную строку, если дата невалидна
+    }
+    return date.toLocaleDateString('ru-RU')
+  } catch (error) {
+    return dateString // Возвращаем исходную строку в случае ошибки
+  }
+}
 
 </script>
 
