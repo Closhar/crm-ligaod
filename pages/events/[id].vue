@@ -712,15 +712,35 @@
                           </div>
                           <!-- Индикатор соотношения -->
                           <div class="flex items-center gap-2 mt-2">
-                            <span class="font-mono font-bold text-blue-700" style="min-width: 36px;">
+                            <span class="font-mono font-bold text-red-600" style="min-width: 36px;">
                               <input type="text" :value="action.value_home" @change="e => updateTeamActionValue(action, 'value_home', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" step="0.1" />
                             </span>
-                            <div class="flex-1 relative h-6 rounded overflow-hidden mx-2" style="min-width: 120px; background: linear-gradient(90deg, #2563eb 0%, #059669 100%);">
-                              <div v-if="action.value_home + action.value_away > 0" :style="{ width: ((action.value_home / (action.value_home + action.value_away)) * 100) + '%', background: '#2563eb', height: '100%', position: 'absolute', left: 0, top: 0 }"></div>
-                              <div v-if="action.value_home + action.value_away > 0" :style="{ width: ((action.value_away / (action.value_home + action.value_away)) * 100) + '%', background: '#059669', height: '100%', position: 'absolute', left: ((action.value_home / (action.value_home + action.value_away)) * 100) + '%' }"></div>
-                              <div v-if="action.value_home + action.value_away === 0" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">0%</div>
+                            <div class="flex-1 relative h-6 rounded overflow-hidden mx-2 bg-gray-200" style="min-width: 120px;">
+                              <!-- Красный блок для первой команды -->
+                              <div v-if="parseFloat(action.value_home) > 0" 
+                                   :style="{ 
+                                     width: ((parseFloat(action.value_home) / (parseFloat(action.value_home) + parseFloat(action.value_away))) * 100) + '%', 
+                                     background: '#dc2626', 
+                                     height: '100%', 
+                                     position: 'absolute', 
+                                     left: 0, 
+                                     top: 0 
+                                   }">
+                              </div>
+                              <!-- Синий блок для второй команды -->
+                              <div v-if="parseFloat(action.value_away) > 0" 
+                                   :style="{ 
+                                     width: ((parseFloat(action.value_away) / (parseFloat(action.value_home) + parseFloat(action.value_away))) * 100) + '%', 
+                                     background: '#2563eb', 
+                                     height: '100%', 
+                                     position: 'absolute', 
+                                     left: ((parseFloat(action.value_home) / (parseFloat(action.value_home) + parseFloat(action.value_away))) * 100) + '%' 
+                                   }">
+                              </div>
+                              <!-- Текст для случая когда оба значения 0 -->
+                              <div v-if="parseFloat(action.value_home) + parseFloat(action.value_away) === 0" class="absolute inset-0 flex items-center justify-center text-xs text-gray-400">0%</div>
                             </div>
-                            <span class="font-mono font-bold text-green-700" style="min-width: 36px;">
+                            <span class="font-mono font-bold text-blue-600" style="min-width: 36px;">
                               <input type="text" :value="action.value_away" @change="e => updateTeamActionValue(action, 'value_away', e.target.value)" class="w-14 p-1 border rounded text-center" style="width: 50px;" step="0.1" />
                             </span>
                             <button @click="askRemoveTeamAction(action)" class="ml-2 text-red-400 hover:text-red-700" title="Удалить">
@@ -2401,6 +2421,16 @@ const formatEventDate = (dateString) => {
     return dateString // Возвращаем исходную строку в случае ошибки
   }
 }
+
+// Метод для форматирования значения события команды
+const formatTeamActionValue = (value) => {
+  if (value === null || value === undefined || value === '') return '0';
+  const num = parseFloat(value);
+  if (num % 1 === 0) {
+    return num.toFixed(0);
+  }
+  return num.toFixed(2);
+};
 
 </script>
 

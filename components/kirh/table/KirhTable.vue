@@ -1285,9 +1285,9 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (fieldName === 'free_tickets' || fieldName === 'is_active') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
@@ -1342,6 +1342,15 @@ export default {
       try {
         if (!props.tableOptions.editable || !isFieldEditable(fieldName)) return;
 
+        // Защита от множественных запросов для toggle полей
+        if (row._updating && row._updating[fieldName]) {
+          return;
+        }
+        
+        // Устанавливаем флаг обновления
+        if (!row._updating) row._updating = {};
+        row._updating[fieldName] = true;
+
         // Выполняем поиск колонки с заданным именем
         let column = allFields.value.find(col => col.name === fieldName);
         
@@ -1374,18 +1383,18 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (column.type === 'toggle') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
 
         // Дополнительная проверка для поля free_tickets
         if (fieldName === 'free_tickets') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
@@ -1414,6 +1423,11 @@ export default {
       } catch (err) {
         console.error('Ошибка при обновлении:', err);
         error.value = err.message;
+      } finally {
+        // Сбрасываем флаг обновления
+        if (row._updating) {
+          delete row._updating[fieldName];
+        }
       }
     };
 
@@ -1477,9 +1491,9 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (fieldName === 'free_tickets' || fieldName === 'is_active') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
@@ -1550,9 +1564,9 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (fieldName === 'free_tickets' || fieldName === 'is_active') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
@@ -2218,9 +2232,9 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (fieldName === 'free_tickets' || fieldName === 'is_active') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }
@@ -2290,9 +2304,9 @@ export default {
 
         // Для toggle полей преобразуем числовые значения в boolean
         if (column.name === 'free_tickets' || column.name === 'is_active') {
-          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true) {
+          if (valueToSave === 1 || valueToSave === '1' || valueToSave === true || valueToSave === 'on' || valueToSave === 'true') {
             valueToSave = true;
-          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false) {
+          } else if (valueToSave === 0 || valueToSave === '0' || valueToSave === false || valueToSave === 'off' || valueToSave === 'false') {
             valueToSave = false;
           }
         }

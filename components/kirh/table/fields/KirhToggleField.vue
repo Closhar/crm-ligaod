@@ -31,7 +31,8 @@ export default {
   },
   data() {
     return {
-      lastEmittedValue: null
+      lastEmittedValue: null,
+      isUpdating: false
     }
   },
   computed: {
@@ -40,7 +41,9 @@ export default {
       return this.modelValue !== null ? this.modelValue : this.value;
     },
     internalValue() {
-      return this.actualValue == 1 || this.actualValue === '1' || this.actualValue === true;
+      // Расширенная логика для обработки различных форматов значений
+      const val = this.actualValue;
+      return val == 1 || val === '1' || val === true || val === 'on' || val === 'true';
     },
     labelText() {
       if (!this.options.labels) return '';
@@ -51,11 +54,15 @@ export default {
   },
   methods: {
     handleSingleChange(e) {
+      // Защита от множественных кликов
+      if (this.isUpdating) return;
+      
       const newValue = e.target.checked ? 1 : 0;
 
       // Защита от дублирования
       if (this.lastEmittedValue === newValue) return;
       
+      this.isUpdating = true;
       this.lastEmittedValue = newValue;
       
       // Для совместимости с Vue 2
@@ -64,6 +71,11 @@ export default {
       
       // Для Vue 3
       this.$emit('update:modelValue', newValue);
+      
+      // Сбрасываем флаг через небольшую задержку
+      setTimeout(() => {
+        this.isUpdating = false;
+      }, 300);
     }
   }
 }
