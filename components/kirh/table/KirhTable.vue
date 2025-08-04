@@ -941,6 +941,7 @@ import KirhToggleField from './fields/KirhToggleField.vue';
 import ParseTableField from './fields/ParseTableField.vue';
 import ParseTableLockField from './fields/ParseTableLockField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
+import { useDataRefresh } from '~/composables/useDataRefresh';
 
 export default {
   name: 'KirhTable',
@@ -1087,6 +1088,9 @@ export default {
     // Новые реактивные переменные для подтверждения удаления
     const showDeleteConfirmationModal = ref(false);
     const pendingBulkAction = ref(null);
+
+    // Инициализация useDataRefresh для обновления конкретных событий
+    const { eventUpdateTrigger } = useDataRefresh();
 
     // Методы
     const getFieldComponent = (type) => {
@@ -2148,6 +2152,23 @@ export default {
     });
 
     watch([currentPage, sortField, sortDirection], fetchData);
+
+    // Слушатель для обновления конкретных событий
+    watch(eventUpdateTrigger, (updateData) => {
+      if (updateData && updateData.eventId) {
+        // Находим событие в таблице и обновляем только его поля
+        const eventIndex = tableData.value.findIndex(item => item.id === updateData.eventId);
+        if (eventIndex !== -1) {
+          // Обновляем только поля result и additional_result
+          if (updateData.result !== undefined) {
+            tableData.value[eventIndex].result = updateData.result;
+          }
+          if (updateData.additionalResult !== undefined) {
+            tableData.value[eventIndex].additional_result = updateData.additionalResult;
+          }
+        }
+      }
+    });
 
     // Переключение фильтра по ID
     const toggleIdFilter = (id) => {

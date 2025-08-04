@@ -45,7 +45,7 @@ const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере при каждой загрузке страницы
-const {data} = useAsyncData('globals', () => {
+const {data} = useAsyncData('events-globals', () => {
   return globalsStore.fetchData().then(() => {
     return {params: globalsStore.params, images: globalsStore.images};
   });

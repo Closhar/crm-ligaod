@@ -20,11 +20,11 @@
                 <label class="form-label">Команда</label>
                 <KirhSelectField
                   v-model="editingMembership.club_id"
-                  api-url="/api/people/clubs"
-                  :api-params="{ type: 'async' }"
+                  api-url="v1/clubs"
+                  :api-params="{ limit: 10, type: 'async' }"
                   key-field="id"
-                  label-field="name"
-                  image-field="logo_url"
+                  label-field="club_info"
+                  image-field="full_image_path"
                   :enable-search="true"
                   :limit="10"
                   placeholder="Выберите команду"
@@ -86,11 +86,11 @@
                 <label class="form-label">Команда</label>
                 <KirhSelectField
                   v-model="newMembership.club_id"
-                  api-url="/api/people/clubs"
-                  :api-params="{ type: 'async' }"
+                  api-url="v1/clubs"
+                  :api-params="{ limit: 10, type: 'async' }"
                   key-field="id"
-                  label-field="name"
-                  image-field="logo_url"
+                  label-field="club_info"
+                  image-field="full_image_path"
                   :enable-search="true"
                   :limit="10"
                   placeholder="Выберите команду"

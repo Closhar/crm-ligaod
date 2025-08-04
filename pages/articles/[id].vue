@@ -728,7 +728,7 @@ const globalsStore = useGlobalsStore();
 const { params } = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере
-const { data } = await useAsyncData('globals', async () => {
+const { data } = await useAsyncData('article-globals', async () => {
   await globalsStore.fetchData();
   return { params: globalsStore.params };
 });

@@ -152,7 +152,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineProps, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import * as XLSX from 'xlsx'
 // @ts-ignore
 import { Icon } from '@iconify/vue'

@@ -9,6 +9,12 @@
 
   <div v-if="isAuthenticated" class="">
     <div class="min-h-full text-gray-900">
+      <!-- Скрытый компонент для отслеживания результатов -->
+      <ResultsTrackerHidden />
+      
+      <!-- Компонент для отображения уведомлений -->
+      <NotificationToast />
+      
       <h2 class="text-xl font-semibold text-gray-800 mb-4 px-4 mt-4 flex items-center gap-2">
         <Icon name="material-symbols:calendar-today" class="text-blue-600" size="1.5em" />
         События сегодня
@@ -64,6 +70,8 @@
 import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
 import Head from "~/components/parts/Head.vue";
+import ResultsTrackerHidden from "~/components/content/ResultsTrackerHidden.vue";
+import NotificationToast from "~/components/NotificationToast.vue";
 import { useAuth } from '~/composables/useAuth';
 import { useGlobals } from '~/composables/useGlobals';
 

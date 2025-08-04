@@ -354,12 +354,13 @@
                 <template v-else>
                   <KirhSelectField
                     v-model="form.club_id"
-                    :options="clubSelectOptions"
+                    api-url="v1/clubs"
+                    :api-params="{ limit: 10, type: 'async' }"
                     key-field="id"
-                    label-field="full_info"
-                    image-field="logo_url"
+                    label-field="club_info"
+                    image-field="full_image_path"
                     :enable-search="true"
-                    :limit="50"
+                    :limit="10"
                     placeholder="Выберите команду"
                     :emptyable="false"
                     :class="errors.club_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
@@ -705,24 +706,8 @@ const checkClubRegion = async (clubId) => {
 
 // Функция для загрузки списка клубов (без фильтрации по id)
 const fetchClubsList = async () => {
-  try {
-    const params = { limit: 50, type: 'async' }
-    const response = await apiRequest('/clubs', { params })
-    let clubs = response
-    if (clubs && Array.isArray(clubs)) {
-      clubs.forEach(club => {
-        if (!clubSelectOptions.value.some(opt => String(opt.id) === String(club.id))) {
-          clubSelectOptions.value.push({
-            ...club,
-            id: String(club.id)
-          })
-        }
-      })
-      clubSelectOptions.value = [...clubSelectOptions.value]
-    }
-  } catch (e) {
-    console.log('Error in fetchClubsList:', e)
-  }
+  // Теперь используется динамическая загрузка через KirhSelectField
+  // Эта функция оставлена для совместимости, но не используется
 }
 
 const editAchievement = async (achievement) => {
@@ -736,12 +721,6 @@ const editAchievement = async (achievement) => {
     promoted: achievement.promoted,
     is_farm: achievement.is_farm || false
   }
-  // Очищаем опции
-  clubSelectOptions.value = []
-  // Сначала добавляем выбранный клуб
-  await ensureClubInOptions(achievement.club_id)
-  // Затем подгружаем остальные клубы
-  await fetchClubsList()
   await checkClubRegion(achievement.club_id)
   showModal.value = true
 }
@@ -1008,56 +987,18 @@ const clearFilters = () => {
   loadAchievements(1)
 }
 
-// Опции для селекта клубов с добавлением выбранного клуба, если его нет в опциях
-const clubSelectOptions = ref([])
-
-const ensureClubInOptions = async (clubId) => {
-  if (!clubId) return
-  const clubIdStr = String(clubId)
-  if (!clubSelectOptions.value.some(opt => String(opt.id) === clubIdStr)) {
-    try {
-      const response = await apiRequest(`/clubs/${clubId}`)
-      let club = response
-      if (Array.isArray(club)) {
-        if (club.length > 0) {
-          club = club[0]
-        } else {
-          club = null
-        }
-      }
-      if (club) {
-        // Пушим весь объект клуба, id приводим к строке
-        clubSelectOptions.value.push({
-          ...club,
-          id: String(club.id)
-        })
-        clubSelectOptions.value = [...clubSelectOptions.value]
-      }
-    } catch (e) {
-      console.log('Error in ensureClubInOptions:', e)
-    }
-  } else {
-    clubSelectOptions.value = [...clubSelectOptions.value]
-  }
-}
+// Опции для селекта клубов теперь загружаются динамически через API
 
 const onSelectClub = async (clubId) => {
   form.value.club_id = String(clubId)
-  await ensureClubInOptions(clubId)
   await checkClubRegion(clubId)
 }
 
-watch(() => form.value.club_id, async (newVal) => {
-  if (newVal) {
-    await ensureClubInOptions(newVal)
-  }
-})
+// Watcher удален, так как теперь используется динамическая загрузка
 
 // Функция для открытия модалки добавления достижения
 const openAddModal = async () => {
   editingAchievement.value = null
-  clubSelectOptions.value = []
-  await fetchClubsList()
   showModal.value = true
 }
 

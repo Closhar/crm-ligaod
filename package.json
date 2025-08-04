@@ -102,5 +102,21 @@
     "@nuxtjs/tailwindcss": "^6.13.2",
     "@pinia/nuxt": "^0.10.1",
     "@types/node": "^22.14.1"
-  }
+  },
+  "version": "1.0.0",
+  "description": "Административная панель для управления спортивным порталом.",
+  "main": "tailwind.config.js",
+  "directories": {
+    "example": "examples"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kirhtarg/crm.sporterp.ru.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kirhtarg/crm.sporterp.ru/issues"
+  },
+  "homepage": "https://github.com/kirhtarg/crm.sporterp.ru#readme"
 }
