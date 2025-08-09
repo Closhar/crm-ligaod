@@ -72,13 +72,11 @@
           </div>
           
           <div class="relative z-10 p-2">
-            <ArticleList2 
-              :url="`${api}/api/v1/articles?club=${club?.slug || ''}`"
-              :items-per-page="4"
-              active-tab="news"
-              :default_image="'/placeholder-topnews.jpg'"
-              :show-filters="false"
-            />
+                         <div class="text-center py-8">
+               <Icon name="material-symbols:article" size="3em" class="mx-auto mb-4 text-gray-300" />
+               <p class="text-gray-500">Список новостей в разработке</p>
+               <p class="text-sm text-gray-400 mt-2">ArticleList2 компонент будет добавлен позже</p>
+             </div>
           </div>
         </div>
       </div>
@@ -166,7 +164,6 @@
 
 <script setup>
 import { onMounted, ref, watch, defineAsyncComponent } from 'vue';
-import ArticleList2 from "~/components/content/ArticleList2.vue";
 import BirthdaysToday from "~/components/content/BirthdaysToday.vue";
 
 const props = defineProps({
