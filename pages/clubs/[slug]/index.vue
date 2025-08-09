@@ -12,24 +12,47 @@
         title="Дни рождения команды"
       />
       
-      <AboutSection
-        v-if="club"
-        title="Информация о команде"
-        icon="healthicons:info"
-        :about="club.about || ''"
-        :address="club.address || ''"
-        :sites="club.sites || ''"
-        :emails="club.emails || ''"
-        :phones="club.phones || ''"
-        :telegrams="club.telegrams || ''"
-        :instagrams="club.instagrams || ''"
-        :facebooks="club.facebooks || ''"
-        :xs="club.xs || ''"
-        :arenas="Array.isArray(club.arenas) ? club.arenas : []"
-        :vks="club.vks || ''"
-        :youtubes="club.youtubes || ''"
-        :map="club.map || ''"
-      />
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex items-center gap-3 mb-4">
+          <Icon name="healthicons:info" class="w-6 h-6 text-blue-600" />
+          <h3 class="text-xl font-bold text-gray-800">Информация о команде</h3>
+        </div>
+        
+        <div v-if="club?.about" class="mb-4">
+          <p class="text-gray-700 leading-relaxed">{{ club.about }}</p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-if="club?.address" class="flex items-start gap-2">
+            <Icon name="material-symbols:location-on" class="w-5 h-5 text-gray-500 mt-0.5" />
+            <span class="text-gray-600">{{ club.address }}</span>
+          </div>
+          
+          <div v-if="club?.phones" class="flex items-start gap-2">
+            <Icon name="material-symbols:phone" class="w-5 h-5 text-gray-500 mt-0.5" />
+            <span class="text-gray-600">{{ club.phones }}</span>
+          </div>
+          
+          <div v-if="club?.emails" class="flex items-start gap-2">
+            <Icon name="material-symbols:email" class="w-5 h-5 text-gray-500 mt-0.5" />
+            <span class="text-gray-600">{{ club.emails }}</span>
+          </div>
+          
+          <div v-if="club?.sites" class="flex items-start gap-2">
+            <Icon name="material-symbols:language" class="w-5 h-5 text-gray-500 mt-0.5" />
+            <span class="text-gray-600">{{ club.sites }}</span>
+          </div>
+        </div>
+        
+        <div v-if="club?.arenas && Array.isArray(club.arenas) && club.arenas.length > 0" class="mt-4">
+          <h4 class="font-semibold text-gray-700 mb-2">Арены:</h4>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="arena in club.arenas" :key="arena" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+              {{ arena }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="xl:col-span-2 space-y-6">
@@ -143,7 +166,6 @@
 
 <script setup>
 import { onMounted, ref, watch, defineAsyncComponent } from 'vue';
-import AboutSection from "~/components/content/AboutSection.vue";
 import ArticleList2 from "~/components/content/ArticleList2.vue";
 import BirthdaysToday from "~/components/content/BirthdaysToday.vue";
 
