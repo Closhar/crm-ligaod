@@ -5,12 +5,19 @@
 
   <div class="grid grid-cols-1 xl:grid-cols-3">
     <div class="xl:col-span-1">
-      <!-- Дни рождения команды -->
-      <BirthdaysToday 
-        v-if="club?.slug"
-        :club-slug="club.slug"
-        title="Дни рождения команды"
-      />
+             <!-- Дни рождения команды -->
+       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+         <div class="flex items-center gap-3 mb-4">
+           <Icon name="material-symbols:cake" class="w-6 h-6 text-pink-600" />
+           <h3 class="text-xl font-bold text-gray-800">Дни рождения команды</h3>
+         </div>
+         
+         <div class="text-center py-8">
+           <Icon name="material-symbols:cake" size="3em" class="mx-auto mb-4 text-gray-300" />
+           <p class="text-gray-500">Список дней рождений в разработке</p>
+           <p class="text-sm text-gray-400 mt-2">BirthdaysToday компонент будет добавлен позже</p>
+         </div>
+       </div>
       
       <div class="bg-white rounded-lg shadow-md p-6 mb-6">
         <div class="flex items-center gap-3 mb-4">
@@ -164,7 +171,6 @@
 
 <script setup>
 import { onMounted, ref, watch, defineAsyncComponent } from 'vue';
-import BirthdaysToday from "~/components/content/BirthdaysToday.vue";
 
 const props = defineProps({
   club: {
