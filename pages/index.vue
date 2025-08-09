@@ -9,9 +9,6 @@
 
   <div v-if="isAuthenticated" class="">
     <div class="min-h-full text-gray-900">
-      <!-- Скрытый компонент для отслеживания результатов -->
-      <ResultsTrackerHidden />
-      
       <!-- Компонент для отображения уведомлений -->
       <NotificationToast />
       
@@ -70,7 +67,6 @@
 import { ref } from 'vue';
 import KirhTable from "~/components/kirh/table/KirhTable.vue";
 import Head from "~/components/parts/Head.vue";
-import ResultsTrackerHidden from "~/components/content/ResultsTrackerHidden.vue";
 import NotificationToast from "~/components/NotificationToast.vue";
 import { useAuth } from '~/composables/useAuth';
 import { useGlobals } from '~/composables/useGlobals';

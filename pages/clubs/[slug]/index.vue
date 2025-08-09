@@ -81,16 +81,15 @@
               <p class="text-gray-600">Загрузка предстоящих матчей...</p>
             </div>
             <div v-else-if="upcomingMatches && upcomingMatches.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <EventCard2
+              <div
                 v-for="match in upcomingMatches"
                 :key="match.id"
-                :event="match"
-                :homeRegionId="homeRegionId"
-                :showGender="true"
-                :showSport="true"
-                :eventLink="'/events'"
-                :showTableButton="true"
-              />
+                class="bg-white rounded-lg shadow-md p-4 border"
+              >
+                <h4 class="font-semibold text-lg mb-2">{{ match.title || 'Матч' }}</h4>
+                <p class="text-gray-600">{{ match.date_from }}</p>
+                <p class="text-sm text-gray-500">EventCard2 в разработке</p>
+              </div>
             </div>
             <div v-else class="text-center py-8 text-gray-500">
               <Icon name="material-symbols:schedule" size="3em" class="mx-auto mb-4 text-gray-300" />
@@ -121,16 +120,15 @@
               <p class="text-gray-600">Загрузка прошедших матчей...</p>
             </div>
             <div v-else-if="pastMatches && pastMatches.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <EventCard2
+              <div
                 v-for="match in pastMatches"
                 :key="match.id"
-                :event="match"
-                :homeRegionId="homeRegionId"
-                :showGender="true"
-                :showSport="true"
-                :eventLink="'/events'"
-                :showTableButton="true"
-              />
+                class="bg-white rounded-lg shadow-md p-4 border"
+              >
+                <h4 class="font-semibold text-lg mb-2">{{ match.title || 'Матч' }}</h4>
+                <p class="text-gray-600">{{ match.date_from }}</p>
+                <p class="text-sm text-gray-500">EventCard2 в разработке</p>
+              </div>
             </div>
             <div v-else class="text-center py-8 text-gray-500">
               <Icon name="material-symbols:history" size="3em" class="mx-auto mb-4 text-gray-300" />
@@ -147,7 +145,6 @@
 import { onMounted, ref, watch, defineAsyncComponent } from 'vue';
 import AboutSection from "~/components/content/AboutSection.vue";
 import ArticleList2 from "~/components/content/ArticleList2.vue";
-import EventCard2 from "~/components/content/EventCard2.vue";
 import BirthdaysToday from "~/components/content/BirthdaysToday.vue";
 
 const props = defineProps({
