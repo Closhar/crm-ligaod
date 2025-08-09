@@ -690,9 +690,7 @@
                         :row="row"
                         :api-url="apiUrl"
                         @update:model-value="column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
-                        @blur="column.type === 'aigen' ? handleAigenBlur(row, column.name, $event) : (column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : handleBlur(row, column.name))"
-                        @input="column.type === 'aigen' || column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
-                        @change="column.type === 'aigen' || column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : updateValue(row, column.name, $event)"
+                        @blur="column.type === 'aigen' ? handleAigenBlur(row, column.name, $event) : (column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' || column.type === 'toggle' ? null : handleBlur(row, column.name))"
                         @keyup.enter="column.type === 'aigen' ? null : (column.type === 'morphedByMany' || column.type === 'belongsToMany' || column.type === 'morphToMany' ? null : handleBlur(row, column.name))"
                         @click="handleCellClick(row, column)"
                     />
@@ -1224,6 +1222,12 @@ export default {
 
       // Получаем актуальное значение из события или напрямую
       const actualValue = value?.target?.value ?? value;
+
+      // Защита от повторных обновлений для toggle полей
+      if (!row._updating) row._updating = {};
+      if (row._updating[fieldName]) {
+        return;
+      }
 
       // Для всех полей обновляем локальное значение
       row[fieldName] = actualValue;

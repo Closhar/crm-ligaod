@@ -65,17 +65,13 @@ export default {
       this.isUpdating = true;
       this.lastEmittedValue = newValue;
       
-      // Для совместимости с Vue 2
-      this.$emit('input', newValue);
-      this.$emit('change', newValue);
-      
-      // Для Vue 3
+      // Эмитируем только одно событие для избежания дублирования
       this.$emit('update:modelValue', newValue);
       
-      // Сбрасываем флаг через небольшую задержку
+      // Увеличиваем время блокировки для надежности  
       setTimeout(() => {
         this.isUpdating = false;
-      }, 300);
+      }, 1000);
     }
   }
 }

@@ -351,24 +351,24 @@
                     <div class="font-semibold text-gray-900">{{ selectedClubData?.full_info || '—' }}</div>
                   </div>
                 </template>
-                <template v-else>
-                  <KirhSelectField
-                    v-model="form.club_id"
-                    api-url="v1/clubs"
-                    :api-params="{ limit: 10, type: 'async' }"
-                    key-field="id"
-                    label-field="club_info"
-                    image-field="full_image_path"
-                    :enable-search="true"
-                    :limit="10"
-                    placeholder="Выберите команду"
-                    :emptyable="false"
-                    :class="errors.club_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
-                    sel-class="text-gray-900"
-                    required
-                    @update:model-value="onSelectClub"
-                  />
-                </template>
+                                 <template v-else>
+                   <KirhSelectField
+                     v-model="form.club_id"
+                     api-url="v1/clubs"
+                     :api-params="{ limit: 10, type: 'async' }"
+                     key-field="id"
+                     label-field="club_info"
+                     image-field="full_image_path"
+                     :enable-search="true"
+                     :limit="10"
+                     placeholder="Выберите команду"
+                     :emptyable="false"
+                     :class="errors.club_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
+                     sel-class="text-gray-900"
+                     required
+                     @update:model-value="onSelectClub"
+                   />
+                 </template>
                 <p v-if="errors.club_id" class="mt-1 text-sm text-red-600">{{ errors.club_id[0] }}</p>
                 
                 <!-- Предупреждение о отсутствии региона у клуба -->
@@ -393,43 +393,43 @@
                 </div>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Год *</label>
-                <KirhSelectField
-                  v-model="form.year"
-                  api-url="v1/rating/years"
-                  :api-params="{ limit: 10 }"
-                  key-field="year"
-                  label-field="title"
-                  :enable-search="false"
-                  :limit="10"
-                  placeholder="Выберите год"
-                  :emptyable="false"
-                  :class="errors.year ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
-                  sel-class="text-gray-900"
-                  required
-                />
-                <p v-if="errors.year" class="mt-1 text-sm text-red-600">{{ errors.year[0] }}</p>
-              </div>
+                             <div>
+                 <label class="block text-sm font-medium text-gray-700 mb-2">Год *</label>
+                 <KirhSelectField
+                   v-model="form.year"
+                   api-url="v1/rating/years"
+                   :api-params="{ limit: 10 }"
+                   key-field="year"
+                   label-field="title"
+                   :enable-search="false"
+                   :limit="10"
+                   placeholder="Выберите год"
+                   :emptyable="false"
+                   :class="errors.year ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
+                   sel-class="text-gray-900"
+                   required
+                 />
+                 <p v-if="errors.year" class="mt-1 text-sm text-red-600">{{ errors.year[0] }}</p>
+               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Тип турнира *</label>
-                <KirhSelectField
-                  v-model="form.tournament_type_id"
-                  api-url="v1/tournament-types"
-                  :api-params="{ limit: 10 }"
-                  key-field="id"
-                  label-field="name"
-                  :enable-search="true"
-                  :limit="10"
-                  placeholder="Выберите тип турнира"
-                  :emptyable="false"
-                  :class="errors.tournament_type_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
-                  sel-class="text-gray-900"
-                  required
-                />
-                <p v-if="errors.tournament_type_id" class="mt-1 text-sm text-red-600">{{ errors.tournament_type_id[0] }}</p>
-              </div>
+               <div>
+                 <label class="block text-sm font-medium text-gray-700 mb-2">Тип турнира *</label>
+                 <KirhSelectField
+                   v-model="form.tournament_type_id"
+                   api-url="v1/tournament-types"
+                   :api-params="{ limit: 10 }"
+                   key-field="id"
+                   label-field="name"
+                   :enable-search="true"
+                   :limit="10"
+                   placeholder="Выберите тип турнира"
+                   :emptyable="false"
+                   :class="errors.tournament_type_id ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : ''"
+                   sel-class="text-gray-900"
+                   required
+                 />
+                 <p v-if="errors.tournament_type_id" class="mt-1 text-sm text-red-600">{{ errors.tournament_type_id[0] }}</p>
+               </div>
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Место *</label>
@@ -549,23 +549,23 @@
               У команды не указан регион рейтинга. Для добавления достижения необходимо сначала добавить регион к команде.
             </p>
             
-            <!-- Поле выбора региона -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Выберите регион *</label>
-              <KirhSelectField
-                v-model="selectedRegionId"
-                api-url="v1/rating/regions"
-                :api-params="{ limit: 20 }"
-                key-field="id"
-                label-field="name"
-                :enable-search="true"
-                :limit="20"
-                placeholder="Выберите регион"
-                :emptyable="false"
-                sel-class="text-gray-900"
-                required
-              />
-            </div>
+                         <!-- Поле выбора региона -->
+             <div>
+               <label class="block text-sm font-medium text-gray-700 mb-2">Выберите регион *</label>
+               <KirhSelectField
+                 v-model="selectedRegionId"
+                 api-url="v1/rating/regions"
+                 :api-params="{ limit: 20 }"
+                 key-field="id"
+                 label-field="name"
+                 :enable-search="true"
+                 :limit="20"
+                 placeholder="Выберите регион"
+                 :emptyable="false"
+                 sel-class="text-gray-900"
+                 required
+               />
+             </div>
           </div>
 
           <div class="flex justify-end gap-3">
@@ -591,7 +591,7 @@
 
 <script setup>
 import { Icon } from '@iconify/vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, nextTick } from 'vue'
 import KirhSelectField from '~/components/kirh/table/fields/KirhSelectField.vue'
 
 const clubApiParams = ref({ limit: 10, type: 'async' })
@@ -789,6 +789,9 @@ const addRegionToClub = async () => {
   if (!selectedRegionId.value || !clubForRegion.value) return
 
   try {
+    // Сохраняем ID выбранной команды
+    const selectedClubId = form.value.club_id
+    
     const response = await apiRequest(`/v1/clubs/${clubForRegion.value.id}/regions`, {
       method: 'POST',
       body: { region_id: selectedRegionId.value }
@@ -804,6 +807,12 @@ const addRegionToClub = async () => {
     
     // Закрываем модалку
     closeRegionModal()
+    
+    // Восстанавливаем выбранную команду в форме
+    if (selectedClubId) {
+      form.value.club_id = selectedClubId
+      await checkClubRegion(selectedClubId)
+    }
     
     // Показываем сообщение об успехе
     showNotification('Регион успешно добавлен к команде', 'success')
@@ -868,12 +877,25 @@ const saveAchievement = async () => {
     // Успешный ответ
     if (editingAchievement.value) {
       showNotification('Достижение успешно обновлено', 'success')
-    } else {
-      showNotification('Достижение успешно добавлено', 'success')
-    }
-    await loadAchievements()
-    await fetchRatingActuality()
-    closeModal()
+      await loadAchievements()
+      await fetchRatingActuality()
+      closeModal()
+              } else {
+       // Для добавления нового достижения показываем сообщение в модалке и не закрываем её
+       successMessage.value = 'Достижение успешно добавлено!'
+       
+       // Обновляем данные в таблице
+       await loadAchievements()
+       await fetchRatingActuality()
+       
+       // Сохраняем все поля формы как есть, ничего не сбрасываем
+       // Не очищаем selectedClubData, чтобы сохранить информацию о клубе
+       
+       // Автоматически скрываем сообщение об успехе через 3 секунды
+       setTimeout(() => {
+         successMessage.value = ''
+       }, 3000)
+     }
   } catch (error) {
     console.error('Ошибка сохранения достижения:', error)
     errors.value = { general: ['Произошла ошибка при сохранении'] }
@@ -999,6 +1021,7 @@ const onSelectClub = async (clubId) => {
 // Функция для открытия модалки добавления достижения
 const openAddModal = async () => {
   editingAchievement.value = null
+  successMessage.value = '' // Очищаем сообщение об успехе при открытии
   showModal.value = true
 }
 
