@@ -19,6 +19,11 @@ const useBrowserNotifications = ref(false);
 
 // Загружаем состояние звука из localStorage при инициализации
 const loadAudioState = () => {
+  // Проверяем, что мы на клиентской стороне
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+  
   try {
     const savedState = localStorage.getItem('audioActivated');
     if (savedState !== null) {
@@ -36,6 +41,11 @@ const loadAudioState = () => {
 
 // Сохраняем состояние звука в localStorage
 const saveAudioState = () => {
+  // Проверяем, что мы на клиентской стороне
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return;
+  }
+  
   try {
     localStorage.setItem('audioActivated', JSON.stringify(isAudioActivated.value));
     localStorage.setItem('useBrowserNotifications', JSON.stringify(useBrowserNotifications.value));
@@ -44,12 +54,29 @@ const saveAudioState = () => {
   }
 };
 
-// Загружаем состояние при инициализации
-loadAudioState();
-
 export const useNotifications = () => {
+  // Проверяем, находимся ли мы в админке (по URL)
+  const isAdminPanel = typeof window !== 'undefined' && 
+    (window.location.hostname === 'crm.sporterp.ru' || 
+     window.location.hostname.includes('crm.'));
+  
+  // Загружаем состояние при инициализации composable на клиенте
+  // В админке звук отключен по умолчанию
+  if (typeof window !== 'undefined') {
+    if (isAdminPanel) {
+      // В админке принудительно отключаем звук
+      isAudioActivated.value = false;
+      useBrowserNotifications.value = false;
+    } else {
+      loadAudioState();
+    }
+  }
+  
   // Инициализация аудио
   const initAudio = () => {
+    // Не инициализируем аудио в админке
+    if (isAdminPanel) return;
+    
     try {
       // Создаем Web Audio API контекст
       if (!audioContext) {
@@ -184,6 +211,9 @@ export const useNotifications = () => {
 
   // Воспроизведение звука
   const playNotificationSound = async () => {
+    // Не воспроизводим звук в админке
+    if (isAdminPanel) return;
+    
     // Проверяем, включен ли звук
     if (!isAudioActivated.value) {
       return;
