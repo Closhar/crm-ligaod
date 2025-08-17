@@ -159,11 +159,11 @@
             </div>
 
                   <!-- Содержание с RichTextEditor -->
-            <div>
+                  <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Содержание статьи *</label>
                     <div class="border border-gray-300 rounded-md overflow-hidden">
                       <RichTextEditor
-                v-model="formData.content" 
+                        v-model="formData.content" 
                         :placeholder="'Введите содержание статьи...'"
                         :upload-options="{
                           url: `${api}/api/articles/${route.params.id}/upload-image`,
@@ -173,6 +173,18 @@
                       />
                     </div>
                   </div>
+
+                  <!-- Фотоинфо -->
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Информация о фото:</label>
+                    <div class="border border-gray-300 rounded-md overflow-hidden">
+                      <RichTextEditor
+                        v-model="formData.photo_info" 
+                        :placeholder="'Введите информацию о фото...'"
+                      />
+                    </div>
+                  </div>
+
                 </div>
 
                 <!-- Правая колонка - Отношения (1/3) -->
@@ -368,6 +380,56 @@
                       </div>
                       <div v-if="formData.clubs.length === 0" class="text-sm text-gray-500 text-center py-2">
                         Команды не выбраны
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Персоны -->
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <Icon name="i-mdi:account" class="w-5 h-5 mr-2 text-indigo-600" />
+                      Персоны
+                    </h3>
+                    
+                    <!-- Поле добавления -->
+                    <div class="mb-3 relative">
+                      <input
+                        v-model="peopleSearch"
+                        type="text"
+                        placeholder="Начните вводить ФИО или дату рождения..."
+                        class="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @input="searchPeople"
+                        @focus="showPeopleDropdown = true"
+                      />
+                      
+                      <!-- Выпадающий список результатов поиска -->
+                      <div v-if="showPeopleDropdown && filteredPeople.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        <div
+                          v-for="person in filteredPeople"
+                          :key="person.id"
+                          class="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          @click="addPerson(person)"
+                        >
+                          {{ person.title }}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Список выбранных персон -->
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                      <div v-for="personId in formData.people" :key="personId" class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200">
+                        <span class="text-sm text-gray-700">
+                          {{ getPersonTitle(personId) }}
+                        </span>
+                        <button
+                          @click="removePerson(personId)"
+                          class="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          <Icon name="heroicons:x-mark" class="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div v-if="formData.people.length === 0" class="text-sm text-gray-500 text-center py-2">
+                        Персоны не выбраны
                       </div>
                     </div>
                   </div>
@@ -745,6 +807,7 @@ interface Article {
   content: string;
   published: number | boolean;
   article_image_path?: string;
+  photo_info?: string;
   sports?: any[];
   clubs?: any[];
   arenas?: any[];
@@ -752,6 +815,7 @@ interface Article {
   events?: any[];
   galleries?: any[];
   videos?: any[];
+  people?: any[];
 }
 
 interface Region {
@@ -791,6 +855,7 @@ const availableCompetitions = ref<RelationItem[]>([]);
 const availableEvents = ref<RelationItem[]>([]);
 const availableGalleries = ref<RelationItem[]>([]);
 const availableVideos = ref<RelationItem[]>([]);
+const availablePeople = ref<RelationItem[]>([]);
 
 // Переменные для поиска и автокомплита
 const sportSearch = ref('');
@@ -800,6 +865,7 @@ const competitionSearch = ref('');
 const eventSearch = ref('');
 const gallerySearch = ref('');
 const videoSearch = ref('');
+const peopleSearch = ref('');
 
 // Состояния выпадающих списков
 const showSportDropdown = ref(false);
@@ -809,6 +875,7 @@ const showCompetitionDropdown = ref(false);
 const showEventDropdown = ref(false);
 const showGalleryDropdown = ref(false);
 const showVideoDropdown = ref(false);
+const showPeopleDropdown = ref(false);
 
 // Отфильтрованные результаты поиска
 const filteredSports = ref<RelationItem[]>([]);
@@ -818,6 +885,7 @@ const filteredCompetitions = ref<RelationItem[]>([]);
 const filteredEvents = ref<RelationItem[]>([]);
 const filteredGalleries = ref<RelationItem[]>([]);
 const filteredVideos = ref<RelationItem[]>([]);
+const filteredPeople = ref<RelationItem[]>([]);
 
 const emptyRegionOption = {
   value: '',
@@ -833,13 +901,15 @@ const formData = ref({
   content: '',
   published: false,
   article_image_path: '',
+  photo_info: '',
   sports: [] as number[],
   clubs: [] as number[],
   arenas: [] as number[],
   competitions: [] as number[],
   events: [] as number[],
   galleries: [] as number[],
-  videos: [] as number[]
+  videos: [] as number[],
+  people: [] as number[]
 });
 
 // SEO
@@ -914,15 +984,22 @@ const loadArticle = async () => {
         content: article.value.content || '',
         published: article.value.published === 1 || article.value.published === true,
         article_image_path: article.value.article_image_path || '',
+        photo_info: article.value.photo_info || '',
         sports: article.value.sports?.map(s => s.id) || [],
         clubs: article.value.clubs?.map(c => c.id) || [],
         arenas: article.value.arenas?.map(a => a.id) || [],
         competitions: article.value.competitions?.map(c => c.id) || [],
         events: article.value.events?.map(e => e.id) || [],
         galleries: article.value.galleries?.map(g => g.id) || [],
-        videos: article.value.videos?.map(v => v.id) || []
+        videos: article.value.videos?.map(v => v.id) || [],
+        people: article.value.people?.map(p => p.id) || []
       };
     }
+    
+    // После загрузки статьи загружаем доступные отношения
+    // чтобы связанные персоны из статьи добавились в availablePeople
+    await loadAvailableRelations();
+    
   } catch (err) {
     error.value = (err as Error).message || 'Ошибка загрузки статьи';
     article.value = null;
@@ -942,10 +1019,11 @@ const loadAvailableRelations = async () => {
       fetch(`${api}/api/v1/competitions?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/events?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/galleries?type=async`).then(r => r.ok ? r.json() : []),
-      fetch(`${api}/api/videos`).then(r => r.ok ? r.json() : [])
+      fetch(`${api}/api/videos`).then(r => r.ok ? r.json() : []),
+      fetch(`${api}/api/people?type=async`).then(r => r.ok ? r.json() : [])
     ];
 
-    const [sports, clubs, arenas, competitions, events, galleries, videos] = await Promise.all(promises);
+    const [sports, clubs, arenas, competitions, events, galleries, videos, people] = await Promise.all(promises);
 
     availableSports.value = Array.isArray(sports) ? sports : [];
     availableClubs.value = Array.isArray(clubs) ? clubs.map(club => ({
@@ -957,6 +1035,23 @@ const loadAvailableRelations = async () => {
     availableEvents.value = Array.isArray(events) ? events : [];
     availableGalleries.value = Array.isArray(galleries) ? galleries : [];
     availableVideos.value = Array.isArray(videos) ? videos : (videos && videos.data ? videos.data : []);
+    availablePeople.value = Array.isArray(people) ? people : [];
+
+    // Добавляем связанные персоны из статьи в availablePeople, если они есть
+    if (article.value && article.value.people) {
+      article.value.people.forEach(person => {
+        if (!availablePeople.value.find(p => p.id === person.id)) {
+          // Формируем title для персоны в том же формате, что и в API
+          const fullName = (person.last_name + ' ' + person.first_name + ' ' + (person.middle_name || '')).trim();
+          const birthDate = person.birth_date ? new Date(person.birth_date).toLocaleDateString('ru-RU') : '';
+          const personWithTitle = {
+            ...person,
+            title: fullName + (birthDate ? ` (${birthDate})` : '')
+          };
+          availablePeople.value.push(personWithTitle);
+        }
+      });
+    }
 
     // Инициализируем отфильтрованные списки
     filteredSports.value = availableSports.value.slice(0, 10);
@@ -966,6 +1061,7 @@ const loadAvailableRelations = async () => {
     filteredEvents.value = availableEvents.value.slice(0, 10);
     filteredGalleries.value = availableGalleries.value.slice(0, 10);
     filteredVideos.value = availableVideos.value.slice(0, 10);
+    filteredPeople.value = availablePeople.value.slice(0, 10);
   } catch (err) {
     console.error('Ошибка загрузки отношений:', err);
     error.value = (err as Error).message || 'Ошибка загрузки отношений';
@@ -1235,7 +1331,8 @@ const reduceQuality = (canvas: HTMLCanvasElement, maxSizeKB: number, mimeType: s
 
 onMounted(() => {
   loadArticle();
-  loadAvailableRelations();
+  // Загружаем доступные отношения после загрузки статьи
+  // чтобы можно было добавить связанные персоны из статьи в availablePeople
   
   // Обработчик клика вне выпадающих списков
   document.addEventListener('click', (event) => {
@@ -1248,6 +1345,7 @@ onMounted(() => {
       showEventDropdown.value = false;
       showGalleryDropdown.value = false;
       showVideoDropdown.value = false;
+      showPeopleDropdown.value = false;
     }
   });
 });
@@ -1438,6 +1536,27 @@ const searchVideos = debounce(async () => {
   }
 }, 300);
 
+const searchPeople = debounce(async () => {
+  const query = peopleSearch.value.toLowerCase().trim();
+  if (query.length >= 2) {
+    try {
+      const response = await fetch(`${api}/api/people?type=async&q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const people = await response.json();
+        filteredPeople.value = Array.isArray(people) ? people.filter(person => 
+          !formData.value.people.includes(person.id)
+        ) : [];
+      }
+    } catch (err) {
+      console.error('Ошибка поиска персон:', err);
+    }
+  } else {
+    filteredPeople.value = availablePeople.value.filter(person => 
+      !formData.value.people.includes(person.id)
+    ).slice(0, 10);
+  }
+}, 300);
+
 // Функции добавления
 const addSport = async (sport: RelationItem) => {
   if (!formData.value.sports.includes(sport.id)) {
@@ -1558,6 +1677,23 @@ const addVideo = async (video: RelationItem) => {
   searchVideos(); // Обновляем отфильтрованный список
 };
 
+const addPerson = async (person: RelationItem) => {
+  if (!formData.value.people.includes(person.id)) {
+    formData.value.people.push(person.id);
+    
+    // Добавляем персону в availablePeople, если её там нет
+    if (!availablePeople.value.find(p => p.id === person.id)) {
+      availablePeople.value.push(person);
+    }
+    
+    // Сразу сохраняем отношения
+    await saveRelations('people', formData.value.people);
+  }
+  peopleSearch.value = '';
+  showPeopleDropdown.value = false;
+  searchPeople(); // Обновляем отфильтрованный список
+};
+
 // Функции удаления
 const removeSport = async (sportId: number) => {
   formData.value.sports = formData.value.sports.filter(id => id !== sportId);
@@ -1606,6 +1742,13 @@ const removeVideo = async (videoId: number) => {
   // Сразу сохраняем отношения
   await saveRelations('videos', formData.value.videos);
   searchVideos(); // Обновляем отфильтрованный список
+};
+
+const removePerson = async (personId: number) => {
+  formData.value.people = formData.value.people.filter(id => id !== personId);
+  // Сразу сохраняем отношения
+  await saveRelations('people', formData.value.people);
+  searchPeople(); // Обновляем отфильтрованный список
 };
 
 // Функции получения названий по ID
@@ -1720,6 +1863,27 @@ const getVideoTitle = (videoId: number) => {
   }
   
   return `Видео #${videoId}`;
+};
+
+const getPersonTitle = (personId: number) => {
+  // Сначала ищем в availablePeople
+  const person = availablePeople.value.find(p => p.id === personId);
+  if (person) {
+    return person.title;
+  }
+  
+  // Если не найдено в availablePeople, ищем в данных статьи
+  if (article.value && article.value.people) {
+    const articlePerson = article.value.people.find(p => p.id === personId);
+    if (articlePerson) {
+      // Формируем title для персоны из данных статьи
+      const fullName = (articlePerson.last_name + ' ' + articlePerson.first_name + ' ' + (articlePerson.middle_name || '')).trim();
+      const birthDate = articlePerson.birth_date ? new Date(articlePerson.birth_date).toLocaleDateString('ru-RU') : '';
+      return fullName + (birthDate ? ` (${birthDate})` : '');
+    }
+  }
+  
+  return `Персона #${personId}`;
 };
 
 // Удаление изображения статьи

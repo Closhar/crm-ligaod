@@ -399,7 +399,5 @@ export const useNotifications = () => {
     useBrowserNotifications: computed(() => useBrowserNotifications.value)
   };
   
-  console.log('Экспортируемые функции из useNotifications:', Object.keys(result));
-  
   return result;
 }; 
