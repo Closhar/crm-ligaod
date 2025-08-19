@@ -172,7 +172,7 @@ const loadTodayEvents = async () => {
         }
         
         if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter((stream: any) => stream.in_main === 1);
+          const filteredStreams = event.streams.filter((stream: any) => !stream.in_player && !stream.in_profile);
           if (filteredStreams.length > 0) {
             homeTemplate += `<p>📺 Трансляции события:</p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
@@ -255,7 +255,7 @@ const loadTodayEvents = async () => {
         }
         
         if (event.streams && event.streams.length > 0) {
-          const filteredStreams = event.streams.filter((stream: any) => stream.in_main === 1);
+          const filteredStreams = event.streams.filter((stream: any) => !stream.in_player && !stream.in_profile);
           if (filteredStreams.length > 0) {
             awayTemplate += `<p>📺 Трансляции события:</p>\n<ul>\n`;
             filteredStreams.forEach((stream: any) => {
