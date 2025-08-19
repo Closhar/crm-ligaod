@@ -67,7 +67,7 @@
                @click="resetFieldSelector"
                title="Вернуть стандартный вид"
            >
-             <Icon name="material-symbols:restore" size="1.2em" class="mr-1" />
+             <Icon name="ph:arrow-clockwise" size="1.2em" class="mr-1" />
              Сброс полей
            </button>
         </div>

@@ -178,6 +178,22 @@ const tableOptions = ref({
         activeClass: 'bg-green-500 text-white',
         inactiveClass: 'bg-red-100 text-red-800'
       }
+    },
+    {
+      name: 'in_main',
+      label: 'На главной',
+      type: 'toggle',
+      width: '80px',
+      sortable: false,
+      options: {
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
     }
   ],
   // Колонка Действия
@@ -305,6 +321,23 @@ const formOptions = ref({
     {
       name: 'in_profile',
       label: 'В профиле',
+      type: 'toggle',
+      width: '100px',
+      sortable: false,
+      options: {
+        defaultChecked: false,
+        display: 'switch', // или 'switch' для классического вида
+        items: [
+          {value: true, label: 'Вкл'},
+          {value: false, label: 'Выкл'}
+        ],
+        activeClass: 'bg-green-500 text-white',
+        inactiveClass: 'bg-red-100 text-red-800'
+      }
+    },
+    {
+      name: 'in_main',
+      label: 'На главной',
       type: 'toggle',
       width: '100px',
       sortable: false,

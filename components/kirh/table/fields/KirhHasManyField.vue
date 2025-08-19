@@ -60,14 +60,15 @@
                 Инструкция по чекбоксам
               </summary>
               <div class="mt-2 text-gray-700 bg-blue-50 p-3 rounded-md">
-                <b>Значения чекбоксов ВСТРОЕНО (1) и В ПРОФИЛЕ (2)</b><br />
+                <b>Значения чекбоксов ВСТРОЕНО (1), В ПРОФИЛЕ (2) и НА ГЛАВНОЙ (3)</b><br />
                 Если отмечен (1) - ссылка на встроенное видео, будет отображаться на главной странице и видео будет встроено (первое в списке), также ссылка отобразится в профиле события и будет встроена; <br />
                 Если отмечен (2) - ссылка отобразится только в профиле события в разделе Ссылки - сюда можно добавлять ссылки на любые ресурсы (не только видео) - они откроются в новом окне; <br />
-                Если не отмечен ни один чекбокс - ссылка отобразится только на главной странице в модальном окне Ссылки, а также будет добавлена в анонс в Телеграм (когда он будет формироваться).<br /><br />
+                Если отмечен (3) - ссылка отобразится на главной странице в модальном окне Ссылки, а также будет добавлена в анонс в Телеграм (когда он будет формироваться);<br />
+                Если не отмечен ни один чекбокс - ссылка не будет отображаться нигде.<br /><br />
                 Можно в ссылку добавлять код для встраивания iframe (vkvideo, youtube, rutube) - в этом случае добавится 3 ссылки: <br />
                 - для встраивания (ссылка будет вырезана из кода как есть, будет отмечен чекбокс 1);<br />
                 - для профиля (ссылка будет вырезана из кода и преобразована соответствующим образом, будет отмечен чекбокс 2);<br />
-                - для телеграма и ссылки на главной (ссылка будет вырезана из кода и преобразована соответствующим образом, не будет отмечен ни один чекбокс).
+                - для телеграма и ссылки на главной (ссылка будет вырезана из кода и преобразована соответствующим образом, будет отмечен чекбокс 3).
               </div>
             </details>
           </div>
@@ -214,8 +215,7 @@
                               >
                                 <input 
                                   type="checkbox" 
-                                  :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                  @change="item[field.name] = $event.target.checked"
+                                  v-model="item[field.name]"
                                   :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
                                 />
                                 <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
@@ -397,8 +397,7 @@
                                   >
                                     <input 
                                       type="checkbox" 
-                                      :checked="item[field.name] === undefined ? field.options?.defaultChecked : Boolean(item[field.name])"
-                                      @change="item[field.name] = $event.target.checked"
+                                      v-model="item[field.name]"
                                       :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
                                     />
                                     <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
@@ -631,6 +630,7 @@
                                 type="checkbox"
                                 v-model="newItem[field.name]"
                                 :class="field.options?.toggleClass || effectiveOptions?.defaultToggleClass || 'h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'"
+                                @change="handleToggleChange(field.name, $event)"
                               />
                               <span :class="field.options?.toggleLabelClass || 'ml-2 text-sm text-gray-700'" v-if="field.options?.toggleLabel">
                                 {{ field.options.toggleLabel }}
@@ -657,7 +657,7 @@
                   
                   <!-- "Add new" button -->
                   <button v-if="!showAddForm"
-                          @click="showAddForm = true"
+                          @click="handleAddNewClick"
                           class="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
                   >
                     <Icon :name="effectiveOptions?.icons?.add || 'ph:plus-circle-duotone'" class="mr-1" />
@@ -665,6 +665,61 @@
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    
+    <!-- Модальное окно подтверждения -->
+    <Teleport to="body">
+      <div v-if="showConfirmModal" class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Фон -->
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="cancelConfirmAction"></div>
+          
+          <!-- Центрирование модального окна -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+          
+          <!-- Модальное окно -->
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Заголовок -->
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    {{ confirmModalTitle }}
+                  </h3>
+                  <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                      {{ confirmModalMessage }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Кнопки -->
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button
+                type="button"
+                @click="executeConfirmAction"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Подтвердить
+              </button>
+              <button
+                type="button"
+                @click="cancelConfirmAction"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Отмена
+              </button>
             </div>
           </div>
         </div>
@@ -939,6 +994,13 @@ export default {
     const debugMode = ref(false);  // Всегда выключено по умолчанию
     const debugFakeId = ref(null); // Нет заглушки по умолчанию
     
+    // Состояние для модальных окон подтверждения
+    const showConfirmModal = ref(false);
+    const confirmModalTitle = ref('');
+    const confirmModalMessage = ref('');
+    const confirmModalAction = ref(null);
+    const confirmModalItem = ref(null);
+    
     // Функция для получения эффективного ID с учетом режима отладки
     const getEffectiveId = () => {
       const thisId = props.rowData?.id || props.parentId;
@@ -1163,6 +1225,9 @@ export default {
             newItem.value[field.name] = field.default;
           } else if (field.type === 'toggle' && field.options?.defaultChecked !== undefined) {
             newItem.value[field.name] = field.options.defaultChecked;
+          } else if (field.type === 'toggle') {
+            // Для toggle полей без явного defaultChecked устанавливаем false
+            newItem.value[field.name] = false;
           } else {
             newItem.value[field.name] = null;
           }
@@ -1200,6 +1265,8 @@ export default {
           });
         }
       }
+      
+
     };
     
     // Methods
@@ -1289,6 +1356,8 @@ export default {
           finalFetchApiUrl = joinUrl(effectiveOptions.value.baseApiUrl, path);
         }
         
+
+        
         // Получаем заголовки авторизации
         const headers = getAuthHeaders();
         
@@ -1300,7 +1369,6 @@ export default {
         
         // Если получаем 404, просто показываем пустой список
         if (response.status === 404) {
-          console.log('API-эндпоинт не найден, показываем пустой список:', finalFetchApiUrl);
           relatedItems.value = [];
           relatedItemsLoaded.value = true;
           loading.value = false;
@@ -1431,32 +1499,26 @@ export default {
       item[fieldName] = value;
     };
     
+
+    
+
+    
     const editItem = (item) => {
-      // Создаем глубокую копию объекта для редактирования
-      const itemCopy = JSON.parse(JSON.stringify(item));
-      
       // Обрабатываем чекбоксы, преобразуя их значения в булевы
       effectiveOptions.value.fields.forEach(field => {
         if (field.type === 'toggle') {
           // Если значение undefined или null, используем defaultChecked
-          if (itemCopy[field.name] === undefined || itemCopy[field.name] === null) {
-            itemCopy[field.name] = field.options?.defaultChecked || false;
+          if (item[field.name] === undefined || item[field.name] === null) {
+            item[field.name] = field.options?.defaultChecked || false;
           } else {
             // Преобразуем значение в булево
-            itemCopy[field.name] = Boolean(itemCopy[field.name]);
+            item[field.name] = Boolean(item[field.name]);
           }
         }
       });
       
-      // Находим индекс элемента в массиве
-      const index = relatedItems.value.findIndex(i => i.id === item.id);
-      if (index !== -1) {
-        // Заменяем элемент на его копию
-        relatedItems.value[index] = itemCopy;
-      }
-      
       isEditingItem.value = item.id;
-      editingItemOriginal.value = JSON.parse(JSON.stringify(itemCopy));
+      editingItemOriginal.value = JSON.parse(JSON.stringify(item));
     };
     
     const cancelEdit = () => {
@@ -1625,6 +1687,8 @@ export default {
           newItem.value[foreignKey] = formattedId;
         }
         
+
+        
         // Выполняем API-запрос для создания записи
         const response = await fetch(createUrl, {
           method: 'POST',
@@ -1671,11 +1735,13 @@ export default {
         const newRecord = data.data || data;
         relatedItems.value.push(newRecord);
         
-        // Обновляем счетчик связанных записей
-        emit('update:modelValue', relatedItems.value.length);
+        // Обновляем счетчик связанных записей - отправляем массив, а не число
+        emit('update:modelValue', relatedItems.value);
         
         // Сохраняем оригинальную копию обновленного списка
         originalItems.value = JSON.parse(JSON.stringify(relatedItems.value));
+        
+
         
         // Очищаем форму
         showAddForm.value = false;
@@ -1700,72 +1766,84 @@ export default {
         return;
       }
       
-      // Запрос подтверждения отвязки
-      if (!confirm(`Вы уверены, что хотите отвязать эту запись? Сама запись не будет удалена, только связь будет разорвана.`)) {
-        return;
-      }
-      
-      // Установка флага удаления
-      item._deleting = true;
-      
-      try {
-        // Вместо удаления отправляем запрос на отвязку записи через API отношений
-        const response = await fetch(`/api/relations/detach`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify({
-            parent_id: getEffectiveId(),
-            related_id: item.id,
-            parent_model: effectiveOptions.value.parentModel,
-            relation_name: effectiveOptions.value.relationship
-          })
-        });
-        
-        // Если статус 404, это скорее всего означает, что бэкенд не поддерживает метод detach,
-        // но связь всё равно была разорвана другим способом (например, через DELETE запрос)
-        if (response.status === 404) {
-          // Считаем, что запись всё равно была отвязана, просто удаляем её из интерфейса
-          // Удаляем объект из списка relatedItems
-          relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
-          item._deleting = false;
-          return;
-        }
-        
-        // Проверка успешности ответа для других случаев
-        if (!response.ok) {
-          let errorMessage = '';
+      // Запрос подтверждения отвязки через модальное окно
+      showConfirmDialog(
+        'Подтверждение отвязки',
+        'Вы уверены, что хотите отвязать эту запись? Сама запись не будет удалена, только связь будет разорвана.',
+        async (itemToDelete) => {
+          // Установка флага удаления
+          itemToDelete._deleting = true;
           
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
-          } catch (e) {
-            errorMessage = `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
+            // Вместо удаления отправляем запрос на отвязку записи через API отношений
+            const response = await fetch(`/api/relations/detach`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({
+                parent_id: getEffectiveId(),
+                related_id: itemToDelete.id,
+                parent_model: effectiveOptions.value.parentModel,
+                relation_name: effectiveOptions.value.relationship
+              })
+            });
+            
+            // Если статус 404, это скорее всего означает, что бэкенд не поддерживает метод detach,
+            // но связь всё равно была разорвана другим способом (например, через DELETE запрос)
+            if (response.status === 404) {
+              // Считаем, что запись всё равно была отвязана, просто удаляем её из интерфейса
+              // Удаляем объект из списка relatedItems
+              relatedItems.value = relatedItems.value.filter(i => i.id !== itemToDelete.id);
+              itemToDelete._deleting = false;
+              return;
+            }
+            
+            // Проверка успешности ответа для других случаев
+            if (!response.ok) {
+              let errorMessage = '';
+              
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
+              } catch (e) {
+                errorMessage = `Ошибка при отвязке записи: ${response.status} ${response.statusText}`;
+              }
+              
+              // Дополнительная информация в зависимости от статуса
+              if (response.status === 403) {
+                errorMessage = 'Ошибка 403: У вас нет прав на изменение этой связи.';
+              }
+              
+              error.value = errorMessage;
+              itemToDelete._deleting = false;
+              return;
+            }
+            
+            // Удаляем объект из списка relatedItems
+            relatedItems.value = relatedItems.value.filter(i => i.id !== itemToDelete.id);
+            
+            // Обновляем modelValue после удаления записи
+            emit('update:modelValue', relatedItems.value);
+            
+            itemToDelete._deleting = false;
+          } catch (err) {
+            // Если ошибка возникла при парсинге JSON или другая, но связь была разорвана
+            // всё равно обновляем UI, удаляя запись из списка
+            console.error(`Ошибка при отвязке записи: ${err.message}`, err);
+            relatedItems.value = relatedItems.value.filter(i => i.id !== itemToDelete.id);
+            
+            // Обновляем modelValue после удаления записи
+            emit('update:modelValue', relatedItems.value);
+            
+            itemToDelete._deleting = false;
           }
-          
-          // Дополнительная информация в зависимости от статуса
-          if (response.status === 403) {
-            errorMessage = 'Ошибка 403: У вас нет прав на изменение этой связи.';
-          }
-          
-          error.value = errorMessage;
-          item._deleting = false;
-          return;
-        }
-        
-        // Удаляем объект из списка relatedItems
-        relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
-        
-        item._deleting = false;
-      } catch (err) {
-        // Если ошибка возникла при парсинге JSON или другая, но связь была разорвана
-        // всё равно обновляем UI, удаляя запись из списка
-        console.error(`Ошибка при отвязке записи: ${err.message}`, err);
-        relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
-        item._deleting = false;
-      }
+        },
+        item
+      );
+      
+      return;
     };
     
     // Добавляем функцию полного удаления записи
@@ -1781,71 +1859,83 @@ export default {
         return;
       }
       
-      // Запрос подтверждения удаления
-      if (!confirm(`Вы уверены, что хотите полностью удалить эту запись? Это действие нельзя отменить.`)) {
-        return;
-      }
-      
-      // Установка флага удаления
-      item._permanentDeleting = true;
-      
-      try {
-        // Формируем URL для удаления записи
-        const deleteUrl = buildApiUrl(effectiveOptions.value.deleteApiUrl, { id: item.id });
-        
-        if (!deleteUrl) {
-          error.value = 'Ошибка: URL для удаления не настроен. Проверьте опцию deleteApiUrl.';
-          item._permanentDeleting = false;
-          return;
-        }
-        
-        // Выполняем API-запрос для удаления записи
-        const response = await fetch(deleteUrl, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          }
-        });
-        
-        // Если получаем 404, это может означать, что запись уже была удалена
-        if (response.status === 404) {
-          // Удаляем объект из списка relatedItems
-          relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
-          item._permanentDeleting = false;
-          return;
-        }
-        
-        // Проверка успешности ответа для других случаев
-        if (!response.ok) {
-          let errorMessage = '';
+      // Запрос подтверждения удаления через модальное окно
+      showConfirmDialog(
+        'Подтверждение удаления',
+        'Вы уверены, что хотите полностью удалить эту запись? Это действие нельзя отменить.',
+        async (itemToDelete) => {
+          // Установка флага удаления
+          itemToDelete._permanentDeleting = true;
           
           try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorData.message || `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
-          } catch (e) {
-            errorMessage = `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+            // Формируем URL для удаления записи
+            const deleteUrl = buildApiUrl(effectiveOptions.value.deleteApiUrl, { id: itemToDelete.id });
+            
+            if (!deleteUrl) {
+              error.value = 'Ошибка: URL для удаления не настроен. Проверьте опцию deleteApiUrl.';
+              itemToDelete._permanentDeleting = false;
+              return;
+            }
+            
+            // Выполняем API-запрос для удаления записи
+            const response = await fetch(deleteUrl, {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              }
+            });
+            
+            // Если получаем 404, это может означать, что запись уже была удалена
+            if (response.status === 404) {
+              // Удаляем объект из списка relatedItems
+              relatedItems.value = relatedItems.value.filter(i => i.id !== itemToDelete.id);
+              
+              // Обновляем modelValue после удаления записи
+              emit('update:modelValue', relatedItems.value);
+              
+              itemToDelete._permanentDeleting = false;
+              return;
+            }
+            
+            // Проверка успешности ответа для других случаев
+            if (!response.ok) {
+              let errorMessage = '';
+              
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+              } catch (e) {
+                errorMessage = `Ошибка при удалении записи: ${response.status} ${response.statusText}`;
+              }
+              
+              // Дополнительная информация в зависимости от статуса
+              if (response.status === 403) {
+                errorMessage = 'Ошибка 403: У вас нет прав на удаление этой записи.';
+              }
+              
+              error.value = errorMessage;
+              itemToDelete._permanentDeleting = false;
+              return;
+            }
+            
+            // Удаляем объект из списка relatedItems
+            relatedItems.value = relatedItems.value.filter(i => i.id !== itemToDelete.id);
+            
+            // Обновляем modelValue после удаления записи
+            emit('update:modelValue', relatedItems.value);
+            
+            itemToDelete._permanentDeleting = false;
+          } catch (err) {
+            console.error(`Ошибка при удалении записи: ${err.message}`, err);
+            error.value = `Произошла ошибка при удалении записи: ${err.message}`;
+            itemToDelete._permanentDeleting = false;
           }
-          
-          // Дополнительная информация в зависимости от статуса
-          if (response.status === 403) {
-            errorMessage = 'Ошибка 403: У вас нет прав на удаление этой записи.';
-          }
-          
-          error.value = errorMessage;
-          item._permanentDeleting = false;
-          return;
-        }
-        
-        // Удаляем объект из списка relatedItems
-        relatedItems.value = relatedItems.value.filter(i => i.id !== item.id);
-        
-        item._permanentDeleting = false;
-      } catch (err) {
-        console.error(`Ошибка при удалении записи: ${err.message}`, err);
-        error.value = `Произошла ошибка при удалении записи: ${err.message}`;
-        item._permanentDeleting = false;
-      }
+        },
+        item
+      );
+      
+      return;
     };
     
     const getSelectLabel = (item, field) => {
@@ -1871,6 +1961,45 @@ export default {
       }
       
       return null;
+    };
+    
+    // Функции для работы с модальными окнами подтверждения
+    const showConfirmDialog = (title, message, action, item) => {
+      confirmModalTitle.value = title;
+      confirmModalMessage.value = message;
+      confirmModalAction.value = action;
+      confirmModalItem.value = item;
+      showConfirmModal.value = true;
+    };
+    
+    const executeConfirmAction = async () => {
+      try {
+        if (confirmModalAction.value && confirmModalItem.value) {
+          await confirmModalAction.value(confirmModalItem.value);
+        }
+      } catch (error) {
+        error.value = `Произошла ошибка при выполнении действия: ${error.message}`;
+      } finally {
+        showConfirmModal.value = false;
+      }
+    };
+    
+    const cancelConfirmAction = () => {
+      showConfirmModal.value = false;
+    };
+    
+    // Обработчик изменения toggle полей
+    const handleToggleChange = (fieldName, event) => {
+      // Логика обработки изменения toggle полей
+    };
+    
+    // Обработчик клика по кнопке "Добавить запись"
+    const handleAddNewClick = () => {
+      showAddForm.value = true;
+      
+      nextTick(() => {
+        resetNewItem();
+      });
     };
     
     // Переключение режима отладки
@@ -2194,6 +2323,20 @@ export default {
       selectSuggestion,
       // Обработчик клика вне области подсказок
       handleClickOutside,
+      // Обработчик изменения toggle полей
+      handleToggleChange,
+      // Обработчик клика по кнопке "Добавить запись"
+      handleAddNewClick,
+      // Функции для модальных окон подтверждения
+      showConfirmDialog,
+      executeConfirmAction,
+      cancelConfirmAction,
+      // Переменные для модальных окон подтверждения
+      showConfirmModal,
+      confirmModalTitle,
+      confirmModalMessage,
+      confirmModalAction,
+      confirmModalItem,
       // Состояния для автоподсказок
       suggestions,
       isActiveSuggestion,
@@ -2203,6 +2346,8 @@ export default {
     };
   }
 };
+
+
 </script>
 
 <style scoped>
