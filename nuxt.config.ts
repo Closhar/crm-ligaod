@@ -32,7 +32,7 @@ export default defineNuxtConfig({
             }
         },
     },
-    css: ['~/assets/css/global.css'],
+    css: ['@/assets/css/global.css'],
     fonts: {
         families: [
             {name: 'Roboto', provider: 'google'},
