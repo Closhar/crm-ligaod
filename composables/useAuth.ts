@@ -2,14 +2,12 @@
 export const useAuth = () => {
     const isAuthenticated = useState('isAuthenticated', () => false);
     const user = useState('user', () => null);
-    const config = useRuntimeConfig(); // Используем useRuntimeConfig()
-    const api = config.public.API_URL;
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await $fetch(api + '/api/adminlogin', {
+            const response = await $fetch('/api/adminlogin', {
                 method: 'POST',
-                body: JSON.stringify({email, password}),
+                body: {email, password},
             });
             // Сохраняем токен
             localStorage.setItem('auth_token', (response as { token: string }).token);
@@ -30,7 +28,7 @@ export const useAuth = () => {
 
     const logout = async () => {
         try {
-            await $fetch(api + '/api/adminlogout', {
+            await $fetch('/api/adminlogout', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
@@ -52,9 +50,10 @@ export const useAuth = () => {
         const token = localStorage.getItem('auth_token');
         if (token) {
             try {
-                const response = await fetch(api + '/api/user', {
+                const response = await fetch('/api/user', {
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
                     },
                 });
 

@@ -6,7 +6,7 @@ import KirhNote from "~/components/kirh/fields/KirhNote.vue";
 import KirhGoogleAuth from "~/components/kirh/auth/KirhGoogleAuth.vue";
 
 const router = useRouter();
-const {isAuthenticated, user, logout, checkAuth} = useAuth();
+const {isAuthenticated, user, logout, checkAuth, login} = useAuth();
 const showEmailNotVerified = ref(false); // Состояние для отображения сообщения о неподтвержденном email
 let type = ref('error');
 const error = ref('');
@@ -36,29 +36,17 @@ const submitForm = async () => {
   showEmailNotVerified.value = false; // Сбрасываем состояние неподтвержденного email
 
   try {
-    const response = await fetch(api + '/api/adminlogin', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value,
-      }),
-    });
+    const authError = await login(email.value, password.value);
 
-    const data = await response.json();
-
-    if (response.ok) {
-      // Сохраняем токен
-      localStorage.setItem('auth_token', data.token);
-
+    if (!authError) {
       // Обновляем данные пользователя
       await checkAuth(); // Этот метод должен обновить данные пользователя, включая аватар
 
       // Перенаправляем пользователя
       await router.push('/');
     } else {
+      const data = authError?.data || authError;
+
       if (data.message === 'Email not verified') {
         // Если email не подтвержден, показываем сообщение
         showEmailNotVerified.value = true;
