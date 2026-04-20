@@ -71,7 +71,7 @@ export default defineNuxtConfig({
 
 ```bash
 # .env файл
-NUXT_PUBLIC_API_URL=https://p.sportrep.ru
+NUXT_PUBLIC_API_URL=https://api.ligaod.ru
 ```
 
 ## Важные моменты

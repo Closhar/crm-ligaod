@@ -1,3 +1,5 @@
+const apiUrl = process.env.NUXT_PUBLIC_API_URL
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
@@ -12,8 +14,8 @@ export default defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            API_URL: process.env.NUXT_PUBLIC_API_URL,
-            apiBase: process.env.NUXT_PUBLIC_API_URL,
+            API_URL: apiUrl,
+            apiBase: apiUrl,
             SITE_URL: process.env.NUXT_SITE_URL,
             VK_TOKEN: process.env.NUXT_PUBLIC_VK_TOKEN,
         }
@@ -23,7 +25,7 @@ export default defineNuxtConfig({
         strategies: {
             sanctum: {
                 provider: 'laravel/sanctum',
-                url: process.env.NUXT_PUBLIC_API_URL,
+                url: apiUrl,
                 endpoints: {
                     login: {url: '/adminlogin', method: 'post'},
                     logout: {url: '/adminlogout', method: 'post'},
