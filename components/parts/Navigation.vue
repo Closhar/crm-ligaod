@@ -13,6 +13,8 @@ interface Props {
 }
 
 import {useBreakpoints} from '@vueuse/core'
+import {storeToRefs} from 'pinia'
+import {useGlobalsStore} from '~/stores/globals'
 // Используем хранилище Pinia
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);// Загружаем данные на сервере при каждой загрузке страницы
