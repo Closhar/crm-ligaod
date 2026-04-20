@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
-    devtools: {enabled: true},
+    devtools: {enabled: false},
     modules: ['@nuxt/fonts', '@nuxt/icon', '@nuxt/image', '@nuxtjs/tailwindcss', '@pinia/nuxt'],
     pages: true,
     router: {
@@ -44,6 +44,12 @@ export default defineNuxtConfig({
             link: [
                 {rel: 'icon', type: 'image/x-icon', href: '/favicon.svg'}
             ]
+        }
+    },
+    icon: {
+        provider: 'server',
+        serverBundle: {
+            externalizeIconsJson: true
         }
     },
 })
