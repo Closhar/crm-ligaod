@@ -123,13 +123,16 @@ const api = config.public.API_URL
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
 
-const adminka_name = computed(() => params.value.adminka_name || 'Админка')
-const site_logo = computed(() => images.value.site_logo || '/images/logo.png')
-const copyrights = computed(() => params.value.adminka_copyrights || '© 2024 Все права защищены')
-const copy_link = computed(() => params.value.adminka_copy_link || '#')
-const registration = computed(() => params.value.admin_reg === "true"); //Наличие регистрации для незарегистрированного пользователя
-const googleAuthEnable = computed(() => params.value.adminka_google_auth === "true"); //Наличие авторизации через Google
-const isMC = computed(() => params.value.adminka_menu_collapsed === "true"); // свернут ли блок меню
+const safeParams = computed(() => params.value || {});
+const safeImages = computed(() => images.value || {});
+
+const adminka_name = computed(() => safeParams.value.adminka_name || 'Админка')
+const site_logo = computed(() => safeImages.value.site_logo || '/images/logo.png')
+const copyrights = computed(() => safeParams.value.adminka_copyrights || '© 2024 Все права защищены')
+const copy_link = computed(() => safeParams.value.adminka_copy_link || '#')
+const registration = computed(() => safeParams.value.admin_reg === "true"); //Наличие регистрации для незарегистрированного пользователя
+const googleAuthEnable = computed(() => safeParams.value.adminka_google_auth === "true"); //Наличие авторизации через Google
+const isMC = computed(() => safeParams.value.adminka_menu_collapsed === "true"); // свернут ли блок меню
 const isMenuCollapsed = ref(isMC.value);
 
 const toggleMenu = () => {
@@ -137,8 +140,8 @@ const toggleMenu = () => {
 };
 
 const isLoading = ref(true);
-const ym_counter_id = computed(() => params.value.ym_counter_id)
-const ga_tracking_id = computed(() => params.value.ga_tracking_id)
+const ym_counter_id = computed(() => safeParams.value.ym_counter_id)
+const ga_tracking_id = computed(() => safeParams.value.ga_tracking_id)
 
 // Отслеживаем изменения состояния меню
 watch(isMC, (newValue) => {

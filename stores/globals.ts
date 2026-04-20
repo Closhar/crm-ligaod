@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 
 interface GlobalsState {
-  params: Record<string, any> | null
-  images: Record<string, any> | null
+  params: Record<string, any>
+  images: Record<string, any>
   isLoading: boolean
   error: string | null
   lastFetchTime: number | null
@@ -10,8 +10,8 @@ interface GlobalsState {
 
 export const useGlobalsStore = defineStore('globals', {
   state: (): GlobalsState => ({
-    params: null,
-    images: null,
+    params: {},
+    images: {},
     isLoading: false,
     error: null,
     lastFetchTime: null
