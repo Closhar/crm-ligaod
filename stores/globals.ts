@@ -24,7 +24,8 @@ export const useGlobalsStore = defineStore('globals', {
 
       try {
         const config = useRuntimeConfig()
-        const response = await fetch(config.public.API_URL + '/api/v1/params')
+        const apiBase = String(config.public.API_URL || '').replace(/\/+$/, '')
+        const response = await fetch(`${apiBase}/api/params`)
         
         if (!response.ok) {
           throw new Error('Ошибка при загрузке данных')
