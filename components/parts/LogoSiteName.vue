@@ -5,7 +5,7 @@ const props = defineProps({
   },
   logo: {
     type: String,
-    default: '/ldr.png'
+    default: '/images/logo.png'
   },
   site_name: {
     type: String,
@@ -20,7 +20,7 @@ const props = defineProps({
       <img
           alt="Logo"
           class="w-10 h-10 object-contain flex-shrink-0"
-          src="/ldr.png"
+          :src="logo"
       />
       <span
           v-if="!isMenuCollapsed"

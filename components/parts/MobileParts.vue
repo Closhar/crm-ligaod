@@ -3,6 +3,10 @@ import { storeToRefs } from 'pinia';
 import { useGlobalsStore } from '~/stores/globals';
 
 const props = defineProps({
+  logo: {
+    type: String,
+    default: '/images/logo.png'
+  },
   site_name: {
     type: String,
     default: 'KirhAdm'
@@ -23,7 +27,7 @@ const avatarSrc = computed(() => {
     <img
         alt="Logo"
         class="w-10 h-10 object-contain flex-shrink-0"
-        src="/ldr.png"
+        :src="logo"
     />
     <span class="ml-3 text-xl font-bold truncate">{{ site_name }}</span>
   </div>

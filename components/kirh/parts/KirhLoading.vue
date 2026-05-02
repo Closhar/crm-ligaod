@@ -1,14 +1,18 @@
 <template>
   <div v-if="isLoading" class="loader bg-gray-800">
     <div class="emblem">
-      <img class="emblem" src="/ldr.png">
+      <img :src="logo" alt="Logo" class="emblem-img">
     </div>
   </div>
 </template>
 
 <script setup>
 defineProps({
-  isLoading: Boolean
+  isLoading: Boolean,
+  logo: {
+    type: String,
+    default: '/images/logo.png',
+  },
 });
 </script>
 
@@ -31,6 +35,16 @@ defineProps({
   background-color: #0074D9; /* Цвет эмблемы */
   border-radius: 50%;
   animation: pulse 1.5s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+}
+
+.emblem-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 @keyframes pulse {

@@ -42,9 +42,6 @@
 
   </div>
 
-  <!-- Блок для незарегистрированных пользователей -->
-  <KirhUnauthenticatedUserBlock v-else :google-auth-enable="googleAuthEnable" :registration="registration"/>
-
 </template>
 
 <script setup>
@@ -58,7 +55,6 @@ import {useGlobalsStore} from '~/stores/globals';
 import {storeToRefs} from 'pinia';
 import KirhChangePass from "~/components/kirh/auth/KirhChangePass.vue";
 import KirhPersonal from "~/components/kirh/auth/KirhPersonal.vue";
-import KirhUnauthenticatedUserBlock from "~/components/kirh/auth/KirhUnauthenticatedUserBlock.vue";
 import Head from "~/components/parts/Head.vue"
 
 const globalsStore = useGlobalsStore();

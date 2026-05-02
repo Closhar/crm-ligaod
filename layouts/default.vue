@@ -1,5 +1,5 @@
 <template>
-  <KirhLoading :isLoading="isLoading"/>
+  <KirhLoading :isLoading="isLoading" :logo="site_logo"/>
 
   <div v-if="isAuthenticated" class="flex h-screen">
 
@@ -14,7 +14,7 @@
     <header
         class="md:hidden fixed top-0 left-0 right-0 z-40 bg-gray-800 text-white p-3 flex items-center justify-between border-b border-gray-700">
 
-      <MobileParts :site_name="adminka_name"/>
+      <MobileParts :logo="site_logo" :site_name="adminka_name"/>
 
       <!-- Гамбургер прижат к правому краю -->
       <button
@@ -94,12 +94,14 @@
 
   <div v-else>
     <KirhUnauthenticatedUserBlock :google-auth-enable="googleAuthEnable"
+                                  v-if="showAuthShell"
+                                  :logo="site_logo"
                                   :registration="registration"
                                   :show-logo=true
                                   restore-pass="Восстановить пароль"
-                                  title="Аутентификация"
+                                  :title="adminka_name"
     />
-    <NuxtPage />
+    <NuxtPage v-else />
   </div>
 </template>
 
@@ -119,15 +121,34 @@ const {isAuthenticated, user, logout, checkAuth} = useAuth();
 
 const config = useRuntimeConfig() // Используем useRuntimeConfig()
 const api = config.public.API_URL
+const route = useRoute()
 
 const globalsStore = useGlobalsStore();
 const {params, images} = storeToRefs(globalsStore);
+
+const {data: layoutGlobals} = await useAsyncData('layout-globals', async () => {
+  if (!Object.keys(globalsStore.params || {}).length && !Object.keys(globalsStore.images || {}).length) {
+    await globalsStore.fetchData();
+  }
+
+  return {
+    params: globalsStore.params,
+    images: globalsStore.images,
+  };
+});
+
+if (layoutGlobals.value) {
+  globalsStore.$patch({
+    params: layoutGlobals.value.params || {},
+    images: layoutGlobals.value.images || {},
+  });
+}
 
 const safeParams = computed(() => params.value || {});
 const safeImages = computed(() => images.value || {});
 
 const adminka_name = computed(() => safeParams.value.adminka_name || 'Админка')
-const site_logo = computed(() => safeImages.value.site_logo || '/images/logo.png')
+const site_logo = computed(() => safeImages.value.site_logo || safeImages.value.logo || safeImages.value.adminka_logo || '/images/logo.png')
 const copyrights = computed(() => safeParams.value.adminka_copyrights || '© 2024 Все права защищены')
 const copy_link = computed(() => safeParams.value.adminka_copy_link || '#')
 const registration = computed(() => safeParams.value.admin_reg === "true"); //Наличие регистрации для незарегистрированного пользователя
@@ -142,6 +163,8 @@ const toggleMenu = () => {
 const isLoading = ref(true);
 const ym_counter_id = computed(() => safeParams.value.ym_counter_id)
 const ga_tracking_id = computed(() => safeParams.value.ga_tracking_id)
+const publicUnauthRoutes = ['/auth/google/callback', '/auth/reset-password', '/verify-email']
+const showAuthShell = computed(() => !publicUnauthRoutes.includes(route.path))
 
 // Отслеживаем изменения состояния меню
 watch(isMC, (newValue) => {
