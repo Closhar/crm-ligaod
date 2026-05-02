@@ -1,10 +1,29 @@
-const apiUrl = process.env.NUXT_PUBLIC_API_URL
+const normalizeApiOrigin = (value?: string) => {
+    let origin = String(value || '').trim()
+
+    if (!origin) {
+        return ''
+    }
+
+    origin = origin
+        .replace(/^https?:\/(?!\/)/i, (match) => `${match}/`)
+        .replace(/\/+$/, '')
+        .replace(/\/api$/, '')
+
+    if (!/^https?:\/\//i.test(origin) && !origin.startsWith('/')) {
+        origin = `http://${origin}`
+    }
+
+    return origin
+};
+
+const apiUrl = normalizeApiOrigin(process.env.NUXT_PUBLIC_API_URL || process.env.API_URL)
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
     compatibilityDate: '2024-11-01',
     devtools: {enabled: false},
-    modules: ['@nuxt/fonts', '@nuxt/icon', '@nuxt/image', '@nuxtjs/tailwindcss'],
+    modules: ['@nuxt/icon', '@nuxt/image', '@nuxtjs/tailwindcss'],
     pages: true,
     router: {
         options: {
@@ -35,15 +54,15 @@ export default defineNuxtConfig({
         },
     },
     css: ['@/assets/css/global.css'],
-    fonts: {
-        families: [
-            {name: 'Roboto', provider: 'google'},
-            {name: 'Handjet', provider: 'google'}
-        ],
-    },
     app: {
         head: {
             link: [
+                {rel: 'preconnect', href: 'https://fonts.googleapis.com'},
+                {rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: ''},
+                {
+                    rel: 'stylesheet',
+                    href: 'https://fonts.googleapis.com/css2?family=Handjet:wght@300..900&family=Roboto:wght@300;400;500;700;900&display=swap'
+                },
                 {rel: 'icon', type: 'image/x-icon', href: '/favicon.svg'}
             ]
         }

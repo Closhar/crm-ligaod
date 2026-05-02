@@ -1,4 +1,7 @@
 <script lang="ts" setup>
+import { storeToRefs } from 'pinia';
+import { useGlobalsStore } from '~/stores/globals';
+
 const props = defineProps({
   site_name: {
     type: String,
@@ -6,6 +9,12 @@ const props = defineProps({
   }
 });
 const {isAuthenticated, user, logout} = useAuth();
+const globalsStore = useGlobalsStore();
+const {images} = storeToRefs(globalsStore);
+
+const avatarSrc = computed(() => {
+  return user.value?.avatar_path || images.value?.default_user || '/favicon.svg';
+});
 </script>
 
 <template>
@@ -30,7 +39,7 @@ const {isAuthenticated, user, logout} = useAuth();
       <Icon class="w-6 h-6" name="heroicons:magnifying-glass"/>
     </button>
     <NuxtLink class="p-2 rounded-full hover:bg-gray-700" to="/account">
-      <img :src="user.avatar_path || images.default_user" alt="User avatar" class="w-8 h-8">
+      <img :src="avatarSrc" alt="User avatar" class="w-8 h-8 rounded-full object-cover">
     </NuxtLink>
   </div>
 

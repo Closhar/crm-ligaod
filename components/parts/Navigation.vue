@@ -66,6 +66,12 @@ const handleLeave = () => {
   hoveredItem.value = null
 }
 
+const getMenuIcon = (item: any) => {
+  return typeof item?.icon === 'string' && item.icon.trim()
+      ? item.icon
+      : 'fluent:document-20-filled'
+}
+
 </script>
 
 <template>
@@ -91,7 +97,7 @@ const handleLeave = () => {
                 class="menu-link"
                 @click="emitToggleMenu"
             >
-              <Icon :name="item.icon" class="menu-icon"/>
+              <Icon :name="getMenuIcon(item)" class="menu-icon"/>
               <span v-if="!isMenuCollapsed" class="menu-text">{{ item.title }}</span>
             </NuxtLink>
 
@@ -102,7 +108,7 @@ const handleLeave = () => {
                 class="menu-link justify-between"
                 @click="toggleSubMenu(item.title)"
             >
-              <Icon :name="item.icon" class="menu-icon"/>
+              <Icon :name="getMenuIcon(item)" class="menu-icon"/>
               <span v-if="!isMenuCollapsed" class="menu-text">{{ item.title }}</span>
               <Icon
                   v-if="!isMenuCollapsed"
@@ -125,7 +131,7 @@ const handleLeave = () => {
                   class="submenu-link text-sm"
                   @click="emitToggleMenu"
               >
-                <Icon :name="subItem.icon" class="submenu-icon"/>
+                <Icon :name="getMenuIcon(subItem)" class="submenu-icon"/>
                 <span>{{ subItem.title }}</span>
               </NuxtLink>
             </div>

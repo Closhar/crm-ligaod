@@ -172,6 +172,8 @@
             <th>Виды спорта</th>
             <th>О себе</th>
             <th>Активен</th>
+            <th>Руководство</th>
+            <th>Сортировка</th>
             <th>Действия</th>
           </tr>
         </thead>
@@ -278,6 +280,22 @@
               <KirhToggleField
                 :model-value="!!person.is_active"
                 @update:model-value="val => updateIsActive(person, val === 1 || val === true)"
+              />
+            </td>
+            <td>
+              <KirhToggleField
+                :model-value="!!person.is_management"
+                @update:model-value="val => updateManagementFlag(person, val === 1 || val === true)"
+              />
+            </td>
+            <td>
+              <input
+                v-model.number="person.management_sort"
+                type="number"
+                min="0"
+                class="management-sort-input"
+                @blur="updateManagementSort(person)"
+                @keyup.enter="$event.target.blur()"
               />
             </td>
             <td>
@@ -776,6 +794,31 @@ const updateIsActive = async (person, val) => {
     alert('Ошибка при обновлении активности')
   }
 }
+
+const updateManagementFlag = async (person, val) => {
+  try {
+    await apiRequest(`/people/${person.id}`, {
+      method: 'PUT',
+      body: { is_management: val }
+    })
+    person.is_management = val
+  } catch (e) {
+    alert('Ошибка при обновлении флага руководства')
+  }
+}
+
+const updateManagementSort = async (person) => {
+  const value = Number.isFinite(Number(person.management_sort)) ? Number(person.management_sort) : 500
+  try {
+    await apiRequest(`/people/${person.id}`, {
+      method: 'PUT',
+      body: { management_sort: value }
+    })
+    person.management_sort = value
+  } catch (e) {
+    alert('Ошибка при обновлении сортировки руководства')
+  }
+}
 </script>
 
 <style scoped>
@@ -842,6 +885,10 @@ const updateIsActive = async (person, val) => {
 
 .table-row td {
   @apply px-6 py-4 whitespace-nowrap;
+}
+
+.management-sort-input {
+  @apply w-24 rounded-md border border-gray-300 px-2 py-1 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100;
 }
 
 .person-photo {
@@ -966,4 +1013,4 @@ const updateIsActive = async (person, val) => {
   display: block;
   text-align: center;
 }
-</style> 
+</style>

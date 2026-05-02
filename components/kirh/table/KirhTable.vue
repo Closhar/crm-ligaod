@@ -941,6 +941,24 @@ import ParseTableLockField from './fields/ParseTableLockField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import { useDataRefresh } from '~/composables/useDataRefresh';
 
+function parseJsonResponse(text) {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const jsonStart = text.indexOf('{');
+
+    if (jsonStart >= 0) {
+      try {
+        return JSON.parse(text.slice(jsonStart));
+      } catch {
+        // Ниже пробрасываем исходную ошибку, чтобы увидеть настоящую проблему ответа.
+      }
+    }
+
+    throw error;
+  }
+}
+
 export default {
   name: 'KirhTable',
   components: {
@@ -1785,7 +1803,8 @@ export default {
         }
 
         const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
-        const data = await response.json();
+        const responseText = await response.text();
+        const data = parseJsonResponse(responseText);
 
         closeInlineSelect();
 

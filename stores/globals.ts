@@ -8,6 +8,24 @@ interface GlobalsState {
   lastFetchTime: number | null
 }
 
+function parseJsonResponse(text: string): any {
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    const jsonStart = text.indexOf('{')
+
+    if (jsonStart >= 0) {
+      try {
+        return JSON.parse(text.slice(jsonStart))
+      } catch {
+        // Ниже пробрасываем исходную ошибку, чтобы не скрывать реальную проблему ответа.
+      }
+    }
+
+    throw error
+  }
+}
+
 export const useGlobalsStore = defineStore('globals', {
   state: (): GlobalsState => ({
     params: {},
@@ -24,14 +42,17 @@ export const useGlobalsStore = defineStore('globals', {
 
       try {
         const config = useRuntimeConfig()
-        const apiBase = String(config.public.API_URL || '').replace(/\/+$/, '')
+        const apiBase = String(config.public.API_URL || '')
+          .replace(/\/+$/, '')
+          .replace(/\/api$/, '')
         const response = await fetch(`${apiBase}/api/v1/params`)
         
         if (!response.ok) {
           throw new Error('Ошибка при загрузке данных')
         }
         
-        const data = await response.json()
+        const responseText = await response.text()
+        const data = parseJsonResponse(responseText)
 
         this.params = data.params || {}
         this.images = data.images || {}
