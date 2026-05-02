@@ -47,6 +47,37 @@
           </button>
         </div>
 
+        <!-- Быстрое создание нового элемента -->
+        <div
+          v-if="canCreateItem"
+          class="mb-4 rounded-xl border border-orange-200 bg-gradient-to-br from-slate-900 to-slate-800 p-4 text-white shadow-sm"
+        >
+          <div class="flex flex-col gap-3 md:flex-row md:items-end">
+            <div class="flex-1">
+              <label class="mb-1 block text-xs font-bold uppercase tracking-wide text-orange-300">
+                Новая метка
+              </label>
+              <input
+                v-model="newItemTitle"
+                type="text"
+                class="w-full rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/45 outline-none transition focus:border-orange-300 focus:bg-white/15"
+                :placeholder="createPlaceholder"
+                @keyup.enter.stop="createItem"
+              >
+              <p v-if="createError" class="mt-2 text-xs text-red-200">{{ createError }}</p>
+            </div>
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-lg bg-orange-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-orange-400 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="creatingItem || !newItemTitle.trim()"
+              @click.stop="createItem"
+            >
+              <Icon name="mdi:tag-plus-outline" class="h-4 w-4" />
+              {{ creatingItem ? 'Создание...' : createButtonLabel }}
+            </button>
+          </div>
+        </div>
+
         <!-- Список всех доступных элементов с чекбоксами -->
         <div class="mb-4">
           <h4 class="text-sm font-medium text-gray-700 mb-2">
@@ -150,6 +181,9 @@ const selectedItems = ref<number[]>([]);
 const allAvailableItems = ref<any[]>([]);
 const showTooltip = ref(false);
 const tooltipContent = ref('');
+const newItemTitle = ref('');
+const creatingItem = ref(false);
+const createError = ref('');
 
 // Вычисляемые свойства
 const count = computed(() => {
@@ -160,6 +194,9 @@ const count = computed(() => {
 
 const relationField = computed(() => props.column?.options?.relationField || '');
 const relationLabel = computed(() => props.column?.options?.relationLabel || 'элементов');
+const canCreateItem = computed(() => Boolean(props.column?.options?.createEndpoint));
+const createButtonLabel = computed(() => props.column?.options?.createButtonLabel || 'Создать и добавить');
+const createPlaceholder = computed(() => props.column?.options?.createPlaceholder || 'Название метки');
 const modalTitle = computed(() => {
   const mainField = props.column?.options?.mainField || 'title';
   let title = props.row[mainField] || props.row.title || 'элемент';
@@ -339,6 +376,57 @@ const deselectAll = async () => {
   await saveRelations();
 };
 
+const createItem = async () => {
+  const endpoint = props.column?.options?.createEndpoint;
+  const title = newItemTitle.value.trim();
+
+  if (!endpoint || !title) {
+    return;
+  }
+
+  try {
+    creatingItem.value = true;
+    createError.value = '';
+
+    const titleField = props.column?.options?.titleField || 'title';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+      },
+      body: JSON.stringify({ [titleField]: title, title }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Не удалось создать метку');
+    }
+
+    const createdItem = data?.data || data;
+
+    if (!createdItem?.id) {
+      throw new Error('Сервер не вернул созданную метку');
+    }
+
+    if (!allAvailableItems.value.some(item => item.id === createdItem.id)) {
+      allAvailableItems.value.unshift(createdItem);
+    }
+
+    newItemTitle.value = '';
+
+    if (!selectedItems.value.includes(createdItem.id)) {
+      await toggleItem(createdItem);
+    }
+  } catch (err) {
+    createError.value = err instanceof Error ? err.message : 'Ошибка создания метки';
+  } finally {
+    creatingItem.value = false;
+  }
+};
+
 // Обновление данных в строке
 const updateRowData = async () => {
   const countField = `${relationField.value}_count`;
@@ -463,6 +551,8 @@ const openModal = async () => {
 // Закрытие модального окна
 const closeModal = () => {
   showModal.value = false;
+  createError.value = '';
+  newItemTitle.value = '';
   document.removeEventListener('click', handleClickOutside);
 };
 

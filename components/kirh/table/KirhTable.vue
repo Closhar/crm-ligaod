@@ -96,7 +96,7 @@
       >
         <!-- Прелоадер -->
         <div v-if="loading" class="fixed inset-0 flex items-center justify-center z-50">
-          <img src="/ldr.png" class="loader-image" alt="Loading...">
+          <img :src="loaderLogo" class="loader-image" alt="Loading...">
         </div>
 
         <!-- Панель управления с пагинацией, обновление/сброс, toggle-фильтры, текстовый поиск -->
@@ -890,6 +890,89 @@
       </div>
     </div>
 
+    <!-- Модальное окно добавления меток к выбранным записям -->
+    <div v-if="showBulkTagsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-orange-300/40 bg-slate-950 text-white shadow-2xl">
+        <div class="flex items-start justify-between gap-4 border-b border-white/10 bg-gradient-to-r from-slate-950 to-slate-900 p-5">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-wide text-orange-300">Массовое действие</p>
+            <h3 class="mt-1 text-xl font-black">Добавить метки к статьям</h3>
+            <p class="mt-1 text-sm text-white/70">Выбрано записей: {{ selectedRows.size }}</p>
+          </div>
+          <button class="rounded-full border border-white/15 p-2 text-white/80 hover:bg-white/10" @click="closeBulkTagsModal">
+            <Icon name="heroicons:x-mark" class="h-5 w-5" />
+          </button>
+        </div>
+
+        <div class="grid gap-4 p-5">
+          <div class="relative">
+            <label class="mb-2 block text-sm font-bold text-white/80">Найти метку</label>
+            <input
+              v-model="bulkTagSearch"
+              type="text"
+              class="w-full rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none placeholder:text-white/45 focus:border-orange-400"
+              placeholder="Начните вводить название метки"
+              @input="searchBulkTags"
+              @focus="showBulkTagDropdown = true"
+            />
+            <div v-if="showBulkTagDropdown && filteredBulkTags.length" class="absolute z-10 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-xl">
+              <button
+                v-for="tag in filteredBulkTags"
+                :key="tag.id"
+                type="button"
+                class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-white hover:bg-orange-500/20"
+                @click="addBulkTag(tag)"
+              >
+                <span>{{ tag.title }}</span>
+                <Icon name="mdi:tag-plus-outline" class="text-orange-300" />
+              </button>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+            <div class="mb-3 flex items-center justify-between gap-3">
+              <span class="text-sm font-bold text-white/80">Выбранные метки</span>
+              <button type="button" class="text-xs font-bold text-orange-300 hover:text-orange-200" @click="openCreateBulkTagModal">
+                + Создать метку
+              </button>
+            </div>
+            <div v-if="selectedBulkTags.length" class="flex flex-wrap gap-2">
+              <span v-for="tag in selectedBulkTags" :key="tag.id" class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-black text-slate-950">
+                {{ tag.title }}
+                <button type="button" @click="removeBulkTag(tag.id)">
+                  <Icon name="ic:round-close" class="h-4 w-4" />
+                </button>
+              </span>
+            </div>
+            <p v-else class="text-sm text-white/55">Метки пока не выбраны</p>
+          </div>
+
+          <div v-if="showCreateBulkTagModal" class="rounded-xl border border-orange-300/35 bg-orange-500/10 p-4">
+            <label class="mb-2 block text-sm font-bold text-white/80">Новая метка</label>
+            <div class="flex gap-2">
+              <input
+                v-model="newBulkTagTitle"
+                type="text"
+                class="min-w-0 flex-1 rounded-xl border border-white/15 bg-white px-4 py-2 text-slate-950 outline-none focus:border-orange-400"
+                placeholder="Например: Интервью"
+                @keyup.enter="createBulkTag"
+              />
+              <button type="button" class="rounded-xl bg-orange-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-orange-400 disabled:opacity-60" :disabled="creatingBulkTag" @click="createBulkTag">
+                Создать
+              </button>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-3 border-t border-white/10 pt-4">
+            <button class="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white hover:bg-white/10" @click="closeBulkTagsModal">Отмена</button>
+            <button class="rounded-xl bg-orange-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-orange-400 disabled:opacity-60" :disabled="!selectedBulkTags.length" @click="confirmBulkAddTags">
+              Добавить метки
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Модальное окно для подтверждения удаления -->
     <div v-if="showDeleteConfirmationModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -940,6 +1023,8 @@ import ParseTableField from './fields/ParseTableField.vue';
 import ParseTableLockField from './fields/ParseTableLockField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import { useDataRefresh } from '~/composables/useDataRefresh';
+import { useGlobalsStore } from '~/stores/globals';
+import { storeToRefs } from 'pinia';
 
 function parseJsonResponse(text) {
   try {
@@ -1057,6 +1142,43 @@ export default {
     },
   },
   setup(props) {
+    const runtimeConfig = useRuntimeConfig();
+    const globalsStore = useGlobalsStore();
+    const { params, images } = storeToRefs(globalsStore);
+    const apiBase = computed(() => String(runtimeConfig?.public?.API_URL || '').replace(/\/+$/, '').replace(/\/api$/, ''));
+    const normalizeMediaUrl = (value) => {
+      if (!value) return '';
+
+      const path = String(value).trim();
+      if (!path) return '';
+
+      if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+        return path;
+      }
+
+      if (path.startsWith('/api/storage/')) {
+        return `${apiBase.value}${path.replace(/^\/api/, '')}`;
+      }
+
+      if (path.startsWith('/storage/')) {
+        return `${apiBase.value}${path}`;
+      }
+
+      if (path.startsWith('storage/')) {
+        return `${apiBase.value}/${path}`;
+      }
+
+      return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
+    };
+    const loaderLogo = computed(() => normalizeMediaUrl(
+      images.value?.adminka_logo ||
+      images.value?.site_logo ||
+      images.value?.logo ||
+      params.value?.adminka_logo ||
+      params.value?.site_logo ||
+      params.value?.logo
+    ) || '/images/logo.png');
+
     // Реактивные переменные
     const tableData = ref([]);
     const loading = ref(false);
@@ -1100,6 +1222,16 @@ export default {
     const selectedRows = ref(new Set());
     const showBulkActionsModal = ref(false);
     const selectedBulkAction = ref(null);
+    const showBulkTagsModal = ref(false);
+    const pendingBulkTagsAction = ref(null);
+    const bulkTagSearch = ref('');
+    const bulkTags = ref([]);
+    const filteredBulkTags = ref([]);
+    const selectedBulkTags = ref([]);
+    const showBulkTagDropdown = ref(false);
+    const showCreateBulkTagModal = ref(false);
+    const newBulkTagTitle = ref('');
+    const creatingBulkTag = ref(false);
 
     // Новые реактивные переменные для подтверждения удаления
     const showDeleteConfirmationModal = ref(false);
@@ -2525,6 +2657,160 @@ export default {
       selectedBulkAction.value = null;
     };
 
+    const getBulkTagsAction = () => {
+      return pendingBulkTagsAction.value || props.tableOptions.bulkActions?.find((action) => action.name === 'add-tags');
+    };
+
+    const loadBulkTags = async () => {
+      const action = getBulkTagsAction();
+      if (!action?.tagEndpoint) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${action.tagEndpoint}${action.tagEndpoint.includes('?') ? '&' : '?'}type=async&limit=200`);
+        if (!response.ok) {
+          throw new Error('Ошибка загрузки меток');
+        }
+
+        const data = await response.json();
+        bulkTags.value = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+        filteredBulkTags.value = bulkTags.value.filter((tag) => !selectedBulkTags.value.some((selected) => selected.id === tag.id));
+      } catch (err) {
+        console.error('Ошибка загрузки меток:', err);
+      }
+    };
+
+    const searchBulkTags = debounce(async () => {
+      const query = bulkTagSearch.value.trim().toLowerCase();
+      const action = getBulkTagsAction();
+
+      if (query.length >= 2 && action?.tagEndpoint) {
+        try {
+          const response = await fetch(`${action.tagEndpoint}${action.tagEndpoint.includes('?') ? '&' : '?'}type=async&q=${encodeURIComponent(query)}&limit=50`);
+          if (response.ok) {
+            const data = await response.json();
+            bulkTags.value = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+          }
+        } catch (err) {
+          console.error('Ошибка поиска меток:', err);
+        }
+      }
+
+      filteredBulkTags.value = bulkTags.value
+        .filter((tag) => !selectedBulkTags.value.some((selected) => selected.id === tag.id))
+        .filter((tag) => !query || String(tag.title || '').toLowerCase().includes(query))
+        .slice(0, 50);
+    }, 250);
+
+    const openBulkTagsModal = async (action) => {
+      pendingBulkTagsAction.value = action;
+      selectedBulkTags.value = [];
+      bulkTagSearch.value = '';
+      showCreateBulkTagModal.value = false;
+      newBulkTagTitle.value = '';
+      showBulkActionsModal.value = false;
+      showBulkTagsModal.value = true;
+      await loadBulkTags();
+    };
+
+    const closeBulkTagsModal = () => {
+      showBulkTagsModal.value = false;
+      pendingBulkTagsAction.value = null;
+      selectedBulkTags.value = [];
+      bulkTagSearch.value = '';
+      showBulkTagDropdown.value = false;
+      showCreateBulkTagModal.value = false;
+    };
+
+    const addBulkTag = (tag) => {
+      if (!selectedBulkTags.value.some((selected) => selected.id === tag.id)) {
+        selectedBulkTags.value.push(tag);
+      }
+
+      bulkTagSearch.value = '';
+      showBulkTagDropdown.value = false;
+      filteredBulkTags.value = bulkTags.value.filter((item) => !selectedBulkTags.value.some((selected) => selected.id === item.id));
+    };
+
+    const removeBulkTag = (tagId) => {
+      selectedBulkTags.value = selectedBulkTags.value.filter((tag) => tag.id !== tagId);
+      filteredBulkTags.value = bulkTags.value.filter((item) => !selectedBulkTags.value.some((selected) => selected.id === item.id));
+    };
+
+    const openCreateBulkTagModal = () => {
+      showCreateBulkTagModal.value = true;
+      newBulkTagTitle.value = bulkTagSearch.value.trim();
+    };
+
+    const createBulkTag = async () => {
+      const title = newBulkTagTitle.value.trim();
+      const action = getBulkTagsAction();
+      if (!title || !action?.createTagEndpoint) {
+        return;
+      }
+
+      try {
+        creatingBulkTag.value = true;
+        const response = await fetch(action.createTagEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка создания метки');
+        }
+
+        const tag = await response.json();
+        bulkTags.value = [tag, ...bulkTags.value.filter((item) => item.id !== tag.id)];
+        addBulkTag(tag);
+        newBulkTagTitle.value = '';
+        showCreateBulkTagModal.value = false;
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка создания метки:', err);
+      } finally {
+        creatingBulkTag.value = false;
+      }
+    };
+
+    const confirmBulkAddTags = async () => {
+      const action = getBulkTagsAction();
+      if (!action || !selectedBulkTags.value.length) {
+        return;
+      }
+
+      try {
+        loading.value = true;
+        const response = await fetch(`${props.apiUrl}${action.endpoint || '/bulk-add-tags'}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            ids: Array.from(selectedRows.value),
+            tag_ids: selectedBulkTags.value.map((tag) => tag.id)
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Ошибка добавления меток');
+        }
+
+        clearSelectedRows();
+        await fetchData();
+        closeBulkTagsModal();
+      } catch (err) {
+        error.value = err.message;
+        console.error('Ошибка массового добавления меток:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
     const openDeleteConfirmationModal = (action) => {
       pendingBulkAction.value = action;
       showDeleteConfirmationModal.value = true;
@@ -2566,6 +2852,8 @@ export default {
           clearSelectedRows();
           await fetchData();
           closeBulkActionsModal();
+        } else if (action.name === 'add-tags') {
+          await openBulkTagsModal(action);
         }
       } catch (err) {
         error.value = err.message;
@@ -2614,6 +2902,7 @@ export default {
 
     return {
       tableData,
+      loaderLogo,
       loading,
       showForm,
       editingRow,
@@ -2709,6 +2998,14 @@ export default {
       selectedRows,
       showBulkActionsModal,
       selectedBulkAction,
+      showBulkTagsModal,
+      bulkTagSearch,
+      filteredBulkTags,
+      selectedBulkTags,
+      showBulkTagDropdown,
+      showCreateBulkTagModal,
+      newBulkTagTitle,
+      creatingBulkTag,
       toggleRowSelection,
       clearSelectedRows,
       isRowSelected,
@@ -2716,6 +3013,13 @@ export default {
       openBulkActionsModal,
       closeBulkActionsModal,
       executeBulkAction,
+      searchBulkTags,
+      addBulkTag,
+      removeBulkTag,
+      openCreateBulkTagModal,
+      createBulkTag,
+      closeBulkTagsModal,
+      confirmBulkAddTags,
       showDeleteConfirmationModal,
       pendingBulkAction,
       openDeleteConfirmationModal,

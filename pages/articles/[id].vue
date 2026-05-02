@@ -10,7 +10,7 @@
 
     <div class="p-6">
       <div v-if="loading" class="flex items-center justify-center py-8">
-        <img src="/ldr.png" class="loader-image" alt="Loading...">
+        <img :src="siteLogo" class="loader-image" alt="Loading...">
       </div>
 
       <div v-else-if="error" class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
@@ -282,6 +282,62 @@
                         Загрузка изображения...
                       </div>
                     </div>
+                  </div>
+
+                  <!-- Метки -->
+                  <div class="rounded-2xl border border-orange-200/70 bg-gradient-to-br from-slate-950 to-slate-900 p-4 text-white shadow-lg">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                      <h3 class="flex items-center text-lg font-black">
+                        <Icon name="mdi:tag-multiple-outline" class="mr-2 h-5 w-5 text-orange-300" />
+                        Метки новости
+                      </h3>
+                      <button
+                        type="button"
+                        class="rounded-full border border-orange-300/40 px-3 py-1 text-xs font-black text-orange-200 hover:bg-orange-400/15"
+                        @click="openCreateTagModal"
+                      >
+                        + Создать
+                      </button>
+                    </div>
+
+                    <div class="relative mb-3">
+                      <input
+                        v-model="tagSearch"
+                        type="text"
+                        placeholder="Начните вводить метку..."
+                        class="w-full rounded-xl border border-white/15 bg-white/10 p-3 text-sm text-white outline-none placeholder:text-white/45 focus:border-orange-300"
+                        @input="searchTags"
+                        @focus="showTagDropdown = true"
+                      />
+                      <div v-if="showTagDropdown && filteredTags.length > 0" class="absolute z-10 mt-2 max-h-52 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-xl">
+                        <button
+                          v-for="tag in filteredTags"
+                          :key="tag.id"
+                          type="button"
+                          class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-white hover:bg-orange-500/20"
+                          @click="addTag(tag)"
+                        >
+                          <span>{{ tag.title }}</span>
+                          <Icon name="mdi:tag-plus-outline" class="text-orange-300" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div v-if="formData.tag_ids.length" class="flex flex-wrap gap-2">
+                      <span
+                        v-for="tagId in formData.tag_ids"
+                        :key="tagId"
+                        class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-3 py-1.5 text-xs font-black text-slate-950"
+                      >
+                        {{ getTagTitle(tagId) }}
+                        <button type="button" @click="removeTag(tagId)">
+                          <Icon name="ic:round-close" class="h-4 w-4" />
+                        </button>
+                      </span>
+                    </div>
+                    <p v-else class="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/60">
+                      Метки не выбраны
+                    </p>
                   </div>
 
                   <!-- Виды спорта -->
@@ -709,6 +765,39 @@
     </div>
   </div>
 
+  <!-- Create Tag Modal -->
+  <div v-if="showCreateTagModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div class="w-full max-w-lg overflow-hidden rounded-2xl border border-orange-300/40 bg-slate-950 text-white shadow-2xl">
+      <div class="flex items-start justify-between gap-4 border-b border-white/10 p-5">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-wide text-orange-300">Новая метка</p>
+          <h3 class="mt-1 text-xl font-black">Создать метку для новостей</h3>
+        </div>
+        <button type="button" class="rounded-full border border-white/15 p-2 text-white/80 hover:bg-white/10" @click="closeCreateTagModal">
+          <Icon name="heroicons:x-mark" class="h-5 w-5" />
+        </button>
+      </div>
+      <div class="grid gap-4 p-5">
+        <label class="grid gap-2">
+          <span class="text-sm font-bold text-white/80">Название метки</span>
+          <input
+            v-model="newTagTitle"
+            type="text"
+            class="rounded-xl border border-white/15 bg-white px-4 py-3 text-slate-950 outline-none focus:border-orange-400"
+            placeholder="Например: Интервью"
+            @keyup.enter="createTag"
+          />
+        </label>
+        <div class="flex justify-end gap-3">
+          <button type="button" class="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold text-white hover:bg-white/10" @click="closeCreateTagModal">Отмена</button>
+          <button type="button" class="rounded-xl bg-orange-500 px-4 py-2 text-sm font-black text-slate-950 hover:bg-orange-400 disabled:opacity-60" :disabled="creatingTag || !newTagTitle.trim()" @click="createTag">
+            {{ creatingTag ? 'Создание...' : 'Создать и добавить' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- URL Input Modal -->
   <div v-if="showUrlInput" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
@@ -772,7 +861,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useGlobalsStore } from '~/stores/globals';
 import { storeToRefs } from 'pinia';
@@ -787,12 +876,12 @@ const api = config.public.API_URL;
 const site = config.public.SITE_URL;
 
 const globalsStore = useGlobalsStore();
-const { params } = storeToRefs(globalsStore);
+const { params, images } = storeToRefs(globalsStore);
 
 // Загружаем данные на сервере
 const { data } = await useAsyncData('article-globals', async () => {
   await globalsStore.fetchData();
-  return { params: globalsStore.params };
+  return { params: globalsStore.params, images: globalsStore.images };
 });
 
 const { isAuthenticated } = useAuth();
@@ -816,6 +905,7 @@ interface Article {
   galleries?: any[];
   videos?: any[];
   people?: any[];
+  tags?: any[];
 }
 
 interface Region {
@@ -856,6 +946,7 @@ const availableEvents = ref<RelationItem[]>([]);
 const availableGalleries = ref<RelationItem[]>([]);
 const availableVideos = ref<RelationItem[]>([]);
 const availablePeople = ref<RelationItem[]>([]);
+const availableTags = ref<RelationItem[]>([]);
 
 // Переменные для поиска и автокомплита
 const sportSearch = ref('');
@@ -866,6 +957,7 @@ const eventSearch = ref('');
 const gallerySearch = ref('');
 const videoSearch = ref('');
 const peopleSearch = ref('');
+const tagSearch = ref('');
 
 // Состояния выпадающих списков
 const showSportDropdown = ref(false);
@@ -876,6 +968,7 @@ const showEventDropdown = ref(false);
 const showGalleryDropdown = ref(false);
 const showVideoDropdown = ref(false);
 const showPeopleDropdown = ref(false);
+const showTagDropdown = ref(false);
 
 // Отфильтрованные результаты поиска
 const filteredSports = ref<RelationItem[]>([]);
@@ -886,6 +979,10 @@ const filteredEvents = ref<RelationItem[]>([]);
 const filteredGalleries = ref<RelationItem[]>([]);
 const filteredVideos = ref<RelationItem[]>([]);
 const filteredPeople = ref<RelationItem[]>([]);
+const filteredTags = ref<RelationItem[]>([]);
+const showCreateTagModal = ref(false);
+const newTagTitle = ref('');
+const creatingTag = ref(false);
 
 const emptyRegionOption = {
   value: '',
@@ -909,7 +1006,8 @@ const formData = ref({
   events: [] as number[],
   galleries: [] as number[],
   videos: [] as number[],
-  people: [] as number[]
+  people: [] as number[],
+  tag_ids: [] as number[]
 });
 
 // SEO
@@ -925,25 +1023,44 @@ const breadcrumbs = [
   { title: 'Редактирование', slug: `articles/${route.params.id}`, icon: 'i-mdi:pencil' }
 ];
 
+const apiBase = computed(() => String(api || '').replace(/\/+$/, '').replace(/\/api$/, ''));
+const normalizeMediaUrl = (value: string | null | undefined): string => {
+  if (!value) return '';
+
+  const path = String(value).trim();
+  if (!path) return '';
+
+  if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+    return path;
+  }
+
+  if (path.startsWith('/api/storage/')) {
+    return `${apiBase.value}${path.replace(/^\/api/, '')}`;
+  }
+
+  if (path.startsWith('/storage/')) {
+    return `${apiBase.value}${path}`;
+  }
+
+  if (path.startsWith('storage/')) {
+    return `${apiBase.value}/${path}`;
+  }
+
+  return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
+};
+
+const siteLogo = computed(() => normalizeMediaUrl(
+  (images.value as any)?.adminka_logo ||
+  (images.value as any)?.site_logo ||
+  (images.value as any)?.logo ||
+  (params.value as any)?.adminka_logo ||
+  (params.value as any)?.site_logo ||
+  (params.value as any)?.logo
+) || '/images/logo.png');
+
 // Функция для нормализации пути изображения
 const normalizeImagePath = (imagePath: string | null | undefined): string => {
-  if (!imagePath) return '';
-  
-  // Если путь уже полный URL, возвращаем как есть
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // Если путь относительный, добавляем базовый URL
-  let normalizedPath = `${api}${imagePath.startsWith('/') ? '' : '/'}${imagePath}`;
-  
-  // Если это путь к изображению статьи и не содержит /storage/, добавляем его
-  if (imagePath.includes('articles/') && !imagePath.includes('storage/')) {
-    // Заменяем /articles/ на /storage/articles/
-    normalizedPath = normalizedPath.replace('/articles/', '/storage/articles/');
-  }
-  
-  return normalizedPath;
+  return normalizeMediaUrl(imagePath);
 };
 
 // Загрузка статьи
@@ -992,7 +1109,8 @@ const loadArticle = async () => {
         events: article.value.events?.map(e => e.id) || [],
         galleries: article.value.galleries?.map(g => g.id) || [],
         videos: article.value.videos?.map(v => v.id) || [],
-        people: article.value.people?.map(p => p.id) || []
+        people: article.value.people?.map(p => p.id) || [],
+        tag_ids: article.value.tags?.map(tag => tag.id) || []
       };
     }
     
@@ -1020,10 +1138,11 @@ const loadAvailableRelations = async () => {
       fetch(`${api}/api/events?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/galleries?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/videos`).then(r => r.ok ? r.json() : []),
-      fetch(`${api}/api/people?type=async`).then(r => r.ok ? r.json() : [])
+      fetch(`${api}/api/people?type=async`).then(r => r.ok ? r.json() : []),
+      fetch(`${api}/api/article-tags?type=async`).then(r => r.ok ? r.json() : [])
     ];
 
-    const [sports, clubs, arenas, competitions, events, galleries, videos, people] = await Promise.all(promises);
+    const [sports, clubs, arenas, competitions, events, galleries, videos, people, tags] = await Promise.all(promises);
 
     availableSports.value = Array.isArray(sports) ? sports : [];
     availableClubs.value = Array.isArray(clubs) ? clubs.map(club => ({
@@ -1036,6 +1155,7 @@ const loadAvailableRelations = async () => {
     availableGalleries.value = Array.isArray(galleries) ? galleries : [];
     availableVideos.value = Array.isArray(videos) ? videos : (videos && videos.data ? videos.data : []);
     availablePeople.value = Array.isArray(people) ? people : [];
+    availableTags.value = Array.isArray(tags) ? tags : (tags && tags.data ? tags.data : []);
 
     // Добавляем связанные персоны из статьи в availablePeople, если они есть
     if (article.value && article.value.people) {
@@ -1062,6 +1182,7 @@ const loadAvailableRelations = async () => {
     filteredGalleries.value = availableGalleries.value.slice(0, 10);
     filteredVideos.value = availableVideos.value.slice(0, 10);
     filteredPeople.value = availablePeople.value.slice(0, 10);
+    filteredTags.value = availableTags.value.filter(tag => !formData.value.tag_ids.includes(tag.id)).slice(0, 10);
   } catch (err) {
     console.error('Ошибка загрузки отношений:', err);
     error.value = (err as Error).message || 'Ошибка загрузки отношений';
@@ -1188,7 +1309,7 @@ const handleImageUpload = async (event: Event) => {
     
     // Обновляем данные статьи
     if (article.value) {
-      const imagePath = data.image_path || data.url;
+      const imagePath = data.full_path || data.article_image_path || data.image_path || data.url;
       article.value.article_image_path = normalizeImagePath(imagePath);
     }
     
@@ -1346,6 +1467,7 @@ onMounted(() => {
       showGalleryDropdown.value = false;
       showVideoDropdown.value = false;
       showPeopleDropdown.value = false;
+      showTagDropdown.value = false;
     }
   });
 });
@@ -1557,6 +1679,27 @@ const searchPeople = debounce(async () => {
   }
 }, 300);
 
+const searchTags = debounce(async () => {
+  const query = tagSearch.value.toLowerCase().trim();
+  if (query.length >= 2) {
+    try {
+      const response = await fetch(`${api}/api/article-tags?type=async&q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const tags = await response.json();
+        filteredTags.value = Array.isArray(tags) ? tags.filter(tag =>
+          !formData.value.tag_ids.includes(tag.id)
+        ) : [];
+      }
+    } catch (err) {
+      console.error('Ошибка поиска меток:', err);
+    }
+  } else {
+    filteredTags.value = availableTags.value.filter(tag =>
+      !formData.value.tag_ids.includes(tag.id)
+    ).slice(0, 10);
+  }
+}, 300);
+
 // Функции добавления
 const addSport = async (sport: RelationItem) => {
   if (!formData.value.sports.includes(sport.id)) {
@@ -1694,6 +1837,81 @@ const addPerson = async (person: RelationItem) => {
   searchPeople(); // Обновляем отфильтрованный список
 };
 
+const saveTags = async () => {
+  try {
+    const response = await fetch(`${api}/api/articles/${route.params.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tag_ids: formData.value.tag_ids,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Ошибка сохранения меток:', response.status);
+    }
+  } catch (err) {
+    console.error('Ошибка сохранения меток:', err);
+  }
+};
+
+const addTag = async (tag: RelationItem) => {
+  if (!formData.value.tag_ids.includes(tag.id)) {
+    formData.value.tag_ids.push(tag.id);
+
+    if (!availableTags.value.find(t => t.id === tag.id)) {
+      availableTags.value.push(tag);
+    }
+
+    await saveTags();
+  }
+
+  tagSearch.value = '';
+  showTagDropdown.value = false;
+  searchTags();
+};
+
+const openCreateTagModal = () => {
+  newTagTitle.value = tagSearch.value.trim();
+  showCreateTagModal.value = true;
+};
+
+const closeCreateTagModal = () => {
+  showCreateTagModal.value = false;
+  newTagTitle.value = '';
+};
+
+const createTag = async () => {
+  const title = newTagTitle.value.trim();
+  if (!title) return;
+
+  try {
+    creatingTag.value = true;
+    const response = await fetch(`${api}/api/article-tags`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ошибка создания метки');
+    }
+
+    const tag = await response.json();
+    await addTag(tag);
+    closeCreateTagModal();
+  } catch (err) {
+    error.value = (err as Error).message || 'Ошибка создания метки';
+  } finally {
+    creatingTag.value = false;
+  }
+};
+
 // Функции удаления
 const removeSport = async (sportId: number) => {
   formData.value.sports = formData.value.sports.filter(id => id !== sportId);
@@ -1749,6 +1967,12 @@ const removePerson = async (personId: number) => {
   // Сразу сохраняем отношения
   await saveRelations('people', formData.value.people);
   searchPeople(); // Обновляем отфильтрованный список
+};
+
+const removeTag = async (tagId: number) => {
+  formData.value.tag_ids = formData.value.tag_ids.filter(id => id !== tagId);
+  await saveTags();
+  searchTags();
 };
 
 // Функции получения названий по ID
@@ -1886,6 +2110,11 @@ const getPersonTitle = (personId: number) => {
   return `Персона #${personId}`;
 };
 
+const getTagTitle = (tagId: number) => {
+  const tag = availableTags.value.find(t => t.id === tagId) || article.value?.tags?.find(t => t.id === tagId);
+  return tag ? tag.title : `Метка #${tagId}`;
+};
+
 // Удаление изображения статьи
 const deleteArticleImage = async () => {
   if (!article.value?.article_image_path) return;
@@ -1987,7 +2216,7 @@ const handleUrlSubmit = async () => {
 
       // Обновляем данные статьи
       if (article.value) {
-        article.value.article_image_path = normalizeImagePath(data.image_path || data.url);
+        article.value.article_image_path = normalizeImagePath(data.full_path || data.article_image_path || data.image_path || data.url);
       }
 
       urlInput.value = '';
@@ -2027,7 +2256,7 @@ const handleUrlSubmit = async () => {
 
     // Обновляем данные статьи
     if (article.value) {
-      article.value.article_image_path = normalizeImagePath(data.image_path || data.url);
+      article.value.article_image_path = normalizeImagePath(data.full_path || data.article_image_path || data.image_path || data.url);
     }
 
     urlInput.value = '';

@@ -230,13 +230,42 @@ export default {
     const urlInput = ref('');
     let errorTimeout = null;
     const isImageLoading = ref(false);
+    const apiBase = computed(() => {
+      const base = config?.public?.API_URL || '';
+      return String(base).replace(/\/+$/, '').replace(/\/api$/, '');
+    });
+
+    const normalizeImageUrl = (value) => {
+      if (!value) return '';
+
+      const path = String(value).trim();
+      if (!path) return '';
+
+      if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
+        return path;
+      }
+
+      if (path.startsWith('/api/storage/')) {
+        return `${apiBase.value}${path.replace(/^\/api/, '')}`;
+      }
+
+      if (path.startsWith('/storage/')) {
+        return `${apiBase.value}${path}`;
+      }
+
+      if (path.startsWith('storage/')) {
+        return `${apiBase.value}/${path}`;
+      }
+
+      return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
+    };
 
     // Получаем путь к изображению из данных строки
     const imageSource = computed(() => {
       if (props.options.image_path && props.rowData[props.options.image_path]) {
-        return props.rowData[props.options.image_path];
+        return normalizeImageUrl(props.rowData[props.options.image_path]);
       }
-      return props.value || '';
+      return normalizeImageUrl(props.value);
     });
 
     // Стили для миниатюры

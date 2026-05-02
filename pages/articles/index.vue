@@ -195,6 +195,28 @@ const tableOptions = ref({
         falseLabel: 'Нет'
       }
     },
+    {
+      name: 'tags',
+      label: '',
+      displayLabel: 'Метки',
+      title_icon: 'mdi:tag-multiple-outline',
+      type: 'belongsToMany',
+      width: '80px',
+      sortable: false,
+      options: {
+        relationField: 'tags',
+        relationLabel: 'метками',
+        searchEndpoint: api + '/api/article-tags',
+        createEndpoint: api + '/api/article-tags',
+        createButtonLabel: 'Создать метку',
+        createPlaceholder: 'Например: интервью, обзор, архив',
+        titleField: 'title',
+        searchField: 'title',
+        tooltipField: 'title',
+        mainField: 'title',
+        empty_class: 'bg-orange-100 hover:bg-orange-200 text-orange-900'
+      }
+    },
   ],
   editable: true,
   editrow: true,
@@ -209,6 +231,25 @@ const tableOptions = ref({
   pagination: true,
   main_field: 'title',
   pageSize: 30,
+  enableBulkActions: true,
+  bulkActions: [
+    {
+      name: 'add-tags',
+      label: 'Добавить метки к выбранным',
+      icon: 'mdi:tag-plus-outline',
+      endpoint: '/bulk-add-tags',
+      tagEndpoint: api + '/api/article-tags',
+      createTagEndpoint: api + '/api/article-tags'
+    },
+    {
+      name: 'delete',
+      label: 'Удалить выбранные новости',
+      icon: 'mynaui:trash',
+      confirm: true,
+      confirmTitle: 'Подтверждение удаления новостей',
+      confirmMessage: 'Вы собираетесь удалить выбранные новости. Это действие нельзя отменить.'
+    }
+  ],
   searchable: true,
   enableResetFilters: true,
   showIdFilter: true,
@@ -360,6 +401,17 @@ const additionalFilters = ref([
     ],
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     empty_option: {value: '', label: 'Все'}
+  },
+  {
+    field: 'tags',
+    label: 'Метка',
+    apiUrl: api + '/api/article-tags?type=async',
+    keyField: 'id',
+    labelField: 'title',
+    enableSearch: true,
+    sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
+    options_list: "bg-gray-100 text-gray-600 max-h-[200px] border border-gray-300 rounded-md",
+    empty_option: {value: '', label: 'Все метки'}
   }
 ]);
 
@@ -367,4 +419,4 @@ const additionalFilters = ref([
 
 <style scoped>
 
-</style> 
+</style>
