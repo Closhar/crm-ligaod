@@ -30,7 +30,7 @@
 
     <!-- Модальное окно для управления связями -->
     <div v-if="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="bg-white rounded-lg p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto" @click.stop>
         <!-- Заголовок модального окна -->
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-medium text-gray-900">
@@ -92,7 +92,7 @@
                 'border-blue-200 bg-blue-50': selectedItems.includes(item.id),
                 'border-gray-200': !selectedItems.includes(item.id)
               }"
-              @click="toggleItem(item)"
+              @mousedown.prevent.stop="toggleItem(item)"
             >
               <div class="flex items-center w-full">
                 <div class="flex-shrink-0 mr-3">

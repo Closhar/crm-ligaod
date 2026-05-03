@@ -309,13 +309,13 @@
                         @input="searchTags"
                         @focus="showTagDropdown = true"
                       />
-                      <div v-if="showTagDropdown && filteredTags.length > 0" class="absolute z-10 mt-2 max-h-52 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-xl">
+                      <div v-if="showTagDropdown && filteredTags.length > 0" class="absolute z-30 mt-2 max-h-52 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-xl">
                         <button
                           v-for="tag in filteredTags"
                           :key="tag.id"
                           type="button"
                           class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-white hover:bg-orange-500/20"
-                          @click="addTag(tag)"
+                          @mousedown.prevent.stop="addTag(tag)"
                         >
                           <span>{{ tag.title }}</span>
                           <Icon name="mdi:tag-plus-outline" class="text-orange-300" />
@@ -1869,7 +1869,7 @@ const addTag = async (tag: RelationItem) => {
   }
 
   tagSearch.value = '';
-  showTagDropdown.value = false;
+  showTagDropdown.value = true;
   searchTags();
 };
 

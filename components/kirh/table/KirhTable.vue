@@ -891,8 +891,8 @@
     </div>
 
     <!-- Модальное окно добавления меток к выбранным записям -->
-    <div v-if="showBulkTagsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-orange-300/40 bg-slate-950 text-white shadow-2xl">
+    <div v-if="showBulkTagsModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
+      <div class="w-full max-w-2xl overflow-visible rounded-2xl border border-orange-300/40 bg-slate-950 text-white shadow-2xl" @click.stop>
         <div class="flex items-start justify-between gap-4 border-b border-white/10 bg-gradient-to-r from-slate-950 to-slate-900 p-5">
           <div>
             <p class="text-xs font-bold uppercase tracking-wide text-orange-300">Массовое действие</p>
@@ -905,7 +905,7 @@
         </div>
 
         <div class="grid gap-4 p-5">
-          <div class="relative">
+          <div class="relative z-[70]">
             <label class="mb-2 block text-sm font-bold text-white/80">Найти метку</label>
             <input
               v-model="bulkTagSearch"
@@ -915,13 +915,13 @@
               @input="searchBulkTags"
               @focus="showBulkTagDropdown = true"
             />
-            <div v-if="showBulkTagDropdown && filteredBulkTags.length" class="absolute z-10 mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-xl">
+            <div v-if="showBulkTagDropdown && filteredBulkTags.length" class="relative z-[80] mt-2 max-h-56 w-full overflow-y-auto rounded-xl border border-white/15 bg-slate-900 shadow-2xl">
               <button
                 v-for="tag in filteredBulkTags"
                 :key="tag.id"
                 type="button"
                 class="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-white hover:bg-orange-500/20"
-                @click="addBulkTag(tag)"
+                @mousedown.prevent.stop="addBulkTag(tag)"
               >
                 <span>{{ tag.title }}</span>
                 <Icon name="mdi:tag-plus-outline" class="text-orange-300" />
@@ -2719,7 +2719,7 @@ export default {
       pendingBulkTagsAction.value = null;
       selectedBulkTags.value = [];
       bulkTagSearch.value = '';
-      showBulkTagDropdown.value = false;
+      showBulkTagDropdown.value = true;
       showCreateBulkTagModal.value = false;
     };
 
