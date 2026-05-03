@@ -116,6 +116,7 @@ import Footer from "~/components/parts/Footer.vue";
 import MobileParts from "~/components/parts/MobileParts.vue";
 import KirhUnauthenticatedUserBlock from "~/components/kirh/auth/KirhUnauthenticatedUserBlock.vue";
 import KirhLoading from "~/components/kirh/parts/KirhLoading.vue";
+import {normalizeMediaUrl} from "~/utils/mediaUrl";
 
 const {isAuthenticated, user, logout, checkAuth} = useAuth();
 
@@ -146,31 +147,7 @@ if (layoutGlobals.value) {
 
 const safeParams = computed(() => params.value || {});
 const safeImages = computed(() => images.value || {});
-const apiBase = computed(() => String(api || '').replace(/\/+$/, '').replace(/\/api$/, ''));
-const normalizeMediaUrl = (value) => {
-  if (!value) return '';
-
-  const path = String(value).trim();
-  if (!path) return '';
-
-  if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
-    return path;
-  }
-
-  if (path.startsWith('/api/storage/')) {
-    return `${apiBase.value}${path.replace(/^\/api/, '')}`;
-  }
-
-  if (path.startsWith('/storage/')) {
-    return `${apiBase.value}${path}`;
-  }
-
-  if (path.startsWith('storage/')) {
-    return `${apiBase.value}/${path}`;
-  }
-
-  return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
-};
+const publicMediaUrl = computed(() => String(config.public.PUBLIC_FILESYSTEM_URL || ''));
 
 const adminka_name = computed(() => safeParams.value.adminka_name || 'Админка')
 const site_logo = computed(() => normalizeMediaUrl(
@@ -179,7 +156,9 @@ const site_logo = computed(() => normalizeMediaUrl(
     safeImages.value.logo ||
     safeParams.value.adminka_logo ||
     safeParams.value.site_logo ||
-    safeParams.value.logo
+    safeParams.value.logo,
+    api,
+    publicMediaUrl.value
   ) || '/images/logo.png')
 const copyrights = computed(() => safeParams.value.adminka_copyrights || '© 2024 Все права защищены')
 const copy_link = computed(() => safeParams.value.adminka_copy_link || '#')

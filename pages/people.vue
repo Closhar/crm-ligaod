@@ -185,8 +185,8 @@
             <td>
               <div class="person-photo clickable-field" @click="editImages(person)" @click.stop>
                 <img
-                  v-if="person.main_image && person.main_image[0]"
-                  :src="getImageUrl(person.main_image[0])"
+                  v-if="getPersonPhoto(person)"
+                  :src="getPersonPhoto(person)"
                   :alt="person.full_name"
                   class="w-10 h-10 rounded-full object-cover"
                 />
@@ -198,7 +198,7 @@
               </div>
             </td>
             <td>
-              <div class="person-info">
+              <div class="person-info clickable-field" @click="editPerson(person)">
                 <div class="person-name">{{ person.last_name }} {{ person.first_name }} {{ person.middle_name || '' }}</div>
                 <div class="person-details">{{ person.birth_date ? formatDate(person.birth_date) : 'Не указана' }}</div>
               </div>
@@ -793,6 +793,14 @@ const updateIsActive = async (person, val) => {
   } catch (e) {
     alert('Ошибка при обновлении активности')
   }
+}
+
+const getPersonPhoto = (person) => {
+  const mainImage = Array.isArray(person?.main_image)
+    ? person.main_image[0]
+    : person?.main_image
+
+  return getImageUrl(mainImage || person?.images?.[0])
 }
 
 const updateManagementFlag = async (person, val) => {

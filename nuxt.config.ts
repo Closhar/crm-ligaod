@@ -35,6 +35,7 @@ export default defineNuxtConfig({
         public: {
             API_URL: apiUrl,
             apiBase: apiUrl,
+            PUBLIC_FILESYSTEM_URL: process.env.NUXT_PUBLIC_PUBLIC_FILESYSTEM_URL || process.env.PUBLIC_FILESYSTEM_URL || process.env.AWS_URL || '',
             SITE_URL: process.env.NUXT_SITE_URL,
             VK_TOKEN: process.env.NUXT_PUBLIC_VK_TOKEN,
         }
@@ -63,14 +64,18 @@ export default defineNuxtConfig({
                     rel: 'stylesheet',
                     href: 'https://fonts.googleapis.com/css2?family=Handjet:wght@300..900&family=Roboto:wght@300;400;500;700;900&display=swap'
                 },
-                {rel: 'icon', type: 'image/x-icon', href: '/favicon.svg'}
+                {rel: 'icon', type: 'image/png', href: '/favicon-96x96.png', sizes: '96x96'},
+                {rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg'},
+                {rel: 'shortcut icon', href: '/favicon.ico'},
+                {rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png'},
+                {rel: 'manifest', href: '/site.webmanifest'}
             ]
         }
     },
     icon: {
         provider: 'server',
         serverBundle: {
-            externalizeIconsJson: true
+            externalizeIconsJson: false
         }
     },
 })

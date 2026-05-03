@@ -868,6 +868,7 @@ import { storeToRefs } from 'pinia';
 import Head from "~/components/parts/Head.vue";
 import RichTextEditor from "~/components/kirh/table/editor/RichTextEditor.vue";
 import KirhSelectField from "~/components/kirh/table/fields/KirhSelectField.vue";
+import { normalizeMediaUrl } from '~/utils/mediaUrl';
 
 const route = useRoute();
 const router = useRouter();
@@ -1023,39 +1024,15 @@ const breadcrumbs = [
   { title: 'Редактирование', slug: `articles/${route.params.id}`, icon: 'i-mdi:pencil' }
 ];
 
-const apiBase = computed(() => String(api || '').replace(/\/+$/, '').replace(/\/api$/, ''));
-const normalizeMediaUrl = (value: string | null | undefined): string => {
-  if (!value) return '';
-
-  const path = String(value).trim();
-  if (!path) return '';
-
-  if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
-    return path;
-  }
-
-  if (path.startsWith('/api/storage/')) {
-    return `${apiBase.value}${path.replace(/^\/api/, '')}`;
-  }
-
-  if (path.startsWith('/storage/')) {
-    return `${apiBase.value}${path}`;
-  }
-
-  if (path.startsWith('storage/')) {
-    return `${apiBase.value}/${path}`;
-  }
-
-  return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
-};
-
 const siteLogo = computed(() => normalizeMediaUrl(
   (images.value as any)?.adminka_logo ||
   (images.value as any)?.site_logo ||
   (images.value as any)?.logo ||
   (params.value as any)?.adminka_logo ||
   (params.value as any)?.site_logo ||
-  (params.value as any)?.logo
+  (params.value as any)?.logo,
+  api,
+  config.public.PUBLIC_FILESYSTEM_URL
 ) || '/images/logo.png');
 
 // Функция для нормализации пути изображения

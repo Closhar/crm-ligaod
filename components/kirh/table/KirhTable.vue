@@ -1024,6 +1024,7 @@ import ParseTableLockField from './fields/ParseTableLockField.vue';
 import ToggleFilter from "./filters/ToggleFilter.vue";
 import { useDataRefresh } from '~/composables/useDataRefresh';
 import { useGlobalsStore } from '~/stores/globals';
+import { normalizeMediaUrl } from '~/utils/mediaUrl';
 import { storeToRefs } from 'pinia';
 
 function parseJsonResponse(text) {
@@ -1145,38 +1146,15 @@ export default {
     const runtimeConfig = useRuntimeConfig();
     const globalsStore = useGlobalsStore();
     const { params, images } = storeToRefs(globalsStore);
-    const apiBase = computed(() => String(runtimeConfig?.public?.API_URL || '').replace(/\/+$/, '').replace(/\/api$/, ''));
-    const normalizeMediaUrl = (value) => {
-      if (!value) return '';
-
-      const path = String(value).trim();
-      if (!path) return '';
-
-      if (/^(https?:)?\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) {
-        return path;
-      }
-
-      if (path.startsWith('/api/storage/')) {
-        return `${apiBase.value}${path.replace(/^\/api/, '')}`;
-      }
-
-      if (path.startsWith('/storage/')) {
-        return `${apiBase.value}${path}`;
-      }
-
-      if (path.startsWith('storage/')) {
-        return `${apiBase.value}/${path}`;
-      }
-
-      return `${apiBase.value}/storage/${path.replace(/^\/+/, '')}`;
-    };
     const loaderLogo = computed(() => normalizeMediaUrl(
       images.value?.adminka_logo ||
       images.value?.site_logo ||
       images.value?.logo ||
       params.value?.adminka_logo ||
       params.value?.site_logo ||
-      params.value?.logo
+      params.value?.logo,
+      runtimeConfig?.public?.API_URL,
+      runtimeConfig?.public?.PUBLIC_FILESYSTEM_URL
     ) || '/images/logo.png');
 
     // Реактивные переменные
@@ -2719,7 +2697,7 @@ export default {
       pendingBulkTagsAction.value = null;
       selectedBulkTags.value = [];
       bulkTagSearch.value = '';
-      showBulkTagDropdown.value = true;
+      showBulkTagDropdown.value = false;
       showCreateBulkTagModal.value = false;
     };
 
@@ -2729,7 +2707,7 @@ export default {
       }
 
       bulkTagSearch.value = '';
-      showBulkTagDropdown.value = false;
+      showBulkTagDropdown.value = true;
       filteredBulkTags.value = bulkTags.value.filter((item) => !selectedBulkTags.value.some((selected) => selected.id === item.id));
     };
 
