@@ -75,7 +75,34 @@ export default defineNuxtConfig({
     icon: {
         provider: 'server',
         serverBundle: {
-            externalizeIconsJson: false
+            externalizeIconsJson: false,
+            collections: [
+                'akar-icons',
+                'emojione-v1',
+                'fa',
+                'fa-solid',
+                'fluent',
+                'fluent-mdl2',
+                'healthicons',
+                'heroicons',
+                'ic',
+                'iconamoon',
+                'icon-park-twotone',
+                'line-md',
+                'lucide',
+                'material-symbols',
+                'mdi',
+                'mingcute',
+                'mynaui',
+                'ph',
+                'ri',
+                'si',
+                'solar',
+                'svg-spinners',
+                'tabler',
+                'uil',
+                'weui',
+            ]
         }
     },
 })
