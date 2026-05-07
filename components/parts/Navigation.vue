@@ -29,7 +29,20 @@ const {isAuthenticated, user, logout} = useAuth();
 const config = useRuntimeConfig() // Используем useRuntimeConfig()
 const api = config.public.API_URL
 const {data: menuData} = await useFetch(api + `/api/v1/amenu`);
-const menu = (menuData.value || []) as any[];
+const menu = computed(() => {
+  const items = [...((menuData.value || []) as any[])]
+  const hasDocuments = items.some((item: any) => item.slug === 'documents' || item.title === 'Документы')
+
+  if (!hasDocuments) {
+    items.push({
+      title: 'Документы',
+      icon: 'mdi:file-document-multiple-outline',
+      slug: 'documents',
+    })
+  }
+
+  return items
+});
 
 const isSubMenuOpen = ref<Record<string, boolean>>({})
 const hoveredItem = ref<string | null>(null)

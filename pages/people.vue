@@ -173,6 +173,9 @@
             <th>О себе</th>
             <th>Активен</th>
             <th>Руководство</th>
+            <th>Президент</th>
+            <th>Зам.</th>
+            <th>Попеч.</th>
             <th>Сортировка</th>
             <th>Действия</th>
           </tr>
@@ -286,6 +289,24 @@
               <KirhToggleField
                 :model-value="!!person.is_management"
                 @update:model-value="val => updateManagementFlag(person, val === 1 || val === true)"
+              />
+            </td>
+            <td>
+              <KirhToggleField
+                :model-value="!!person.is_president"
+                @update:model-value="val => updatePersonFlag(person, 'is_president', val === 1 || val === true)"
+              />
+            </td>
+            <td>
+              <KirhToggleField
+                :model-value="!!person.is_vice"
+                @update:model-value="val => updatePersonFlag(person, 'is_vice', val === 1 || val === true)"
+              />
+            </td>
+            <td>
+              <KirhToggleField
+                :model-value="!!person.is_popech"
+                @update:model-value="val => updatePersonFlag(person, 'is_popech', val === 1 || val === true)"
               />
             </td>
             <td>
@@ -815,6 +836,18 @@ const updateManagementFlag = async (person, val) => {
   }
 }
 
+const updatePersonFlag = async (person, field, val) => {
+  try {
+    await apiRequest(`/people/${person.id}`, {
+      method: 'PUT',
+      body: { [field]: val }
+    })
+    person[field] = val
+  } catch (e) {
+    alert('Ошибка при обновлении флага персоны')
+  }
+}
+
 const updateManagementSort = async (person) => {
   const value = Number.isFinite(Number(person.management_sort)) ? Number(person.management_sort) : 500
   try {
@@ -876,11 +909,12 @@ const updateManagementSort = async (person) => {
 }
 
 .table-container {
-  @apply bg-white rounded-lg shadow overflow-hidden;
+  @apply bg-white rounded-lg shadow overflow-x-auto;
 }
 
 .data-table {
   @apply w-full;
+  min-width: 1680px;
 }
 
 .data-table th {

@@ -82,6 +82,24 @@
                 <KirhToggleField v-model="form.is_active" :options="{ labels: { on: 'Да', off: '' } }" />
               </div>
             </div>
+            <div class="leadership-flags">
+              <div class="form-group">
+                <label class="form-label">Руководство</label>
+                <KirhToggleField v-model="form.is_management" :options="{ labels: { on: 'Да', off: '' } }" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Президент</label>
+                <KirhToggleField v-model="form.is_president" :options="{ labels: { on: 'Да', off: '' } }" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Заместитель</label>
+                <KirhToggleField v-model="form.is_vice" :options="{ labels: { on: 'Да', off: '' } }" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Попечитель</label>
+                <KirhToggleField v-model="form.is_popech" :options="{ labels: { on: 'Да', off: '' } }" />
+              </div>
+            </div>
           </div>
           <!-- Справа от основной информации: блок для вывода данных об игроках -->
           <div v-if="mode === 'create'" class="form-section flex flex-col justify-start">
@@ -326,6 +344,10 @@ const form = reactive({
   address: '',
   gender: 'm',
   is_active: true,
+  is_management: false,
+  is_president: false,
+  is_vice: false,
+  is_popech: false,
   about: '',
 })
 
@@ -580,6 +602,10 @@ watch(() => props.person, (person) => {
       address: person.address || '',
       gender: person.gender || 'm',
       is_active: typeof person.is_active === 'boolean' ? person.is_active : true,
+      is_management: !!person.is_management,
+      is_president: !!person.is_president,
+      is_vice: !!person.is_vice,
+      is_popech: !!person.is_popech,
       about: person.about || '',
     })
   } else if (props.mode === 'create') {
@@ -594,6 +620,10 @@ watch(() => props.person, (person) => {
       address: '',
       gender: 'm',
       is_active: true,
+      is_management: false,
+      is_president: false,
+      is_vice: false,
+      is_popech: false,
       about: '',
     })
   }
@@ -623,6 +653,10 @@ const savePerson = async () => {
       address: form.address,
       gender: form.gender,
       is_active: form.is_active,
+      is_management: form.is_management,
+      is_president: form.is_president,
+      is_vice: form.is_vice,
+      is_popech: form.is_popech,
       about: form.about,
     }
     let response
@@ -791,6 +825,10 @@ const alreadyInClub = computed(() => {
 
 .form-row {
   @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.leadership-flags {
+  @apply grid grid-cols-2 md:grid-cols-4 gap-3 rounded-lg bg-gray-50 p-3;
 }
 
 .form-group {
