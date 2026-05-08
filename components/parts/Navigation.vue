@@ -3,6 +3,7 @@ interface MenuItem {
   title: string
   icon: string
   slug?: string
+  link?: string
   submenu?: MenuItem[]
 }
 
@@ -26,9 +27,27 @@ const {data} = await useAsyncData('navigation-globals', async () => {
 const props = defineProps<Props>()
 
 const {isAuthenticated, user, logout} = useAuth();
-const config = useRuntimeConfig() // Используем useRuntimeConfig()
-const api = config.public.API_URL
-const {data: menuData} = await useFetch(api + `/api/v1/amenu`);
+const {apiRequest} = useApi()
+const menuData = ref<MenuItem[]>([])
+
+const loadMenu = async () => {
+  if (!import.meta.client || !isAuthenticated.value) {
+    menuData.value = []
+    return
+  }
+
+  try {
+    menuData.value = await apiRequest('/v1/amenu') as MenuItem[]
+  } catch (error) {
+    console.error('Ошибка загрузки меню админки:', error)
+    menuData.value = []
+  }
+}
+
+onMounted(loadMenu)
+
+watch(isAuthenticated, loadMenu)
+
 const menu = computed(() => {
   const items = [...((menuData.value || []) as any[])]
   const hasDocuments = items.some((item: any) => item.slug === 'documents' || item.title === 'Документы')
