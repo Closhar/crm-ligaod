@@ -17,7 +17,7 @@ const globalsStore = useGlobalsStore();
 const {images} = storeToRefs(globalsStore);
 
 const avatarSrc = computed(() => {
-  return user.value?.avatar_path || images.value?.default_user || '/favicon.svg';
+  return user.value?.avatar_path || images.value?.adminka_logo || images.value?.site_logo || images.value?.logo || props.logo || '/images/logo.png';
 });
 </script>
 

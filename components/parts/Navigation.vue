@@ -29,6 +29,11 @@ const props = defineProps<Props>()
 const {isAuthenticated, user, logout} = useAuth();
 const {apiRequest} = useApi()
 const menuData = ref<MenuItem[]>([])
+const avatarSrc = computed(() => {
+  const fallback = (images.value as any)?.adminka_logo || (images.value as any)?.site_logo || (images.value as any)?.logo || '/images/logo.png'
+
+  return (user.value as any)?.avatar_path || fallback
+})
 
 const loadMenu = async () => {
   if (!import.meta.client || !isAuthenticated.value) {
@@ -175,7 +180,7 @@ const getMenuIcon = (item: any) => {
     <!-- Блок кредитов с пользовательской информацией -->
     <div class="credits-block">
       <NuxtLink class="user-avatar" to="/account">
-        <img :src="(user as any)?.avatar_path || (images as any)?.default_user" alt="User avatar" class="avatar-img mr-2">
+        <img :src="avatarSrc" alt="User avatar" class="avatar-img mr-2">
       </NuxtLink>
       <div v-if="!isMenuCollapsed" class="user-info">
 

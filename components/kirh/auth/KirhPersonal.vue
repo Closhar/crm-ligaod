@@ -1,248 +1,404 @@
 <script lang="ts" setup>
-import {onMounted, ref, watch} from "vue";
-import {useAuth} from "~/composables/useAuth";
-import KirhNote from "~/components/kirh/fields/KirhNote.vue";
+import {computed, onMounted, ref, watch} from 'vue'
+import {useAuth} from '~/composables/useAuth'
 
 const props = defineProps({
   avatar: {
     type: String,
-    default: '/default_avatar',
+    default: '/images/logo.png',
   },
-});
+})
 
-const {isAuthenticated, user, checkAuth} = useAuth();
+const {isAuthenticated, user, checkAuth} = useAuth()
+const config = useRuntimeConfig()
+const api = config.public.API_URL
 
-const avatarFile = ref(null);
-const avatarPathPreview = ref(user.value?.avatar_path || '');
-const avatarPreview = ref(user.value?.avatar || '');
-const isAvatarLoading = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null)
+const avatarFile = ref<File | null>(null)
+const avatarPreview = ref('')
+const isSaving = ref(false)
+const isAvatarLoading = ref(false)
+const successMessage = ref('')
+const errorMessage = ref('')
 
-const successMessage = ref('');
-const errorMessage = ref('');
-const config = useRuntimeConfig(); // Используем useRuntimeConfig()
-const api = config.public.API_URL;
+const currentUser = computed<any>(() => user.value || {})
+const avatarSrc = computed(() => avatarPreview.value || currentUser.value?.avatar_path || props.avatar)
+const hasCustomAvatar = computed(() => Boolean(currentUser.value?.avatar_path || avatarFile.value))
 
-// Функция для отображения успешного сообщения
-const showSuccessMessage = (message) => {
-  successMessage.value = message;
+const showMessage = (target: typeof successMessage, message: string) => {
+  target.value = message
   setTimeout(() => {
-    successMessage.value = ''; // Сбрасываем сообщение через 5 секунд
-  }, 5000);
-};
+    target.value = ''
+  }, 5000)
+}
 
-// Функция для отображения сообщения об ошибке
-const showErrorMessage = (message) => {
-  errorMessage.value = message;
-  setTimeout(() => {
-    errorMessage.value = ''; // Сбрасываем сообщение через 5 секунд
-  }, 5000);
-};
-
-// Сбрасываем сообщения при монтировании компонента
 onMounted(() => {
-  successMessage.value = '';
-  errorMessage.value = '';
-
   if (isAuthenticated.value) {
-    checkAuth(); // Обновляем данные пользователя
+    checkAuth()
   } else {
-    navigateTo('/account'); // Перенаправляем на страницу авторизации, если пользователь не авторизован
+    navigateTo('/account')
   }
-});
+})
 
-// Отслеживаем изменения avatar_path пользователя
 watch(
-    () => user.value?.avatar_path,
-    (newAvatarPath) => {
-      if (newAvatarPath) {
-        avatarPathPreview.value = newAvatarPath;
-        avatarPreview.value = newAvatarPath;
-      } else {
-        avatarPathPreview.value = props.avatar;
-        avatarPreview.value = props.avatar;
-      }
-    },
-    {immediate: true}
-);
+  () => currentUser.value?.avatar_path,
+  (newAvatarPath) => {
+    if (!avatarFile.value) {
+      avatarPreview.value = newAvatarPath || ''
+    }
+  },
+  {immediate: true},
+)
 
-// Словарь для перевода имен полей
-const fieldLabels = {
-  old_password: 'Старый пароль',
-  new_password: 'Новый пароль',
-  new_password_confirmation: 'Подтверждение нового пароля',
-  name: 'Имя',
-  avatar: 'Аватар',
-};
+const openFileDialog = () => {
+  fileInput.value?.click()
+}
 
-// Обработка изменения аватара
-const handleAvatarChange = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    isAvatarLoading.value = true;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      avatarPreview.value = e.target.result; // Обновляем preview
-      avatarPathPreview.value = e.target.result; // Обновляем путь для отображения
-      isAvatarLoading.value = false;
-    };
-    reader.readAsDataURL(file);
-    avatarFile.value = file;
+const handleAvatarChange = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+
+  if (!file) {
+    return
   }
-};
 
-// Удаление аватара
-const deleteAvatar = async () => {
-  errorMessage.value = '';
-  successMessage.value = '';
+  avatarFile.value = file
+  isAvatarLoading.value = true
 
-  try {
-    // Отправляем запрос на удаление аватара
-    const response = await $fetch(api + '/api/user/avatar', {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-      },
-    });
-
-    // Обновляем состояние
-    avatarPreview.value = props.avatar;
-    avatarPathPreview.value = props.avatar;
-    avatarFile.value = null;
-    user.value.avatar_path = null;
-
-    // Показываем успешное сообщение
-    showSuccessMessage('Аватар успешно удален!');
-  } catch (err) {
-    handleError(err);
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    avatarPreview.value = String(e.target?.result || '')
+    isAvatarLoading.value = false
   }
-};
+  reader.readAsDataURL(file)
+}
 
-// Обновление профиля
 const updateProfile = async () => {
-  errorMessage.value = '';
-  successMessage.value = '';
+  if (!user.value) {
+    return
+  }
 
-  const formData = new FormData();
-  formData.append('name', user.value.name);
+  errorMessage.value = ''
+  successMessage.value = ''
+  isSaving.value = true
+
+  const formData = new FormData()
+  formData.append('name', currentUser.value.name || '')
 
   if (avatarFile.value) {
-    formData.append('avatar', avatarFile.value);
+    formData.append('avatar', avatarFile.value)
   }
 
   try {
-    const updatedUser = await $fetch(api + '/api/user', {
+    const updatedUser = await $fetch<any>(api + '/api/user', {
       method: 'POST',
       body: formData,
       headers: {
         Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
       },
-    });
+    })
 
-    // Обновляем глобальное состояние
-    user.value = updatedUser;
-    avatarPathPreview.value = updatedUser.avatar_path;
-    avatarPreview.value = updatedUser.avatar_path;
-
-    // Показываем успешное сообщение
-    showSuccessMessage('Данные профиля успешно обновлены!');
-  } catch (err) {
-    handleError(err);
+    user.value = updatedUser
+    avatarFile.value = null
+    avatarPreview.value = updatedUser.avatar_path || ''
+    showMessage(successMessage, 'Профиль обновлен')
+  } catch (err: any) {
+    handleError(err)
+  } finally {
+    isSaving.value = false
   }
-};
+}
 
+const deleteAvatar = async () => {
+  errorMessage.value = ''
+  successMessage.value = ''
+  isSaving.value = true
 
-// Обработка ошибок
-const handleError = (err) => {
-  if (err.data?.errors) {
-    const errors = err.data.errors;
-    let message = '';
+  try {
+    const response = await $fetch<any>(api + '/api/user/avatar', {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      },
+    })
 
-    // Формируем сообщение об ошибке
-    for (const key in errors) {
-      if (errors[key]) {
-        const fieldName = fieldLabels[key] || key;
-        message += `${fieldName}: ${errors[key].join(', ')}\n`;
-      }
+    user.value = response.user
+    avatarFile.value = null
+    avatarPreview.value = ''
+    if (fileInput.value) {
+      fileInput.value.value = ''
     }
-
-    // Показываем сообщение об ошибке
-    showErrorMessage(message.trim());
-  } else {
-    showErrorMessage(err.data?.message || err.message);
+    showMessage(successMessage, 'Аватар удален')
+  } catch (err: any) {
+    handleError(err)
+  } finally {
+    isSaving.value = false
   }
-};
+}
+
+const handleError = (err: any) => {
+  if (err?.data?.errors) {
+    const message = Object.values(err.data.errors)
+      .flat()
+      .join('\n')
+    showMessage(errorMessage, message || 'Не удалось сохранить профиль')
+    return
+  }
+
+  showMessage(errorMessage, err?.data?.message || err?.message || 'Не удалось сохранить профиль')
+}
 </script>
 
 <template>
-  <div class="p-4">
-    <!-- Уведомления -->
-    <KirhNote :message="successMessage" type="success"/>
-    <KirhNote :message="errorMessage" type="error"/>
-    <form class="mb-8" @submit.prevent="updateProfile">
-      <!-- E-mail -->
-      <div class="my-4">
-        <label class="block text-sm font-medium text-gray-800" for="email">Электронная почта</label>
-        <input id="email" v-model="user.email" class="mt-1 w-full px-3 py-2 border border-gray-400 text-gray-500 font-bold bg-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled
-               type="text"/>
-      </div>
+  <form class="profile-card" @submit.prevent="updateProfile">
+    <div v-if="successMessage" class="profile-note profile-note--success">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="profile-note profile-note--error">{{ errorMessage }}</div>
 
-      <!-- Имя пользователя -->
-      <div class="my-4">
-        <label class="block text-sm font-medium text-gray-800" for="name">Имя</label>
-        <input id="name" v-model="user.name" class="mt-1 block w-full px-3 py-2 border border-gray-600 text-gray-900 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-               type="text"/>
-      </div>
-
-      <!-- Поле для аватара -->
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-800">Аватар</label>
-        <div class="mt-1 items-center relative">
-          <div class="relative w-40 h-40 rounded-full overflow-hidden border-2 border-gray-300 mx-auto">
-            <img :src="avatarPathPreview || avatar" alt="Аватар"
-                 class="w-full h-full object-cover"/>
-            <div v-if="isAvatarLoading"
-                 class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-              <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"
-                   xmlns="http://www.w3.org/2000/svg">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                        stroke-width="4"></circle>
-                <path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      fill="currentColor"></path>
-              </svg>
-            </div>
-          </div>
-
-          <div class="absolute top-0 right-10">
-            <button v-if="avatarPreview && avatarPreview !== avatar" class="px-2 pt-2 bg-red-600 text-white rounded-3xl hover:bg-red-700 "
-                    @click="deleteAvatar">
-              <Icon class="" name="mi:delete" size="1.5em"/>
-            </button>
-          </div>
-
-          <input id="avatar" accept="image/*" class="cursor-pointer mt-1 block w-full px-3 py-2 border border-gray-600 text-gray-900 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" type="file"
-                 @change="handleAvatarChange"/>
+    <div class="profile-card__hero">
+      <div class="profile-card__avatar">
+        <img :src="avatarSrc" alt="Аватар пользователя">
+        <div v-if="isAvatarLoading" class="profile-card__avatar-loading">
+          <Icon name="svg-spinners:180-ring" />
         </div>
       </div>
 
-      <button class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              type="submit">
-        Обновить данные
+      <div class="profile-card__identity">
+        <span>Профиль пользователя</span>
+        <strong>{{ currentUser.name || 'Пользователь' }}</strong>
+        <small>{{ currentUser.email }}</small>
+      </div>
+    </div>
+
+    <input
+      ref="fileInput"
+      accept="image/*"
+      class="sr-only"
+      type="file"
+      @change="handleAvatarChange"
+    >
+
+    <div class="profile-card__actions">
+      <button class="profile-card__button profile-card__button--secondary" type="button" @click="openFileDialog">
+        <Icon name="heroicons:photo" />
+        Выбрать аватар
       </button>
-    </form>
-  </div>
+      <button
+        v-if="hasCustomAvatar"
+        class="profile-card__button profile-card__button--danger"
+        type="button"
+        :disabled="isSaving"
+        @click="deleteAvatar"
+      >
+        <Icon name="heroicons:trash" />
+        Удалить
+      </button>
+    </div>
+
+    <label class="profile-card__field">
+      <span>Электронная почта</span>
+      <input :value="currentUser.email" disabled type="text">
+    </label>
+
+    <label class="profile-card__field">
+      <span>Имя</span>
+      <input v-model="currentUser.name" type="text">
+    </label>
+
+    <button class="profile-card__button profile-card__button--primary" :disabled="isSaving" type="submit">
+      <Icon name="heroicons:check" />
+      {{ isSaving ? 'Сохранение...' : 'Сохранить изменения' }}
+    </button>
+  </form>
 </template>
 
 <style scoped>
-.animate-spin {
-  animation: spin 1s linear infinite;
+.profile-card {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  color: #111827;
 }
 
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+.profile-card__hero {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 18px;
+  align-items: center;
+  border-radius: 12px;
+  border: 1px solid #dbe4f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef6ff 100%);
+  padding: 18px;
+}
+
+.profile-card__avatar {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.18);
+}
+
+.profile-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-card__avatar-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(15 23 42 / 0.62);
+  color: #fff;
+  font-size: 30px;
+}
+
+.profile-card__identity {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.profile-card__identity span {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.profile-card__identity strong {
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.profile-card__identity small {
+  color: #64748b;
+}
+
+.profile-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.profile-card__field {
+  display: grid;
+  gap: 7px;
+  text-align: left;
+}
+
+.profile-card__field span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #475569;
+}
+
+.profile-card__field input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  padding: 12px 14px;
+  outline: none;
+}
+
+.profile-card__field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgb(37 99 235 / 0.12);
+}
+
+.profile-card__field input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.profile-card__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 10px;
+  padding: 11px 16px;
+  font-weight: 800;
+  transition: 0.2s ease;
+}
+
+.profile-card__button--primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.profile-card__button--primary:hover {
+  background: #1e40af;
+}
+
+.profile-card__button--secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1e293b;
+}
+
+.profile-card__button--secondary:hover {
+  background: #f8fafc;
+}
+
+.profile-card__button--danger {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.profile-card__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.profile-note {
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.profile-note--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.profile-note--error {
+  white-space: pre-line;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .profile-card__hero {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
   }
-  to {
-    transform: rotate(360deg);
+
+  .profile-card__identity {
+    text-align: center;
+  }
+
+  .profile-card__button {
+    width: 100%;
   }
 }
 </style>
