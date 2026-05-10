@@ -690,6 +690,53 @@
                     </div>
                   </div>
 
+                  <!-- Документы -->
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
+                      <Icon name="mdi:file-document-multiple-outline" class="w-5 h-5 mr-2 text-orange-600" />
+                      Документы
+                    </h3>
+
+                    <div class="mb-3 relative">
+                      <input
+                        v-model="documentSearch"
+                        type="text"
+                        placeholder="Начните вводить название документа..."
+                        class="w-full p-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @input="searchDocuments"
+                        @focus="() => { showDocumentDropdown = true; searchDocuments(); }"
+                      />
+
+                      <div v-if="showDocumentDropdown && filteredDocuments.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-40 overflow-y-auto">
+                        <div
+                          v-for="document in filteredDocuments"
+                          :key="document.id"
+                          class="p-2 hover:bg-gray-100 cursor-pointer text-sm"
+                          @click="addDocument(document)"
+                        >
+                          {{ document.title }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                      <div v-for="documentId in formData.documents" :key="documentId" class="flex items-center justify-between bg-blue-50 p-2 rounded border border-blue-200">
+                        <span class="text-sm text-gray-700">
+                          {{ getDocumentTitle(documentId) }}
+                        </span>
+                        <button
+                          @click="removeDocument(documentId)"
+                          class="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          <Icon name="heroicons:x-mark" class="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div v-if="formData.documents.length === 0" class="text-sm text-gray-500 text-center py-2">
+                        Документы не выбраны
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- Видео -->
                   <div class="bg-gray-50 rounded-lg p-4">
                     <h3 class="text-lg font-medium text-gray-900 mb-3 flex items-center">
@@ -905,6 +952,7 @@ interface Article {
   events?: any[];
   galleries?: any[];
   videos?: any[];
+  documents?: any[];
   people?: any[];
   tags?: any[];
 }
@@ -946,6 +994,7 @@ const availableCompetitions = ref<RelationItem[]>([]);
 const availableEvents = ref<RelationItem[]>([]);
 const availableGalleries = ref<RelationItem[]>([]);
 const availableVideos = ref<RelationItem[]>([]);
+const availableDocuments = ref<RelationItem[]>([]);
 const availablePeople = ref<RelationItem[]>([]);
 const availableTags = ref<RelationItem[]>([]);
 
@@ -957,6 +1006,7 @@ const competitionSearch = ref('');
 const eventSearch = ref('');
 const gallerySearch = ref('');
 const videoSearch = ref('');
+const documentSearch = ref('');
 const peopleSearch = ref('');
 const tagSearch = ref('');
 
@@ -968,6 +1018,7 @@ const showCompetitionDropdown = ref(false);
 const showEventDropdown = ref(false);
 const showGalleryDropdown = ref(false);
 const showVideoDropdown = ref(false);
+const showDocumentDropdown = ref(false);
 const showPeopleDropdown = ref(false);
 const showTagDropdown = ref(false);
 
@@ -979,6 +1030,7 @@ const filteredCompetitions = ref<RelationItem[]>([]);
 const filteredEvents = ref<RelationItem[]>([]);
 const filteredGalleries = ref<RelationItem[]>([]);
 const filteredVideos = ref<RelationItem[]>([]);
+const filteredDocuments = ref<RelationItem[]>([]);
 const filteredPeople = ref<RelationItem[]>([]);
 const filteredTags = ref<RelationItem[]>([]);
 const showCreateTagModal = ref(false);
@@ -1007,6 +1059,7 @@ const formData = ref({
   events: [] as number[],
   galleries: [] as number[],
   videos: [] as number[],
+  documents: [] as number[],
   people: [] as number[],
   tag_ids: [] as number[]
 });
@@ -1086,6 +1139,7 @@ const loadArticle = async () => {
         events: article.value.events?.map(e => e.id) || [],
         galleries: article.value.galleries?.map(g => g.id) || [],
         videos: article.value.videos?.map(v => v.id) || [],
+        documents: article.value.documents?.map(d => d.id) || [],
         people: article.value.people?.map(p => p.id) || [],
         tag_ids: article.value.tags?.map(tag => tag.id) || []
       };
@@ -1115,11 +1169,12 @@ const loadAvailableRelations = async () => {
       fetch(`${api}/api/events?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/galleries?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/videos`).then(r => r.ok ? r.json() : []),
+      fetch(`${api}/api/documents?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/people?type=async`).then(r => r.ok ? r.json() : []),
       fetch(`${api}/api/article-tags?type=async`).then(r => r.ok ? r.json() : [])
     ];
 
-    const [sports, clubs, arenas, competitions, events, galleries, videos, people, tags] = await Promise.all(promises);
+    const [sports, clubs, arenas, competitions, events, galleries, videos, documents, people, tags] = await Promise.all(promises);
 
     availableSports.value = Array.isArray(sports) ? sports : [];
     availableClubs.value = Array.isArray(clubs) ? clubs.map(club => ({
@@ -1131,6 +1186,7 @@ const loadAvailableRelations = async () => {
     availableEvents.value = Array.isArray(events) ? events : [];
     availableGalleries.value = Array.isArray(galleries) ? galleries : [];
     availableVideos.value = Array.isArray(videos) ? videos : (videos && videos.data ? videos.data : []);
+    availableDocuments.value = Array.isArray(documents) ? documents : (documents && documents.data ? documents.data : []);
     availablePeople.value = Array.isArray(people) ? people : [];
     availableTags.value = Array.isArray(tags) ? tags : (tags && tags.data ? tags.data : []);
 
@@ -1635,6 +1691,29 @@ const searchVideos = debounce(async () => {
   }
 }, 300);
 
+const searchDocuments = debounce(async () => {
+  const query = documentSearch.value.toLowerCase().trim();
+
+  if (query.length >= 2) {
+    try {
+      const response = await fetch(`${api}/api/documents?type=async&q=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const documentsResponse = await response.json();
+        const documents = Array.isArray(documentsResponse) ? documentsResponse : (documentsResponse && documentsResponse.data ? documentsResponse.data : []);
+        filteredDocuments.value = documents.filter((document: any) =>
+          !formData.value.documents.includes(document.id)
+        );
+      }
+    } catch (err) {
+      console.error('Ошибка поиска документов:', err);
+    }
+  } else {
+    filteredDocuments.value = availableDocuments.value.filter(document =>
+      !formData.value.documents.includes(document.id)
+    ).slice(0, 10);
+  }
+}, 300);
+
 const searchPeople = debounce(async () => {
   const query = peopleSearch.value.toLowerCase().trim();
   if (query.length >= 2) {
@@ -1797,6 +1876,21 @@ const addVideo = async (video: RelationItem) => {
   searchVideos(); // Обновляем отфильтрованный список
 };
 
+const addDocument = async (document: RelationItem) => {
+  if (!formData.value.documents.includes(document.id)) {
+    formData.value.documents.push(document.id);
+
+    if (!availableDocuments.value.find(d => d.id === document.id)) {
+      availableDocuments.value.push(document);
+    }
+
+    await saveRelations('documents', formData.value.documents);
+  }
+  documentSearch.value = '';
+  showDocumentDropdown.value = false;
+  searchDocuments();
+};
+
 const addPerson = async (person: RelationItem) => {
   if (!formData.value.people.includes(person.id)) {
     formData.value.people.push(person.id);
@@ -1939,6 +2033,12 @@ const removeVideo = async (videoId: number) => {
   searchVideos(); // Обновляем отфильтрованный список
 };
 
+const removeDocument = async (documentId: number) => {
+  formData.value.documents = formData.value.documents.filter(id => id !== documentId);
+  await saveRelations('documents', formData.value.documents);
+  searchDocuments();
+};
+
 const removePerson = async (personId: number) => {
   formData.value.people = formData.value.people.filter(id => id !== personId);
   // Сразу сохраняем отношения
@@ -2064,6 +2164,22 @@ const getVideoTitle = (videoId: number) => {
   }
   
   return `Видео #${videoId}`;
+};
+
+const getDocumentTitle = (documentId: number) => {
+  const document = availableDocuments.value.find(d => d.id === documentId);
+  if (document) {
+    return document.title;
+  }
+
+  if (article.value && article.value.documents) {
+    const articleDocument = article.value.documents.find(d => d.id === documentId);
+    if (articleDocument) {
+      return articleDocument.title || `Документ #${documentId}`;
+    }
+  }
+
+  return `Документ #${documentId}`;
 };
 
 const getPersonTitle = (personId: number) => {

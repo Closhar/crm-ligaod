@@ -217,6 +217,19 @@ const tableOptions = ref({
         empty_class: 'bg-orange-100 hover:bg-orange-200 text-orange-900'
       }
     },
+    {
+      name: 'galleries_count',
+      label: '',
+      displayLabel: 'Галереи',
+      title_icon: 'mdi:image-multiple-outline',
+      type: 'article_galleries',
+      width: '90px',
+      sortable: false,
+      options: {
+        readonly: true,
+        hint: 'Количество привязанных галерей. Нажмите для добавления или удаления.'
+      }
+    },
   ],
   editable: true,
   editrow: true,

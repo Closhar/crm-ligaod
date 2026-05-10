@@ -12,19 +12,27 @@
     </div>
 
     <div class="table-card">
+      <div class="documents-toolbar">
+        <div class="documents-search">
+          <Icon icon="mdi:magnify" class="w-5 h-5" />
+          <input v-model="searchQuery" type="search" placeholder="Поиск по названию документа..." />
+        </div>
+        <span class="documents-counter">{{ filteredDocuments.length }} из {{ documents.length }}</span>
+      </div>
       <table class="documents-table">
         <thead>
           <tr>
             <th>ID</th>
             <th>Название</th>
             <th>Файл</th>
+            <th>Дата загрузки</th>
             <th>О лиге</th>
             <th>Сортировка</th>
             <th>Действия</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="document in documents" :key="document.id">
+          <tr v-for="document in filteredDocuments" :key="document.id">
             <td>{{ document.id }}</td>
             <td class="title-cell">{{ document.title }}</td>
             <td>
@@ -32,6 +40,10 @@
                 <Icon icon="mdi:file-document-outline" class="w-5 h-5" />
                 {{ document.original_name || document.file_path }}
               </a>
+              <span v-else class="muted-text">{{ document.original_name || document.file_path || 'Файл не загружен' }}</span>
+            </td>
+            <td class="date-cell">
+              {{ formatDateTime(document.created_at) }}
             </td>
             <td>
               <KirhToggleField
@@ -60,8 +72,10 @@
               </div>
             </td>
           </tr>
-          <tr v-if="!loading && !documents.length">
-            <td colspan="6" class="empty-cell">Документы пока не добавлены</td>
+          <tr v-if="!loading && !filteredDocuments.length">
+            <td colspan="7" class="empty-cell">
+              {{ searchQuery ? 'Документы по запросу не найдены' : 'Документы пока не добавлены' }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -81,10 +95,17 @@
           <input v-model="form.title" type="text" required />
         </label>
 
-        <label class="form-group">
+        <div class="form-group">
           <span>{{ editingDocument ? 'Заменить файл' : 'Файл *' }}</span>
-          <input type="file" :required="!editingDocument" @change="onFileChange" />
-        </label>
+          <input ref="fileInput" type="file" class="visually-hidden" @change="onFileChange" />
+          <button class="file-dropzone" type="button" @click="fileInput?.click()" @dragover.prevent @drop.prevent="onFileDrop">
+            <Icon icon="mdi:cloud-upload-outline" class="w-8 h-8" />
+            <strong>{{ selectedFile ? selectedFile.name : 'Выберите файл или перетащите сюда' }}</strong>
+            <span>
+              {{ selectedFile ? formatFileSize(selectedFile.size) : (editingDocument?.original_name || 'PDF, DOC, XLS и другие документы') }}
+            </span>
+          </button>
+        </div>
 
         <div class="form-row">
           <label class="form-group">
@@ -122,7 +143,9 @@ const saving = ref(false)
 const showModal = ref(false)
 const editingDocument = ref<any | null>(null)
 const selectedFile = ref<File | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
+const searchQuery = ref('')
 
 const form = reactive({
   title: '',
@@ -133,12 +156,19 @@ const form = reactive({
 const loadDocuments = async () => {
   loading.value = true
   try {
-    const response: any = await apiRequest('/documents?per_page=100')
+    const response: any = await apiRequest('/documents?per_page=1000')
     documents.value = response?.data || []
   } finally {
     loading.value = false
   }
 }
+
+const filteredDocuments = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return documents.value
+
+  return documents.value.filter((document) => String(document.title || '').toLowerCase().includes(query))
+})
 
 const openCreate = () => {
   editingDocument.value = null
@@ -164,12 +194,40 @@ const closeModal = () => {
   showModal.value = false
   editingDocument.value = null
   selectedFile.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
   errorMessage.value = ''
+}
+
+const setSelectedFile = (file?: File | null) => {
+  selectedFile.value = file || null
 }
 
 const onFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement
-  selectedFile.value = input.files?.[0] || null
+  setSelectedFile(input.files?.[0] || null)
+}
+
+const onFileDrop = (event: DragEvent) => {
+  setSelectedFile(event.dataTransfer?.files?.[0] || null)
+}
+
+const formatFileSize = (size: number) => {
+  if (!size) return ''
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} КБ`
+  return `${(size / 1024 / 1024).toFixed(1)} МБ`
+}
+
+const formatDateTime = (value?: string) => {
+  if (!value) return '-'
+  return new Date(value).toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 const buildPayload = () => {
@@ -186,6 +244,12 @@ const buildPayload = () => {
 const saveDocument = async () => {
   saving.value = true
   errorMessage.value = ''
+  if (!editingDocument.value && !selectedFile.value) {
+    errorMessage.value = 'Выберите файл документа'
+    saving.value = false
+    return
+  }
+
   try {
     const url = editingDocument.value ? `/documents/${editingDocument.value.id}` : '/documents'
     const response: any = await apiRequest(url, {
@@ -266,6 +330,43 @@ onMounted(loadDocuments)
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
 }
 
+.documents-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+}
+
+.documents-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 520px);
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  color: #2563eb;
+}
+
+.documents-search input {
+  width: 100%;
+  border: 0;
+  outline: none;
+  color: #111827;
+}
+
+.documents-counter,
+.muted-text,
+.date-cell {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .documents-table {
   width: 100%;
   border-collapse: collapse;
@@ -298,6 +399,44 @@ onMounted(loadDocuments)
   gap: 8px;
   color: #1d4ed8;
   font-weight: 600;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.file-dropzone {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 2px dashed #93c5fd;
+  border-radius: 14px;
+  padding: 22px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  color: #1d4ed8;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+
+.file-dropzone:hover {
+  border-color: #2563eb;
+  background: #eff6ff;
+  transform: translateY(-1px);
+}
+
+.file-dropzone strong {
+  color: #111827;
+}
+
+.file-dropzone span {
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .sort-input {

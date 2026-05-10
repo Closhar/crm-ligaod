@@ -38,7 +38,13 @@
 
           <!-- Desktop Logo/Site Name -->
           <div class="hidden md:block">
-            <LogoSiteName :is-menu-collapsed="isMenuCollapsed" :logo="site_logo" :site_name="adminka_name"/>
+            <LogoSiteName
+                :is-menu-collapsed="isMenuCollapsed"
+                :logo="site_logo"
+                :site_name="adminka_name"
+                :public-site-name="site_public_name"
+                :public-site-url="site_public_url"
+            />
           </div>
 
           <!-- Navigation -->

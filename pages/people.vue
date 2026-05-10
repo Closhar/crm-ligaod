@@ -934,7 +934,12 @@ const updateManagementSort = async (person) => {
 }
 
 .person-photo {
-  @apply flex items-center;
+  @apply flex items-center justify-center w-12 h-12 rounded-full overflow-hidden bg-gray-100;
+}
+
+.person-photo img,
+.person-photo > div {
+  @apply w-10 h-10 rounded-full object-cover flex-shrink-0;
 }
 
 .person-info {

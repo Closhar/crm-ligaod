@@ -85,20 +85,18 @@
               :key="gallery.id"
               @click="selectGallery(gallery)"
               :class="[
-                'p-3 rounded cursor-pointer transition-colors group',
+                'gallery-list-item',
                 selectedGallery?.id === gallery.id 
-                  ? 'bg-blue-100 border-blue-300 border' 
-                  : 'bg-white hover:bg-gray-100 border border-gray-200'
+                  ? 'gallery-list-item--active' 
+                  : 'gallery-list-item--idle'
               ]"
             >
-              <div class="flex justify-between items-center">
-                <div class="flex-1 min-w-0">
-                  <span class="font-medium text-gray-800 truncate">{{ gallery.title }}</span>
-                </div>
+              <div class="gallery-list-item__inner">
+                <div class="gallery-list-item__title">{{ gallery.title }}</div>
                 <button 
                   @click.stop="deleteGallery(gallery.id)"
                   :disabled="deletingGallery === gallery.id"
-                  class="text-red-500 hover:text-red-700 disabled:text-gray-400 text-sm ml-2"
+                  class="gallery-list-item__delete"
                 >
                   <span v-if="deletingGallery === gallery.id">Удаление...</span>
                   <Icon v-else name="mynaui:trash" size="1.5em" />
@@ -115,28 +113,36 @@
           </div>
 
           <!-- Пагинация -->
-          <div v-if="filteredAndSortedGalleries.length > itemsPerPage" class="mt-4 flex justify-center">
-            <div class="flex items-center gap-2">
+          <div v-if="filteredAndSortedGalleries.length > itemsPerPage" class="gallery-pagination">
+            <div class="gallery-pagination__pages">
               <button 
-                @click="currentPage = Math.max(1, currentPage - 1)"
+                @click="setGalleryPage(currentPage - 1)"
                 :disabled="currentPage === 1"
-                class="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                class="gallery-page-btn gallery-page-btn--arrow"
               >
                 ←
               </button>
-              
-              <span class="text-sm text-gray-600">
-                {{ currentPage }} из {{ totalPages }}
-              </span>
+
+              <button
+                v-for="page in galleryPageNumbers"
+                :key="`gallery-page-${page}`"
+                class="gallery-page-btn"
+                :class="{ 'gallery-page-btn--active': page === currentPage }"
+                type="button"
+                @click="setGalleryPage(page)"
+              >
+                {{ page }}
+              </button>
               
               <button 
-                @click="currentPage = Math.min(totalPages, currentPage + 1)"
+                @click="setGalleryPage(currentPage + 1)"
                 :disabled="currentPage === totalPages"
-                class="px-3 py-1 text-sm border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                class="gallery-page-btn gallery-page-btn--arrow"
               >
                 →
               </button>
             </div>
+            <div class="gallery-pagination__meta">Страница {{ currentPage }} из {{ totalPages }}</div>
           </div>
         </div>
       </div>
@@ -479,6 +485,15 @@
             <div class="mt-2 text-sm text-gray-600">
               Выбрано файлов: {{ selectedFiles.length }}
             </div>
+            <div v-if="selectedFilePreviews.length" class="selected-preview-grid">
+              <div v-for="preview in selectedFilePreviews" :key="preview.url" class="selected-preview-card">
+                <img :src="preview.url" :alt="preview.file.name" />
+                <div class="selected-preview-card__meta">
+                  <span>{{ preview.file.name }}</span>
+                  <small>{{ formatFileSize(preview.file.size) }}</small>
+                </div>
+              </div>
+            </div>
             <div class="mt-4 flex gap-2">
               <button 
                 @click="uploadImages" 
@@ -495,7 +510,7 @@
                 Отменить загрузку
               </button>
               <button 
-                @click="showUploadForm = false; selectedFiles = []; resetLogoSettings()" 
+                @click="cancelUploadForm" 
                 :disabled="uploading"
                 class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -744,6 +759,7 @@ const showAddGalleryForm = ref(false);
 const showUploadForm = ref(false);
 const newGalleryTitle = ref('');
 const selectedFiles = ref<File[]>([]);
+const selectedFilePreviews = ref<{ file: File; url: string }[]>([]);
 const uploading = ref(false);
 const showEditModal = ref(false);
 const editingImage = ref<GalleryImage | null>(null);
@@ -811,6 +827,22 @@ const paginatedGalleries = computed(() => {
   const end = start + itemsPerPage;
   return filteredAndSortedGalleries.value.slice(start, end);
 });
+
+const galleryPageNumbers = computed(() => {
+  const pages: number[] = [];
+  const start = Math.max(1, currentPage.value - 2);
+  const end = Math.min(totalPages.value, currentPage.value + 2);
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page);
+  }
+
+  return pages;
+});
+
+const setGalleryPage = (page: number) => {
+  currentPage.value = Math.min(totalPages.value, Math.max(1, page));
+};
 
 // Computed свойство для сортировки изображений по position
 const sortedGalleryImages = computed(() => {
@@ -969,15 +1001,15 @@ const getImageUrl = (image: GalleryImage) => {
     return image.image;
   }
   
-  // Если URL относительные, добавляем базовый URL
+  // Если API вернул относительный путь из S3/local storage, нормализуем без двойного /storage.
   if (image.thumbnail) {
-    return `${api}/storage/${image.thumbnail}`;
+    return normalizeStorageUrl(image.thumbnail);
   }
   if (image.gallery_image_path) {
-    return `${api}/storage/${image.gallery_image_path}`;
+    return normalizeStorageUrl(image.gallery_image_path);
   }
   if (image.image) {
-    return `${api}/storage/${image.image}`;
+    return normalizeStorageUrl(image.image);
   }
   
   return '';
@@ -996,18 +1028,26 @@ const getFullImageUrl = (image: GalleryImage) => {
     return image.thumbnail;
   }
   
-  // Если URL относительные, добавляем базовый URL
+  // Если API вернул относительный путь из S3/local storage, нормализуем без двойного /storage.
   if (image.gallery_image_path) {
-    return `${api}/storage/${image.gallery_image_path}`;
+    return normalizeStorageUrl(image.gallery_image_path);
   }
   if (image.image) {
-    return `${api}/storage/${image.image}`;
+    return normalizeStorageUrl(image.image);
   }
   if (image.thumbnail) {
-    return `${api}/storage/${image.thumbnail}`;
+    return normalizeStorageUrl(image.thumbnail);
   }
   
   return '';
+};
+
+const normalizeStorageUrl = (path: string) => {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/storage/')) return `${api}${path}`;
+  if (path.startsWith('storage/')) return `${api}/${path}`;
+  return `${api}/storage/${path.replace(/^\/+/, '')}`;
 };
 
 // Функция для загрузки изображений галереи
@@ -1158,8 +1198,33 @@ const checkAvailableRoutes = async (galleryId: number) => {
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files) {
-    selectedFiles.value = Array.from(target.files);
+    setSelectedFiles(Array.from(target.files));
   }
+};
+
+const setSelectedFiles = (files: File[]) => {
+  clearSelectedFilePreviews();
+  selectedFiles.value = files;
+  selectedFilePreviews.value = files.map((file) => ({
+    file,
+    url: URL.createObjectURL(file),
+  }));
+};
+
+const clearSelectedFilePreviews = () => {
+  selectedFilePreviews.value.forEach((preview) => URL.revokeObjectURL(preview.url));
+  selectedFilePreviews.value = [];
+};
+
+const clearSelectedFiles = () => {
+  selectedFiles.value = [];
+  clearSelectedFilePreviews();
+};
+
+const formatFileSize = (size: number) => {
+  if (!size) return '';
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} КБ`;
+  return `${(size / 1024 / 1024).toFixed(1)} МБ`;
 };
 
 // Загрузка изображений
@@ -1212,15 +1277,9 @@ const uploadImages = async () => {
           if (logoSettings.value.source === 'custom' && logoSettings.value.customLogo) {
             formData.append('custom_logo', logoSettings.value.customLogo);
           } else if (logoSettings.value.source === 'default') {
-            // Загружаем логотип по умолчанию как файл
-            const defaultLogoFile = await getDefaultLogoAsFile();
-            if (defaultLogoFile) {
-              formData.append('custom_logo', defaultLogoFile);
-            } else {
-              const defaultLogoUrl = getDefaultLogoUrl();
-              if (defaultLogoUrl) {
-                formData.append('default_logo_url', defaultLogoUrl);
-              }
+            const defaultLogoUrl = getDefaultLogoUrl();
+            if (defaultLogoUrl) {
+              formData.append('default_logo_url', defaultLogoUrl);
             }
           }
         }
@@ -1268,7 +1327,7 @@ const uploadImages = async () => {
     
     // Обновляем список изображений
     await loadGalleryImages(selectedGallery.value.id);
-    selectedFiles.value = [];
+    clearSelectedFiles();
     showUploadForm.value = false;
     resetLogoSettings(); // Сбрасываем настройки логотипа
     
@@ -1285,9 +1344,15 @@ const cancelUpload = () => {
   cancelUploadFlag.value = true;
   uploadProgress.value.isUploading = false;
   uploading.value = false;
-  selectedFiles.value = [];
+  clearSelectedFiles();
   showUploadForm.value = false;
   resetLogoSettings(); // Сбрасываем настройки логотипа
+};
+
+const cancelUploadForm = () => {
+  showUploadForm.value = false;
+  clearSelectedFiles();
+  resetLogoSettings();
 };
 
 // Удаление изображения

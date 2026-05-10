@@ -368,8 +368,9 @@
                   <input
                       type="checkbox"
                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      :checked="selectedRows.size === tableData.length"
-                      @change="selectedRows.size === tableData.length ? clearSelectedRows() : tableData.forEach(row => selectedRows.add(row.id))"
+                      :checked="totalItems > 0 && selectedRows.size === totalItems"
+                      :title="totalItems > tableData.length ? `Выбрать все записи с учетом фильтра: ${totalItems}` : 'Выбрать все записи'"
+                      @change="toggleSelectAllFilteredRows"
                   />
                 </div>
               </div>
@@ -1011,6 +1012,7 @@ import KirhBelongsToManyField from './fields/KirhBelongsToManyField.vue';
 import KirhDateTimeField from './fields/KirhDateTimeField.vue';
 import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhHasManySelectField from './fields/KirhHasManySelectField.vue';
+import KirhArticleGalleriesField from './fields/KirhArticleGalleriesField.vue';
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhMorphToManyField from './fields/KirhMorphToManyField.vue';
 import KirhMorphedByManyField from './fields/KirhMorphedByManyField.vue';
@@ -1066,6 +1068,7 @@ export default {
     ParseTableLockField,
     AIGenField,
     KirhHasManySelectField,
+    KirhArticleGalleriesField,
     KirhMultiFieldModal,
   },
   props: {
@@ -1241,6 +1244,7 @@ export default {
         aigen: AIGenField, // Добавляем поддержку AI генерации
         'has-many-select': KirhHasManySelectField,
         multi_field_modal: KirhMultiFieldModal, // Новый тип поля
+        article_galleries: KirhArticleGalleriesField,
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1869,48 +1873,10 @@ export default {
         loading.value = true;
         error.value = null;
 
-        const filterParams = {};
-        if (searchQuery.value) {
-          filterParams.q = searchQuery.value;
-        }
-
-        // Добавляем фильтр по ID, если он активен
-        if (idFilter.value) {
-          filterParams.id = idFilter.value;
-        } else {
-          // Добавляем остальные фильтры только если нет фильтра по ID
-          props.additionalFilters.forEach(filter => {
-            if (selectedFilters.value[filter.field] !== undefined && 
-                selectedFilters.value[filter.field] !== '' && 
-                selectedFilters.value[filter.field] !== null) {
-              filterParams[filter.field] = selectedFilters.value[filter.field];
-            }
-          });
-          
-          // Добавляем фильтры из кнопок в колонках
-          Object.entries(selectedFilters.value).forEach(([key, value]) => {
-            if (value !== undefined && value !== '' && value !== null) {
-              filterParams[key] = value;
-            }
-          });
-        }
-
-        const queryParams = new URLSearchParams({
+        const queryParams = buildQueryParams({
           page: currentPage.value,
           per_page: parseInt(currentPageSize.value, 10), // Преобразуем в число
-          ...(sortField.value && {sort_field: sortField.value}),
-          ...(sortDirection.value && {sort_direction: sortDirection.value}),
-          ...props.additionalParams,
-          ...filterParams
         });
-
-        // Добавляем api_params из tableOptions, если они есть
-        if (props.tableOptions.api_params) {
-          const apiParams = new URLSearchParams(props.tableOptions.api_params);
-          for (const [key, value] of apiParams.entries()) {
-            queryParams.set(key, value);
-          }
-        }
 
         const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
         const responseText = await response.text();
@@ -1940,17 +1906,62 @@ export default {
       }
     };
 
+    const buildQueryParams = (overrides = {}) => {
+      const filterParams = {};
+      if (searchQuery.value) {
+        filterParams.q = searchQuery.value;
+      }
+
+      if (idFilter.value) {
+        filterParams.id = idFilter.value;
+      } else {
+        props.additionalFilters.forEach(filter => {
+          if (selectedFilters.value[filter.field] !== undefined &&
+              selectedFilters.value[filter.field] !== '' &&
+              selectedFilters.value[filter.field] !== null) {
+            filterParams[filter.field] = selectedFilters.value[filter.field];
+          }
+        });
+
+        Object.entries(selectedFilters.value).forEach(([key, value]) => {
+          if (value !== undefined && value !== '' && value !== null) {
+            filterParams[key] = value;
+          }
+        });
+      }
+
+      const queryParams = new URLSearchParams({
+        ...(sortField.value && {sort_field: sortField.value}),
+        ...(sortDirection.value && {sort_direction: sortDirection.value}),
+        ...props.additionalParams,
+        ...filterParams,
+        ...overrides,
+      });
+
+      if (props.tableOptions.api_params) {
+        const apiParams = new URLSearchParams(props.tableOptions.api_params);
+        for (const [key, value] of apiParams.entries()) {
+          queryParams.set(key, value);
+        }
+      }
+
+      return queryParams;
+    };
+
     const debouncedSearch = debounce(() => {
+      clearSelectedRows();
       fetchData();
     }, 500);
 
     const clearSearch = () => {
       searchQuery.value = '';
+      clearSelectedRows();
       fetchData();
     };
 
     const applyFilters = () => {
       currentPage.value = 1;
+      clearSelectedRows();
       fetchData();
     };
 
@@ -1963,6 +1974,7 @@ export default {
       sortDirection.value = props.tableOptions.defaultSortDirection;
       currentPage.value = 1;
       idFilter.value = null; // Сбрасываем фильтр по ID
+      clearSelectedRows();
       fetchData();
     };
 
@@ -2618,6 +2630,32 @@ export default {
       selectedRows.value.clear();
     };
 
+    const toggleSelectAllFilteredRows = async () => {
+      if (totalItems.value > 0 && selectedRows.value.size === totalItems.value) {
+        clearSelectedRows();
+        return;
+      }
+
+      try {
+        loading.value = true;
+        const queryParams = buildQueryParams({
+          ids_only: '1',
+          page: 1,
+          per_page: Math.max(totalItems.value || 10000, currentPageSize.value),
+        });
+
+        const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
+        const data = await response.json();
+        const ids = Array.isArray(data?.ids) ? data.ids : [];
+        selectedRows.value = new Set(ids);
+      } catch (err) {
+        error.value = err.message || 'Ошибка выбора записей';
+        console.error('Ошибка выбора всех записей:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
     const isRowSelected = (row) => {
       return selectedRows.value.has(row.id);
     };
@@ -2986,6 +3024,7 @@ export default {
       creatingBulkTag,
       toggleRowSelection,
       clearSelectedRows,
+      toggleSelectAllFilteredRows,
       isRowSelected,
       hasSelectedRows,
       openBulkActionsModal,
