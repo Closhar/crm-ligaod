@@ -26,13 +26,14 @@
             <th>Название</th>
             <th>Файл</th>
             <th>Дата загрузки</th>
+            <th>Новости</th>
             <th>О лиге</th>
             <th>Сортировка</th>
             <th>Действия</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="document in filteredDocuments" :key="document.id">
+          <tr v-for="document in paginatedDocuments" :key="document.id">
             <td>{{ document.id }}</td>
             <td class="title-cell">{{ document.title }}</td>
             <td>
@@ -44,6 +45,12 @@
             </td>
             <td class="date-cell">
               {{ formatDateTime(document.created_at) }}
+            </td>
+            <td>
+              <button class="articles-count-btn" type="button" @click="openArticlesModal(document)">
+                <Icon icon="mdi:newspaper-variant-multiple-outline" class="w-5 h-5" />
+                {{ document.articles_count || 0 }}
+              </button>
             </td>
             <td>
               <KirhToggleField
@@ -73,12 +80,45 @@
             </td>
           </tr>
           <tr v-if="!loading && !filteredDocuments.length">
-            <td colspan="7" class="empty-cell">
+            <td colspan="8" class="empty-cell">
               {{ searchQuery ? 'Документы по запросу не найдены' : 'Документы пока не добавлены' }}
             </td>
           </tr>
         </tbody>
       </table>
+      <div v-if="documentsTotalPages > 1" class="documents-pagination">
+        <div class="documents-pagination__pages">
+          <button
+            class="documents-page-btn documents-page-btn--arrow"
+            type="button"
+            :disabled="documentsCurrentPage === 1"
+            @click="setDocumentsPage(documentsCurrentPage - 1)"
+          >
+            ←
+          </button>
+          <button
+            v-for="page in documentsPageNumbers"
+            :key="`document-page-${page}`"
+            class="documents-page-btn"
+            :class="{ 'documents-page-btn--active': page === documentsCurrentPage }"
+            type="button"
+            @click="setDocumentsPage(page)"
+          >
+            {{ page }}
+          </button>
+          <button
+            class="documents-page-btn documents-page-btn--arrow"
+            type="button"
+            :disabled="documentsCurrentPage === documentsTotalPages"
+            @click="setDocumentsPage(documentsCurrentPage + 1)"
+          >
+            →
+          </button>
+        </div>
+        <div class="documents-pagination__meta">
+          Страница {{ documentsCurrentPage }} из {{ documentsTotalPages }}
+        </div>
+      </div>
     </div>
 
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
@@ -128,6 +168,65 @@
         </div>
       </form>
     </div>
+
+    <div v-if="showArticlesModal" class="modal-overlay" @click="closeArticlesModal">
+      <div class="modal-card modal-card--wide" @click.stop>
+        <div class="modal-head">
+          <div>
+            <h2>Новости документа</h2>
+            <p class="modal-subtitle">{{ articlesDocument?.title }}</p>
+          </div>
+          <button type="button" class="icon-btn" @click="closeArticlesModal">
+            <Icon icon="mdi:close" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="linked-list">
+          <span v-if="!selectedArticles.length" class="muted-text">Статьи не привязаны</span>
+          <button
+            v-for="article in selectedArticles"
+            :key="article.id"
+            class="linked-chip"
+            type="button"
+            @click="removeArticle(article.id)"
+          >
+            {{ article.title }}
+            <Icon icon="mdi:close" class="w-4 h-4" />
+          </button>
+        </div>
+
+        <div class="documents-search documents-search--modal">
+          <Icon icon="mdi:magnify" class="w-5 h-5" />
+          <input v-model="articleSearchQuery" type="search" placeholder="Найти новость..." @input="searchArticles" />
+        </div>
+
+        <div class="article-picker-list">
+          <button
+            v-for="article in availableArticlesToAdd"
+            :key="article.id"
+            class="article-picker-item"
+            type="button"
+            @click="addArticle(article)"
+          >
+            <Icon icon="mdi:newspaper-variant-outline" class="w-5 h-5" />
+            <span>{{ article.title }}</span>
+            <small>{{ formatDateTime(article.data) }}</small>
+          </button>
+          <div v-if="!articlesLoading && !availableArticlesToAdd.length" class="empty-cell">
+            Новости не найдены
+          </div>
+        </div>
+
+        <div v-if="articlesError" class="error-box">{{ articlesError }}</div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" @click="closeArticlesModal">Отмена</button>
+          <button type="button" class="btn-primary" :disabled="articlesSaving" @click="saveArticleRelations">
+            {{ articlesSaving ? 'Сохранение...' : 'Сохранить связи' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -141,11 +240,22 @@ const documents = ref<any[]>([])
 const loading = ref(false)
 const saving = ref(false)
 const showModal = ref(false)
+const showArticlesModal = ref(false)
 const editingDocument = ref<any | null>(null)
+const articlesDocument = ref<any | null>(null)
 const selectedFile = ref<File | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const errorMessage = ref('')
+const articlesError = ref('')
 const searchQuery = ref('')
+const articleSearchQuery = ref('')
+const documentsCurrentPage = ref(1)
+const documentsPerPage = 25
+const selectedArticles = ref<any[]>([])
+const availableArticles = ref<any[]>([])
+const articlesLoading = ref(false)
+const articlesSaving = ref(false)
+let articleSearchTimer: ReturnType<typeof setTimeout> | null = null
 
 const form = reactive({
   title: '',
@@ -169,6 +279,34 @@ const filteredDocuments = computed(() => {
 
   return documents.value.filter((document) => String(document.title || '').toLowerCase().includes(query))
 })
+
+const documentsTotalPages = computed(() => Math.max(1, Math.ceil(filteredDocuments.value.length / documentsPerPage)))
+
+const paginatedDocuments = computed(() => {
+  const start = (documentsCurrentPage.value - 1) * documentsPerPage
+  return filteredDocuments.value.slice(start, start + documentsPerPage)
+})
+
+const documentsPageNumbers = computed(() => {
+  const pages: number[] = []
+  const start = Math.max(1, documentsCurrentPage.value - 2)
+  const end = Math.min(documentsTotalPages.value, documentsCurrentPage.value + 2)
+
+  for (let page = start; page <= end; page++) {
+    pages.push(page)
+  }
+
+  return pages
+})
+
+const availableArticlesToAdd = computed(() => {
+  const selectedIds = new Set(selectedArticles.value.map((article) => article.id))
+  return availableArticles.value.filter((article) => !selectedIds.has(article.id))
+})
+
+const setDocumentsPage = (page: number) => {
+  documentsCurrentPage.value = Math.min(documentsTotalPages.value, Math.max(1, page))
+}
 
 const openCreate = () => {
   editingDocument.value = null
@@ -295,7 +433,107 @@ const deleteDocument = async (document: any) => {
   await loadDocuments()
 }
 
+const normalizeArticlesResponse = (response: any) => {
+  if (Array.isArray(response?.data)) return response.data
+  if (Array.isArray(response?.data?.data)) return response.data.data
+  if (Array.isArray(response)) return response
+  return []
+}
+
+const loadAvailableArticles = async () => {
+  articlesLoading.value = true
+  try {
+    const params = new URLSearchParams({
+      per_page: '50',
+      sort_field: 'data',
+      sort_direction: 'desc',
+      ...(articleSearchQuery.value.trim() ? { q: articleSearchQuery.value.trim() } : {}),
+    })
+    const response = await apiRequest(`/articles?${params.toString()}`)
+    availableArticles.value = normalizeArticlesResponse(response)
+  } finally {
+    articlesLoading.value = false
+  }
+}
+
+const openArticlesModal = async (document: any) => {
+  articlesDocument.value = document
+  articlesError.value = ''
+  articleSearchQuery.value = ''
+  selectedArticles.value = []
+  availableArticles.value = []
+  showArticlesModal.value = true
+
+  try {
+    const response: any = await apiRequest(`/documents/${document.id}`)
+    selectedArticles.value = response?.data?.articles || []
+    await loadAvailableArticles()
+  } catch (error: any) {
+    articlesError.value = error?.data?.message || error?.message || 'Не удалось загрузить связи документа'
+  }
+}
+
+const closeArticlesModal = () => {
+  showArticlesModal.value = false
+  articlesDocument.value = null
+  selectedArticles.value = []
+  availableArticles.value = []
+  articlesError.value = ''
+}
+
+const searchArticles = () => {
+  if (articleSearchTimer) {
+    clearTimeout(articleSearchTimer)
+  }
+  articleSearchTimer = setTimeout(loadAvailableArticles, 250)
+}
+
+const addArticle = (article: any) => {
+  if (!selectedArticles.value.some((item) => item.id === article.id)) {
+    selectedArticles.value.push(article)
+  }
+}
+
+const removeArticle = (articleId: number) => {
+  selectedArticles.value = selectedArticles.value.filter((article) => article.id !== articleId)
+}
+
+const saveArticleRelations = async () => {
+  if (!articlesDocument.value) return
+  articlesSaving.value = true
+  articlesError.value = ''
+
+  try {
+    const response: any = await apiRequest(`/documents/${articlesDocument.value.id}/articles`, {
+      method: 'POST',
+      body: {
+        article_ids: selectedArticles.value.map((article) => article.id),
+      },
+    })
+    articlesDocument.value.articles_count = response?.data?.articles_count ?? selectedArticles.value.length
+    const documentIndex = documents.value.findIndex((document) => document.id === articlesDocument.value?.id)
+    if (documentIndex !== -1) {
+      documents.value[documentIndex].articles_count = articlesDocument.value.articles_count
+    }
+    closeArticlesModal()
+  } catch (error: any) {
+    articlesError.value = error?.data?.message || error?.message || 'Не удалось сохранить связи'
+  } finally {
+    articlesSaving.value = false
+  }
+}
+
 onMounted(loadDocuments)
+
+watch(searchQuery, () => {
+  documentsCurrentPage.value = 1
+})
+
+watch(documentsTotalPages, (total) => {
+  if (documentsCurrentPage.value > total) {
+    documentsCurrentPage.value = total
+  }
+})
 </script>
 
 <style scoped>
@@ -401,6 +639,25 @@ onMounted(loadDocuments)
   font-weight: 600;
 }
 
+.articles-count-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 58px;
+  border-radius: 999px;
+  padding: 7px 11px;
+  background: #ecfdf5;
+  color: #047857;
+  font-weight: 800;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.articles-count-btn:hover {
+  background: #d1fae5;
+  transform: translateY(-1px);
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -489,6 +746,62 @@ onMounted(loadDocuments)
   text-align: center !important;
 }
 
+.documents-pagination {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.documents-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.documents-page-btn {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 800;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.documents-page-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.documents-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.documents-page-btn--active {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.documents-page-btn--arrow {
+  background: #ffffff;
+}
+
+.documents-pagination__meta {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -506,6 +819,10 @@ onMounted(loadDocuments)
   padding: 24px;
   background: #ffffff;
   box-shadow: 0 22px 70px rgba(15, 23, 42, 0.28);
+}
+
+.modal-card--wide {
+  width: min(100%, 860px);
 }
 
 .modal-head,
@@ -526,6 +843,79 @@ onMounted(loadDocuments)
   color: #111827;
   font-size: 22px;
   font-weight: 800;
+}
+
+.modal-subtitle {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.linked-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 -24px 18px;
+  padding: 14px 24px;
+  background: #f8fafc;
+}
+
+.linked-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: #047857;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.documents-search--modal {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.article-picker-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+}
+
+.article-picker-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #111827;
+  text-align: left;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.article-picker-item:hover {
+  border-color: #86efac;
+  background: #ecfdf5;
+}
+
+.article-picker-item span,
+.article-picker-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.article-picker-item small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .form-group {

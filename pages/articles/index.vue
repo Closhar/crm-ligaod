@@ -230,6 +230,19 @@ const tableOptions = ref({
         hint: 'Количество привязанных галерей. Нажмите для добавления или удаления.'
       }
     },
+    {
+      name: 'documents_count',
+      label: '',
+      displayLabel: 'Документы',
+      title_icon: 'mdi:file-document-multiple-outline',
+      type: 'article_documents',
+      width: '95px',
+      sortable: false,
+      options: {
+        readonly: true,
+        hint: 'Количество привязанных документов. Нажмите для добавления или удаления.'
+      }
+    },
   ],
   editable: true,
   editrow: true,
@@ -265,6 +278,7 @@ const tableOptions = ref({
   ],
   searchable: true,
   enableResetFilters: true,
+  syncQueryWithRoute: true,
   showIdFilter: true,
   resetFiltersLabel: 'Очистить',
   resetFiltersClass: 'text-xs bg-red-500 hover:bg-red-400 text-gray-50 px-3 py-1 mb-1 rounded-md transition-colors shadow-sm ' +
@@ -425,6 +439,28 @@ const additionalFilters = ref([
     sel_class: "text-xs border min-w-48 border-gray-300 bg-gray-100 text-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500",
     options_list: "bg-gray-100 text-gray-600 max-h-[200px] border border-gray-300 rounded-md",
     empty_option: {value: '', label: 'Все метки'}
+  },
+  {
+    field: 'galleries',
+    label: 'Галереи',
+    type: 'toggle',
+    initialLabel: 'Галереи: все',
+    options: [
+      { value: 'with', label: 'с галереями', activeClass: 'bg-blue-600 text-white' },
+      { value: 'without', label: 'без галерей', activeClass: 'bg-slate-700 text-white' }
+    ],
+    empty_option: { value: '', label: 'Все' }
+  },
+  {
+    field: 'documents',
+    label: 'Документы',
+    type: 'toggle',
+    initialLabel: 'Документы: все',
+    options: [
+      { value: 'with', label: 'с документами', activeClass: 'bg-emerald-600 text-white' },
+      { value: 'without', label: 'без документов', activeClass: 'bg-slate-700 text-white' }
+    ],
+    empty_option: { value: '', label: 'Все' }
   }
 ]);
 

@@ -487,6 +487,14 @@
             </div>
             <div v-if="selectedFilePreviews.length" class="selected-preview-grid">
               <div v-for="preview in selectedFilePreviews" :key="preview.url" class="selected-preview-card">
+                <button
+                  class="selected-preview-card__remove"
+                  type="button"
+                  title="Убрать из загрузки"
+                  @click="removeSelectedFile(preview.file)"
+                >
+                  <Icon name="mdi:close" size="1.1em" />
+                </button>
                 <img :src="preview.url" :alt="preview.file.name" />
                 <div class="selected-preview-card__meta">
                   <span>{{ preview.file.name }}</span>
@@ -525,11 +533,12 @@
           </div>
 
           <!-- Сетка изображений -->
-          <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <TransitionGroup v-else name="gallery-image" tag="div" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <div 
               v-for="(image, index) in sortedGalleryImages" 
               :key="image.id"
-              class="relative group"
+              class="relative group gallery-image-card"
+              :class="{ 'gallery-image-card--deleting': image.deleting }"
               draggable="true"
               @dragstart="handleDragStart($event, image, index)"
               @dragover.prevent
@@ -583,7 +592,7 @@
                     <Icon name="line-md:edit" size="1.5em" />
                   </button>
                   <button 
-                    @click="deleteImage(image.id)"
+                    @click="openDeleteImageConfirm(image)"
                     :disabled="deletingImage === image.id"
                     class="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white p-2 rounded shadow-lg transition-colors"
                     title="Удалить"
@@ -602,7 +611,7 @@
               <span class="i-mdi:image text-2xl mb-2 block"></span>
               <p>В этой галерее пока нет изображений</p>
             </div>
-          </div>
+          </TransitionGroup>
         </div>
 
         <div v-else class="flex items-center justify-center h-full text-gray-500">
@@ -687,11 +696,42 @@
         </div>
       </div>
     </div>
+
+    <div v-if="successModal.show" class="gallery-modal-overlay" @click.self="closeSuccessModal">
+      <div class="gallery-feedback-modal gallery-feedback-modal--success">
+        <div class="gallery-feedback-modal__icon">
+          <Icon name="mdi:check-circle-outline" />
+        </div>
+        <h3>{{ successModal.title }}</h3>
+        <p>{{ successModal.message }}</p>
+        <button type="button" class="gallery-feedback-modal__primary" @click="closeSuccessModal">
+          Готово
+        </button>
+      </div>
+    </div>
+
+    <div v-if="deleteImageConfirm.show" class="gallery-modal-overlay" @click.self="closeDeleteImageConfirm">
+      <div class="gallery-feedback-modal gallery-feedback-modal--danger">
+        <div class="gallery-feedback-modal__icon">
+          <Icon name="mdi:trash-can-outline" />
+        </div>
+        <h3>Удалить изображение?</h3>
+        <p>{{ deleteImageConfirm.title || 'Изображение будет удалено из галереи.' }}</p>
+        <div class="gallery-feedback-modal__actions">
+          <button type="button" class="gallery-feedback-modal__secondary" @click="closeDeleteImageConfirm">
+            Отмена
+          </button>
+          <button type="button" class="gallery-feedback-modal__danger" :disabled="!!deletingImage" @click="confirmDeleteImage">
+            {{ deletingImage ? 'Удаление...' : 'Удалить' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue';
 import { useAuth } from '~/composables/useAuth';
 import { useGlobalsStore } from '~/stores/globals';
 import { storeToRefs } from 'pinia';
@@ -750,6 +790,7 @@ interface GalleryImage {
   position?: number;
   loaded?: boolean;
   error?: boolean;
+  deleting?: boolean;
 }
 
 const galleries = ref<Gallery[]>([]);
@@ -771,6 +812,20 @@ const loadingImages = ref(false);
 const deletingImage = ref<number | null>(null);
 const selectedImages = ref<number[]>([]);
 const deletingSelectedImages = ref(false);
+const successModal = ref({
+  show: false,
+  title: '',
+  message: '',
+});
+const deleteImageConfirm = ref<{
+  show: boolean;
+  image: GalleryImage | null;
+  title: string;
+}>({
+  show: false,
+  image: null,
+  title: '',
+});
 
 // Новые переменные для редактирования галереи
 const editingGalleryId = ref<number | null>(null);
@@ -1221,6 +1276,16 @@ const clearSelectedFiles = () => {
   clearSelectedFilePreviews();
 };
 
+const removeSelectedFile = (file: File) => {
+  const preview = selectedFilePreviews.value.find((item) => item.file === file);
+  if (preview) {
+    URL.revokeObjectURL(preview.url);
+  }
+
+  selectedFilePreviews.value = selectedFilePreviews.value.filter((item) => item.file !== file);
+  selectedFiles.value = selectedFiles.value.filter((item) => item !== file);
+};
+
 const formatFileSize = (size: number) => {
   if (!size) return '';
   if (size < 1024 * 1024) return `${Math.round(size / 1024)} КБ`;
@@ -1316,14 +1381,17 @@ const uploadImages = async () => {
     // Формируем итоговое сообщение
     let message = '';
     if (uploadedCount === totalFiles) {
-      message = `✅ Успешно загружено все ${uploadedCount} файлов!`;
+      message = `Успешно загружено файлов: ${uploadedCount}.`;
     } else if (uploadedCount > 0) {
-      message = `✅ Загружено ${uploadedCount} из ${totalFiles} файлов. Ошибок: ${errorCount}`;
+      message = `Загружено ${uploadedCount} из ${totalFiles} файлов. Ошибок: ${errorCount}.`;
     } else {
-      message = `❌ Не удалось загрузить ни одного файла. Ошибок: ${errorCount}`;
+      message = `Не удалось загрузить ни одного файла. Ошибок: ${errorCount}.`;
     }
-    
-    alert(message);
+
+    showSuccessModal(
+      uploadedCount > 0 ? 'Загрузка завершена' : 'Загрузка не выполнена',
+      message
+    );
     
     // Обновляем список изображений
     await loadGalleryImages(selectedGallery.value.id);
@@ -1355,21 +1423,63 @@ const cancelUploadForm = () => {
   resetLogoSettings();
 };
 
-// Удаление изображения
-const deleteImage = async (imageId: number) => {
-  if (!confirm('Вы уверены, что хотите удалить это изображение?') || !selectedGallery.value) return;
-  
+const showSuccessModal = (title: string, message: string) => {
+  successModal.value = {
+    show: true,
+    title,
+    message,
+  };
+};
+
+const closeSuccessModal = () => {
+  successModal.value.show = false;
+};
+
+const openDeleteImageConfirm = (image: GalleryImage) => {
+  deleteImageConfirm.value = {
+    show: true,
+    image,
+    title: image.title || 'Изображение без названия',
+  };
+};
+
+const closeDeleteImageConfirm = () => {
+  if (deletingImage.value) return;
+  deleteImageConfirm.value = {
+    show: false,
+    image: null,
+    title: '',
+  };
+};
+
+const confirmDeleteImage = async () => {
+  const image = deleteImageConfirm.value.image;
+  if (!image || !selectedGallery.value) return;
+
   try {
-    deletingImage.value = imageId;
+    deletingImage.value = image.id;
     await $fetch(`${api}/api/v1/galleries/${selectedGallery.value.id}/delete-image`, {
       method: 'POST',
       body: {
-        image_id: imageId
+        image_id: image.id
       }
     });
-    
-    await loadGalleryImages(selectedGallery.value.id);
-    await loadGalleries(); // Обновляем список галерей
+
+    const target = galleryImages.value.find((item) => item.id === image.id);
+    if (target) {
+      target.deleting = true;
+    }
+
+    selectedImages.value = selectedImages.value.filter((id) => id !== image.id);
+    deleteImageConfirm.value = {
+      show: false,
+      image: null,
+      title: '',
+    };
+
+    window.setTimeout(() => {
+      galleryImages.value = galleryImages.value.filter((item) => item.id !== image.id);
+    }, 240);
   } catch (error: any) {
     alert('Ошибка удаления изображения: ' + (error.message || 'Неизвестная ошибка'));
   } finally {
@@ -1528,25 +1638,6 @@ const getDefaultLogoUrl = () => {
   return null;
 };
 
-// Функция для загрузки логотипа по умолчанию как файла
-const getDefaultLogoAsFile = async () => {
-  const url = getDefaultLogoUrl();
-  if (!url) return null;
-  
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      return null;
-    }
-    
-    const blob = await response.blob();
-    const file = new File([blob], 'default_logo.png', { type: blob.type });
-    return file;
-  } catch (error) {
-    return null;
-  }
-};
-
 const downloadingSelectedImages = ref(false);
 
 const downloadSelectedImages = async () => {
@@ -1648,10 +1739,322 @@ const insertTemplateVariable = (variable: string) => {
     }
   });
 };
+
+onUnmounted(() => {
+  clearSelectedFilePreviews();
+});
 </script>
 
 <style scoped>
-/* Дополнительные стили если нужны */
+.gallery-list-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.gallery-list-item--idle {
+  background: #ffffff;
+}
+
+.gallery-list-item--idle:hover {
+  border-color: #bfdbfe;
+  background: #f8fafc;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+}
+
+.gallery-list-item--active {
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.16);
+}
+
+.gallery-list-item__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.gallery-list-item__title {
+  min-width: 0;
+  color: #111827;
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  white-space: normal;
+}
+
+.gallery-list-item__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  padding: 6px;
+  color: #dc2626;
+  transition: background 0.2s, color 0.2s;
+}
+
+.gallery-list-item__delete:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gallery-pagination {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.gallery-pagination__pages {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.gallery-page-btn {
+  min-width: 34px;
+  height: 34px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 800;
+  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+
+.gallery-page-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.gallery-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.gallery-page-btn--active {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.gallery-page-btn--arrow {
+  background: #f8fafc;
+}
+
+.gallery-pagination__meta {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.selected-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.selected-preview-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.selected-preview-card__remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.78);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.24);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.selected-preview-card__remove:hover {
+  background: #dc2626;
+  transform: scale(1.05);
+}
+
+.selected-preview-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #f3f4f6;
+}
+
+.selected-preview-card__meta {
+  display: grid;
+  gap: 3px;
+  padding: 8px;
+}
+
+.selected-preview-card__meta span {
+  overflow: hidden;
+  color: #111827;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selected-preview-card__meta small {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.gallery-image-card {
+  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+}
+
+.gallery-image-card--deleting {
+  opacity: 0;
+  transform: scale(0.92);
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.gallery-image-enter-active,
+.gallery-image-leave-active {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.gallery-image-enter-from,
+.gallery-image-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+.gallery-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.gallery-feedback-modal {
+  width: min(100%, 440px);
+  border-radius: 20px;
+  padding: 28px;
+  background: #ffffff;
+  color: #111827;
+  text-align: center;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.34);
+}
+
+.gallery-feedback-modal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  margin-bottom: 16px;
+  font-size: 42px;
+}
+
+.gallery-feedback-modal--success .gallery-feedback-modal__icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.gallery-feedback-modal--danger .gallery-feedback-modal__icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.gallery-feedback-modal h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.gallery-feedback-modal p {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.gallery-feedback-modal__actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.gallery-feedback-modal__primary,
+.gallery-feedback-modal__secondary,
+.gallery-feedback-modal__danger {
+  border-radius: 12px;
+  padding: 11px 16px;
+  font-weight: 800;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.gallery-feedback-modal__primary {
+  margin-top: 22px;
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.gallery-feedback-modal__secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.gallery-feedback-modal__danger {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.gallery-feedback-modal__primary:hover,
+.gallery-feedback-modal__secondary:hover,
+.gallery-feedback-modal__danger:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.gallery-feedback-modal__danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1280px) {
+  .selected-preview-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .selected-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 /* Стили для drag-and-drop */
 .dragging {

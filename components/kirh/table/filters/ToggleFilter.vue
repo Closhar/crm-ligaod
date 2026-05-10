@@ -68,7 +68,7 @@ export default {
           this.currentIndex = -1
         } else {
           this.currentIndex = this.filter.options.findIndex(
-              opt => opt.value === newVal
+              opt => String(opt.value) === String(newVal)
           )
         }
       }

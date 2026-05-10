@@ -1013,6 +1013,7 @@ import KirhDateTimeField from './fields/KirhDateTimeField.vue';
 import KirhHasManyField from './fields/KirhHasManyField.vue';
 import KirhHasManySelectField from './fields/KirhHasManySelectField.vue';
 import KirhArticleGalleriesField from './fields/KirhArticleGalleriesField.vue';
+import KirhArticleDocumentsField from './fields/KirhArticleDocumentsField.vue';
 import KirhImageField from './fields/KirhImageField.vue';
 import KirhMorphToManyField from './fields/KirhMorphToManyField.vue';
 import KirhMorphedByManyField from './fields/KirhMorphedByManyField.vue';
@@ -1028,6 +1029,7 @@ import { useDataRefresh } from '~/composables/useDataRefresh';
 import { useGlobalsStore } from '~/stores/globals';
 import { normalizeMediaUrl } from '~/utils/mediaUrl';
 import { storeToRefs } from 'pinia';
+import { useRoute, useRouter } from 'vue-router';
 
 function parseJsonResponse(text) {
   try {
@@ -1147,6 +1149,8 @@ export default {
   },
   setup(props) {
     const runtimeConfig = useRuntimeConfig();
+    const route = useRoute();
+    const router = useRouter();
     const globalsStore = useGlobalsStore();
     const { params, images } = storeToRefs(globalsStore);
     const loaderLogo = computed(() => normalizeMediaUrl(
@@ -1245,6 +1249,7 @@ export default {
         'has-many-select': KirhHasManySelectField,
         multi_field_modal: KirhMultiFieldModal, // Новый тип поля
         article_galleries: KirhArticleGalleriesField,
+        article_documents: KirhArticleDocumentsField,
       };
       return componentMap[type] || KirhTextField;
     };
@@ -1878,6 +1883,8 @@ export default {
           per_page: parseInt(currentPageSize.value, 10), // Преобразуем в число
         });
 
+        syncRouteQuery(queryParams);
+
         const response = await fetch(`${props.apiUrl}?${queryParams.toString()}`);
         const responseText = await response.text();
         const data = parseJsonResponse(responseText);
@@ -1946,6 +1953,50 @@ export default {
       }
 
       return queryParams;
+    };
+
+    const getRouteScalar = (value) => Array.isArray(value) ? value[0] : value;
+
+    const hydrateStateFromRoute = () => {
+      if (!props.tableOptions.syncQueryWithRoute) {
+        return;
+      }
+
+      const query = route.query || {};
+      searchQuery.value = String(getRouteScalar(query.q) || '');
+      currentPage.value = Number(getRouteScalar(query.page) || currentPage.value || 1);
+      currentPageSize.value = Number(getRouteScalar(query.per_page) || currentPageSize.value || props.tableOptions.pageSize || 30);
+      sortField.value = String(getRouteScalar(query.sort_field) || sortField.value || props.tableOptions.defaultSortField || 'id');
+      sortDirection.value = String(getRouteScalar(query.sort_direction) || sortDirection.value || props.tableOptions.defaultSortDirection || 'desc');
+      idFilter.value = getRouteScalar(query.id) || null;
+
+      props.additionalFilters.forEach(filter => {
+        const value = getRouteScalar(query[filter.field]);
+        selectedFilters.value[filter.field] = value !== undefined ? value : (filter.defaultValue || '');
+      });
+    };
+
+    const syncRouteQuery = (queryParams) => {
+      if (!props.tableOptions.syncQueryWithRoute || !router) {
+        return;
+      }
+
+      const nextQuery = {};
+      queryParams.forEach((value, key) => {
+        if (value !== undefined && value !== null && value !== '') {
+          nextQuery[key] = value;
+        }
+      });
+
+      const currentQuery = Object.fromEntries(
+        Object.entries(route.query || {}).map(([key, value]) => [key, getRouteScalar(value)])
+      );
+
+      if (JSON.stringify(currentQuery) === JSON.stringify(nextQuery)) {
+        return;
+      }
+
+      router.replace({ query: nextQuery });
     };
 
     const debouncedSearch = debounce(() => {
@@ -2265,6 +2316,7 @@ export default {
     onMounted(() => {
       setupClickOutsideListener();
       window.addEventListener('keydown', handleKeyDown);
+      hydrateStateFromRoute();
       fetchData();
     });
 
@@ -2280,7 +2332,9 @@ export default {
     // Инициализация
     onMounted(() => {
       props.additionalFilters.forEach(filter => {
-        selectedFilters.value[filter.field] = filter.defaultValue || '';
+        if (selectedFilters.value[filter.field] === undefined) {
+          selectedFilters.value[filter.field] = filter.defaultValue || '';
+        }
       });
       
       // Устанавливаем начальное значение для currentPageSize
@@ -2293,6 +2347,7 @@ export default {
         currentPageSize.value = parseInt(props.tableOptions.pageSize, 10) || 10;
       }
       
+      hydrateStateFromRoute();
       fetchData();
     });
 
