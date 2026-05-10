@@ -98,6 +98,8 @@
                                   :logo="site_logo"
                                   :registration="registration"
                                   :show-logo=true
+                                  :site-title="site_public_name"
+                                  :site-url="site_public_url"
                                   restore-pass="Восстановить пароль"
                                   :title="adminka_name"
     />
@@ -150,6 +152,8 @@ const safeImages = computed(() => images.value || {});
 const publicMediaUrl = computed(() => String(config.public.PUBLIC_FILESYSTEM_URL || ''));
 
 const adminka_name = computed(() => safeParams.value.adminka_name || 'Админка')
+const site_public_name = computed(() => safeParams.value.site_name || safeParams.value.site_title || 'Основной сайт')
+const site_public_url = computed(() => String(config.public.SITE_URL || safeParams.value.site_url || safeParams.value.site_link || '').replace(/\/+$/, '') || 'https://ligaod.ru')
 const site_logo = computed(() => normalizeMediaUrl(
     safeImages.value.adminka_logo ||
     safeImages.value.site_logo ||

@@ -12,16 +12,16 @@
           Управление контентом, участниками, событиями и настройками спортивного портала.
         </p>
 
-        <div class="auth-metrics">
-          <div>
-            <span>CRM</span>
-            <strong>SPORTREP</strong>
-          </div>
-          <div>
-            <span>Доступ</span>
-            <strong>secure</strong>
-          </div>
-        </div>
+        <a
+            class="auth-site-link"
+            :href="siteUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+          <span>На сайт</span>
+          <strong>{{ siteTitle }}</strong>
+          <Icon name="heroicons:arrow-top-right-on-square" />
+        </a>
       </section>
 
       <section class="auth-panel">
@@ -114,6 +114,14 @@ const props = defineProps({
   logo: {
     type: String,
     default: '/images/logo.png'
+  },
+  siteTitle: {
+    type: String,
+    default: 'Основной сайт'
+  },
+  siteUrl: {
+    type: String,
+    default: 'https://ligaod.ru'
   }
 })
 
@@ -219,30 +227,52 @@ const activeTab = ref('login');
   margin: 0;
 }
 
-.auth-metrics {
-  display: flex;
-  gap: 14px;
+.auth-site-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 14px;
+  align-items: center;
+  width: min(360px, 100%);
   margin-top: 38px;
-}
-
-.auth-metrics div {
-  min-width: 132px;
   border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 18px;
   background: rgba(4, 15, 35, .48);
-  padding: 14px 16px;
+  padding: 18px 20px;
+  color: #fff;
+  text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
 }
 
-.auth-metrics span {
+.auth-site-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(246, 113, 12, .72);
+  background: rgba(4, 15, 35, .66);
+}
+
+.auth-site-link span {
   display: block;
-  color: rgba(255, 255, 255, .56);
+  grid-column: 1;
+  color: #f6710c;
   font-size: 12px;
+  font-weight: 900;
   text-transform: uppercase;
   margin-bottom: 5px;
 }
 
-.auth-metrics strong {
+.auth-site-link strong {
+  display: block;
+  grid-column: 1;
   color: #fff;
-  font-size: 18px;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.auth-site-link svg {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  width: 28px;
+  height: 28px;
+  color: #f6710c;
 }
 
 .auth-panel {
