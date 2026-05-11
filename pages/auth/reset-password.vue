@@ -79,6 +79,21 @@ const isPasswordReset = ref(false); // Состояние для скрытия 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 
+const readApiResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    return await response.json();
+  }
+
+  const text = await response.text();
+  return {
+    message: text.includes('<!DOCTYPE')
+      ? 'Сервер вернул HTML-страницу ошибки вместо JSON. Проверьте лог backend.'
+      : text,
+  };
+};
+
 // Получаем токен из URL
 onMounted(() => {
   token.value = String(route.query.token);
@@ -95,6 +110,7 @@ const submitForm = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         token: token.value,
@@ -104,7 +120,7 @@ const submitForm = async () => {
       }),
     });
 
-    const data = await response.json();
+    const data = await readApiResponse(response);
 
     if (response.ok) {
       messageType.value = 'success';

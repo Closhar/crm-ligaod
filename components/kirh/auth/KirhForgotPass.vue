@@ -9,6 +9,21 @@ const forgotPasswordMessageType = ref('');
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 
+const readApiResponse = async (response: Response) => {
+  const contentType = response.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    return await response.json();
+  }
+
+  const text = await response.text();
+  return {
+    message: text.includes('<!DOCTYPE')
+      ? 'Сервер вернул HTML-страницу ошибки вместо JSON. Проверьте лог backend.'
+      : text,
+  };
+};
+
 // Отправка запроса на восстановление пароля
 const submitForgotPasswordForm = async () => {
   forgotPasswordMessage.value = ''; // Сбрасываем сообщение перед запросом
@@ -19,13 +34,14 @@ const submitForgotPasswordForm = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
       },
       body: JSON.stringify({
         email: forgotEmail.value,
       }),
     });
 
-    const data = await response.json();
+    const data = await readApiResponse(response);
 
     if (response.ok) {
       forgotPasswordMessageType.value = 'success';
