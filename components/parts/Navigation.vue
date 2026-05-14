@@ -56,12 +56,21 @@ watch(isAuthenticated, loadMenu)
 const menu = computed(() => {
   const items = [...((menuData.value || []) as any[])]
   const hasDocuments = items.some((item: any) => item.slug === 'documents' || item.title === 'Документы')
+  const hasContacts = items.some((item: any) => item.slug === 'contacts' || item.title === 'Контакты')
 
   if (!hasDocuments) {
     items.push({
       title: 'Документы',
       icon: 'mdi:file-document-multiple-outline',
       slug: 'documents',
+    })
+  }
+
+  if (!hasContacts) {
+    items.push({
+      title: 'Контакты',
+      icon: 'mdi:card-account-phone-outline',
+      slug: 'contacts',
     })
   }
 
