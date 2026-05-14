@@ -199,7 +199,7 @@ onMounted(loadContacts)
         <p>Контактная страница сайта и обращения пользователей</p>
       </div>
       <div class="contacts-admin__badge">
-        <Icon icon="mdi:email-alert-outline" />
+        <Icon name="mdi:email-alert-outline" />
         {{ unprocessedCount }} необработанных
       </div>
     </div>
@@ -220,7 +220,7 @@ onMounted(loadContacts)
       <section class="contacts-card">
         <div class="section-head">
           <h2>Адреса</h2>
-          <button type="button" @click="addresses.push(blankAddress())"><Icon icon="mdi:plus" /> Добавить</button>
+          <button type="button" @click="addresses.push(blankAddress())"><Icon name="mdi:plus" /> Добавить</button>
         </div>
         <div v-for="(address, index) in addresses" :key="index" class="repeat-row repeat-row--address">
           <input v-model="address.title" placeholder="Заголовок">
@@ -229,38 +229,38 @@ onMounted(loadContacts)
           <input v-model="address.longitude" placeholder="Долгота">
           <input v-model.number="address.sort_order" type="number" placeholder="Сорт.">
           <label class="check-row"><input :checked="address.is_main" type="radio" name="main-address" @change="setMainAddress(index)"> Главный</label>
-          <button type="button" class="danger" @click="openDeleteConfirm('address', index, address)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('address', index, address)"><Icon name="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
       <section class="contacts-card">
-        <div class="section-head"><h2>Телефоны</h2><button type="button" @click="phones.push(blankPhone())"><Icon icon="mdi:plus" /> Добавить</button></div>
+        <div class="section-head"><h2>Телефоны</h2><button type="button" @click="phones.push(blankPhone())"><Icon name="mdi:plus" /> Добавить</button></div>
         <div v-for="(phone, index) in phones" :key="index" class="repeat-row">
           <input v-model="phone.title" placeholder="Заголовок">
           <input v-model="phone.phone" placeholder="+7...">
           <input v-model.number="phone.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="openDeleteConfirm('phone', index, phone)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('phone', index, phone)"><Icon name="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
       <section class="contacts-card">
-        <div class="section-head"><h2>Email</h2><button type="button" @click="emails.push(blankEmail())"><Icon icon="mdi:plus" /> Добавить</button></div>
+        <div class="section-head"><h2>Email</h2><button type="button" @click="emails.push(blankEmail())"><Icon name="mdi:plus" /> Добавить</button></div>
         <div v-for="(email, index) in emails" :key="index" class="repeat-row">
           <input v-model="email.title" placeholder="Заголовок">
           <input v-model="email.email" placeholder="info@example.ru">
           <input v-model.number="email.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="openDeleteConfirm('email', index, email)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('email', index, email)"><Icon name="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
       <section class="contacts-card">
-        <div class="section-head"><h2>Соцсети</h2><button type="button" @click="socials.push(blankSocial())"><Icon icon="mdi:plus" /> Добавить</button></div>
+        <div class="section-head"><h2>Соцсети</h2><button type="button" @click="socials.push(blankSocial())"><Icon name="mdi:plus" /> Добавить</button></div>
         <div v-for="(social, index) in socials" :key="index" class="repeat-row repeat-row--social">
           <input v-model="social.title" placeholder="Название">
           <input v-model="social.icon" placeholder="mdi:telegram">
           <input v-model="social.url" placeholder="https://...">
           <input v-model.number="social.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="openDeleteConfirm('social', index, social)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('social', index, social)"><Icon name="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
@@ -276,7 +276,7 @@ onMounted(loadContacts)
       </section>
 
       <button class="save-btn" type="button" :disabled="saving" @click="saveContacts">
-        <Icon icon="mdi:content-save-outline" />
+        <Icon name="mdi:content-save-outline" />
         {{ saving ? 'Сохранение...' : 'Сохранить контакты' }}
       </button>
 
@@ -293,7 +293,7 @@ onMounted(loadContacts)
             <span><strong>{{ message.name }}</strong><small>{{ message.email || message.phone }}</small></span>
             <span><strong>{{ message.subject }}</strong><small>{{ message.message }}</small></span>
             <span>{{ formatDate(message.created_at) }}</span>
-            <button type="button" class="danger" @click="openDeleteConfirm('message', null, message)"><Icon icon="mdi:trash-can-outline" /></button>
+            <button type="button" class="danger" @click="openDeleteConfirm('message', null, message)"><Icon name="mdi:trash-can-outline" /></button>
           </div>
           <div v-if="!messages.length" class="empty">Обращений пока нет</div>
         </div>
