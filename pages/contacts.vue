@@ -21,11 +21,37 @@ const emails = ref([])
 const socials = ref([])
 const messages = ref([])
 const unprocessedCount = ref(0)
+const deleteConfirmOpen = ref(false)
+const deleteConfirmLoading = ref(false)
+const pendingDelete = ref(null)
 
 const blankAddress = () => ({ title: '', address: '', latitude: '', longitude: '', is_main: false, sort_order: 500 })
 const blankPhone = () => ({ title: '', phone: '', sort_order: 500 })
 const blankEmail = () => ({ title: '', email: '', sort_order: 500 })
 const blankSocial = () => ({ title: '', icon: 'mdi:link-variant', url: '', sort_order: 500 })
+
+const contactCollections = {
+  address: addresses,
+  phone: phones,
+  email: emails,
+  social: socials,
+}
+
+const deleteTitles = {
+  address: 'Удаление адреса',
+  phone: 'Удаление телефона',
+  email: 'Удаление email',
+  social: 'Удаление соцсети',
+  message: 'Удаление обращения',
+}
+
+const deleteNames = {
+  address: 'адрес',
+  phone: 'телефон',
+  email: 'email',
+  social: 'соцсеть',
+  message: 'обращение',
+}
 
 const loadContacts = async () => {
   loading.value = true
@@ -89,10 +115,64 @@ const toggleProcessed = async (message) => {
 }
 
 const deleteMessage = async (message) => {
-  if (!confirm('Удалить обращение?')) return
   await apiRequest(`/contact-messages/${message.id}`, { method: 'DELETE' })
   messages.value = messages.value.filter((item) => item.id !== message.id)
   unprocessedCount.value = messages.value.filter((item) => !item.is_processed).length
+}
+
+const getDeleteTargetTitle = (item) => {
+  return item?.title || item?.address || item?.phone || item?.email || item?.url || item?.subject || ''
+}
+
+const openDeleteConfirm = (type, index, item) => {
+  const targetTitle = getDeleteTargetTitle(item)
+  pendingDelete.value = { type, index, item }
+  deleteConfirmOpen.value = true
+  successMessage.value = ''
+  errorMessage.value = ''
+  pendingDelete.value.message = targetTitle
+    ? `Удалить ${deleteNames[type]} "${targetTitle}"? Это действие применится после сохранения контактов.`
+    : `Удалить ${deleteNames[type]}? Это действие применится после сохранения контактов.`
+
+  if (type === 'message') {
+    pendingDelete.value.message = targetTitle
+      ? `Удалить обращение "${targetTitle}"? Это действие нельзя отменить.`
+      : 'Удалить обращение? Это действие нельзя отменить.'
+  }
+}
+
+const closeDeleteConfirm = () => {
+  if (deleteConfirmLoading.value) return
+  deleteConfirmOpen.value = false
+  pendingDelete.value = null
+}
+
+const confirmDelete = async () => {
+  if (!pendingDelete.value) return
+
+  deleteConfirmLoading.value = true
+  try {
+    const { type, index, item } = pendingDelete.value
+
+    if (type === 'message') {
+      await deleteMessage(item)
+    } else {
+      const collection = contactCollections[type]
+      collection?.value?.splice(index, 1)
+
+      if (type === 'address' && addresses.value.length && !addresses.value.some((address) => address.is_main)) {
+        addresses.value[0].is_main = true
+      }
+    }
+
+    deleteConfirmOpen.value = false
+    pendingDelete.value = null
+  } catch (error) {
+    console.error(error)
+    errorMessage.value = 'Не удалось удалить запись'
+  } finally {
+    deleteConfirmLoading.value = false
+  }
 }
 
 const formatDate = (value) => value ? new Date(value).toLocaleString('ru-RU') : ''
@@ -102,6 +182,17 @@ onMounted(loadContacts)
 
 <template>
   <div class="contacts-admin">
+    <ConfirmModal
+      :is-open="deleteConfirmOpen"
+      :title="pendingDelete ? deleteTitles[pendingDelete.type] : 'Удаление'"
+      :message="pendingDelete?.message || 'Удалить запись?'"
+      type="danger"
+      :confirm-text="deleteConfirmLoading ? 'Удаление...' : 'Удалить'"
+      cancel-text="Отмена"
+      @confirm="confirmDelete"
+      @cancel="closeDeleteConfirm"
+    />
+
     <div class="contacts-admin__head">
       <div>
         <h1>Контакты</h1>
@@ -138,7 +229,7 @@ onMounted(loadContacts)
           <input v-model="address.longitude" placeholder="Долгота">
           <input v-model.number="address.sort_order" type="number" placeholder="Сорт.">
           <label class="check-row"><input :checked="address.is_main" type="radio" name="main-address" @change="setMainAddress(index)"> Главный</label>
-          <button type="button" class="danger" @click="addresses.splice(index, 1)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('address', index, address)"><Icon icon="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
@@ -148,7 +239,7 @@ onMounted(loadContacts)
           <input v-model="phone.title" placeholder="Заголовок">
           <input v-model="phone.phone" placeholder="+7...">
           <input v-model.number="phone.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="phones.splice(index, 1)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('phone', index, phone)"><Icon icon="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
@@ -158,18 +249,18 @@ onMounted(loadContacts)
           <input v-model="email.title" placeholder="Заголовок">
           <input v-model="email.email" placeholder="info@example.ru">
           <input v-model.number="email.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="emails.splice(index, 1)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('email', index, email)"><Icon icon="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
       <section class="contacts-card">
         <div class="section-head"><h2>Соцсети</h2><button type="button" @click="socials.push(blankSocial())"><Icon icon="mdi:plus" /> Добавить</button></div>
-        <div v-for="(social, index) in socials" :key="index" class="repeat-row">
+        <div v-for="(social, index) in socials" :key="index" class="repeat-row repeat-row--social">
           <input v-model="social.title" placeholder="Название">
           <input v-model="social.icon" placeholder="mdi:telegram">
           <input v-model="social.url" placeholder="https://...">
           <input v-model.number="social.sort_order" type="number" placeholder="Сорт.">
-          <button type="button" class="danger" @click="socials.splice(index, 1)"><Icon icon="mdi:trash-can-outline" /></button>
+          <button type="button" class="danger" @click="openDeleteConfirm('social', index, social)"><Icon icon="mdi:trash-can-outline" /></button>
         </div>
       </section>
 
@@ -202,7 +293,7 @@ onMounted(loadContacts)
             <span><strong>{{ message.name }}</strong><small>{{ message.email || message.phone }}</small></span>
             <span><strong>{{ message.subject }}</strong><small>{{ message.message }}</small></span>
             <span>{{ formatDate(message.created_at) }}</span>
-            <button type="button" class="danger" @click="deleteMessage(message)"><Icon icon="mdi:trash-can-outline" /></button>
+            <button type="button" class="danger" @click="openDeleteConfirm('message', null, message)"><Icon icon="mdi:trash-can-outline" /></button>
           </div>
           <div v-if="!messages.length" class="empty">Обращений пока нет</div>
         </div>
@@ -216,7 +307,7 @@ onMounted(loadContacts)
   display: grid;
   gap: 18px;
   padding: 24px;
-  color: #e5e7eb;
+  color: #111827;
 }
 .contacts-admin__head {
   display: flex;
@@ -226,18 +317,18 @@ onMounted(loadContacts)
 }
 h1 {
   margin: 0;
-  color: #fff;
+  color: #111827;
   font-size: 34px;
   font-weight: 900;
 }
 h2 {
   margin: 0 0 14px;
-  color: #fff;
+  color: #111827;
   font-size: 22px;
   font-weight: 850;
 }
 .contacts-admin__head p {
-  color: #94a3b8;
+  color: #475569;
 }
 .contacts-admin__badge,
 .save-btn,
@@ -252,11 +343,12 @@ h2 {
   font-weight: 900;
 }
 .contacts-card {
-  border: 1px solid rgba(255,255,255,.1);
+  border: 1px solid #e5e7eb;
   border-radius: 18px;
-  background: #111827;
+  background: #fff;
   padding: 18px;
-  box-shadow: 0 18px 42px rgba(0,0,0,.18);
+  color: #111827;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, .08);
 }
 .form-grid {
   display: grid;
@@ -271,7 +363,7 @@ label {
   gap: 7px;
 }
 label span {
-  color: #94a3b8;
+  color: #475569;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -279,7 +371,7 @@ label span {
 input,
 textarea {
   width: 100%;
-  border: 1px solid #374151;
+  border: 1px solid #cbd5e1;
   border-radius: 10px;
   background: #f8fafc;
   color: #111827;
@@ -302,11 +394,14 @@ textarea {
 .repeat-row--address {
   grid-template-columns: 1fr 2fr 120px 120px 90px 110px 44px;
 }
+.repeat-row--social {
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(320px, 2.5fr) 120px 44px;
+}
 .check-row {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #e5e7eb;
+  color: #111827;
 }
 .check-row input {
   width: auto;
@@ -317,7 +412,7 @@ textarea {
   place-items: center;
   border-radius: 10px;
   background: rgba(239, 68, 68, .14);
-  color: #fecaca;
+  color: #b91c1c;
 }
 .contacts-alert {
   border-radius: 14px;
@@ -325,12 +420,12 @@ textarea {
   font-weight: 850;
 }
 .contacts-alert--error {
-  background: rgba(239, 68, 68, .18);
-  color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
 }
 .contacts-alert--success {
-  background: rgba(34, 197, 94, .18);
-  color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
 }
 .messages-table {
   display: grid;
@@ -342,11 +437,14 @@ textarea {
   gap: 10px;
   align-items: start;
   border-radius: 12px;
-  background: rgba(255,255,255,.06);
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
   padding: 10px;
 }
 .messages-row--head {
-  color: #94a3b8;
+  border-color: transparent;
+  background: #fff7ed;
+  color: #7c2d12;
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -358,22 +456,22 @@ textarea {
 .messages-row small {
   max-height: 42px;
   overflow: hidden;
-  color: #94a3b8;
+  color: #64748b;
 }
 .status-btn {
   border-radius: 999px;
-  background: rgba(246, 113, 12, .2);
-  color: #ffd8bd;
+  background: #ffedd5;
+  color: #9a3412;
   padding: 7px 9px;
   font-size: 12px;
   font-weight: 900;
 }
 .status-btn--done {
-  background: rgba(34, 197, 94, .2);
-  color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
 }
 .empty {
-  color: #94a3b8;
+  color: #64748b;
   padding: 20px;
   text-align: center;
 }
@@ -382,6 +480,7 @@ textarea {
   .form-grid--settings,
   .repeat-row,
   .repeat-row--address,
+  .repeat-row--social,
   .messages-row {
     grid-template-columns: 1fr;
   }
