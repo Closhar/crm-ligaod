@@ -79,7 +79,7 @@ const isPasswordReset = ref(false); // Состояние для скрытия 
 const config = useRuntimeConfig(); // Используем useRuntimeConfig()
 const api = config.public.API_URL;
 
-const readApiResponse = async (response: Response) => {
+const readApiResponse = async (response) => {
   const contentType = response.headers.get('content-type') || '';
 
   if (contentType.includes('application/json')) {
