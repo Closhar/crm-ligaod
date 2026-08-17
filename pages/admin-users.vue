@@ -119,6 +119,10 @@
             <span>Email подтвержден</span>
           </label>
           <label class="toggle-row">
+            <input v-model="userForm.is_admin" type="checkbox">
+            <span>Администратор</span>
+          </label>
+          <label class="toggle-row">
             <input v-model="userForm.is_blocked" type="checkbox">
             <span>Пользователь заблокирован</span>
           </label>
@@ -261,6 +265,7 @@ const userForm = reactive({
   name: '',
   email: '',
   email_verified: false,
+  is_admin: false,
   is_blocked: false,
   admin_role_ids: [] as number[],
 })
@@ -299,6 +304,7 @@ const openEditForm = (item: AdminUserItem) => {
   userForm.name = item.name
   userForm.email = item.email
   userForm.email_verified = item.email_verified
+  userForm.is_admin = item.is_admin
   userForm.is_blocked = item.is_blocked
   userForm.admin_role_ids = [...(item.admin_role_ids || [])]
   errorMessage.value = ''
@@ -326,6 +332,7 @@ const saveUser = async () => {
         name: userForm.name,
         email: userForm.email,
         email_verified: userForm.email_verified,
+        is_admin: userForm.is_admin,
         is_blocked: userForm.is_blocked,
         admin_role_ids: userForm.admin_role_ids,
       },
